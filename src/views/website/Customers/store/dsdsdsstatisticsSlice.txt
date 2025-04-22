@@ -1,0 +1,62 @@
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+
+const API_CUSTOMER_STATISTICS_URL = `${import.meta.env.VITE_WOOCOMMERCE_CUSTOMER_STATISTICS_URL}?consumer_key=${import.meta.env.VITE_WOOCOMMERCE_CONSUMER_KEY}&consumer_secret=${import.meta.env.VITE_WOOCOMMERCE_CONSUMER_SECRET}`;
+
+type Statistic = {
+    value: number
+    growShrink: number
+}
+
+export interface CustomerStatistics {
+    totalCustomers: Statistic
+}
+
+export const fetchStatistics = createAsyncThunk(
+    'statistics/fetchStatistics',
+    async (): Promise<CustomerStatistics> => {
+        const response = await fetch(API_CUSTOMER_STATISTICS_URL);
+        if (!response.ok) {
+            throw new Error("Failed to fetch customer statistics");
+        }
+        const data = await response.json();
+
+        // Sum total customers from all categories
+        const totalCustomers = data.reduce((sum: number, customerType: { total: string }) => sum + parseInt(customerType.total, 10), 0);
+        const statistics: CustomerStatistics = { totalCustomers: { value: totalCustomers, growShrink: 0 } };
+        return statistics;
+    }
+);
+
+interface StatisticsState {
+    totalCustomers: number;
+    loading: boolean;
+    error: string | null;
+}
+
+const initialState: StatisticsState = {
+    totalCustomers: 0,
+    loading: false,
+    error: null,
+};
+
+const statisticsSlice = createSlice({
+    name: 'statistics',
+    initialState,
+    reducers: {},
+    extraReducers: (builder) => {
+        builder
+            .addCase(fetchStatistics.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(fetchStatistics.fulfilled, (state, action) => {
+                state.loading = false;
+                state.totalCustomers = action.payload.total;
+            })
+            .addCase(fetchStatistics.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message || "Error fetching statistics";
+            });
+    }
+});
+
+export default statisticsSlice.reducer;

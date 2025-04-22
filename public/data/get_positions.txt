@@ -1,0 +1,6 @@
+-- Shows mouse position every time you click
+hs.eventtap.new({hs.eventtap.event.types.leftMouseDown}, function(e)
+    local point = hs.mouse.getAbsolutePosition()
+    print("Mouse clicked at:", point.x, point.y)
+    hs.alert.show("Click at: " .. point.x .. ", " .. point.y)
+end):start()
