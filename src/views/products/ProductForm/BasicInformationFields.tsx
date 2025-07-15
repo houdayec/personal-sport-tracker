@@ -9,6 +9,9 @@ type FormFieldsName = {
     name: string
     sku: string
     category: string
+    mainKeyword: string
+    secondKeyword: string
+    price: string
 }
 
 type BasicInformationFields = {
@@ -30,7 +33,7 @@ const statusOptions = [
     { label: 'Undefined', value: 'undefined' },
 ]
 
-const BasicInformationFields = (props: BasicInformationFields) => {
+const ProductInfoFields = (props: BasicInformationFields) => {
     const { touched, errors } = props
 
     return (
@@ -90,6 +93,12 @@ const BasicInformationFields = (props: BasicInformationFields) => {
                         )}
                     </Field>
                 </FormItem>
+                <FormItem label="Main Keyword" invalid={(errors.mainKeyword && touched.secondKeyword) as boolean}>
+                    <Field type="text" name="mainKeyword" placeholder="Main keyword" component={Input} />
+                </FormItem>
+                <FormItem label="Second Keyword" invalid={(errors.secondKeyword && touched.secondKeyword) as boolean}>
+                    <Field type="text" name="secondKeyword" placeholder="Second keyword" component={Input} />
+                </FormItem>
 
                 <FormItem label="WordPress ID">
                     <Field
@@ -100,21 +109,8 @@ const BasicInformationFields = (props: BasicInformationFields) => {
                     />
                 </FormItem>
 
-                <FormItem label="Etsy ID">
-                    <Field
-                        type="text"
-                        name="etsyId"
-                        placeholder="Etsy ID"
-                        component={Input}
-                    />
-                </FormItem>
-
-                <FormItem label="Published on Etsy">
-                    <Field name="publishedOnEtsy" type="checkbox">
-                        {({ field }: FieldProps) => (
-                            <input type="checkbox" {...field} checked={field.value} />
-                        )}
-                    </Field>
+                <FormItem label="Price (USD)" invalid={(errors.price && touched.price) as boolean}>
+                    <Field type="number" name="price" placeholder="9.99" component={Input} />
                 </FormItem>
 
                 <FormItem label="Published on Website">
@@ -156,4 +152,4 @@ const BasicInformationFields = (props: BasicInformationFields) => {
     )
 }
 
-export default BasicInformationFields
+export default ProductInfoFields

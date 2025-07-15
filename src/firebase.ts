@@ -14,6 +14,7 @@ import 'firebase/compat/auth'
 import 'firebase/compat/firestore'
 
 import firebaseConfig from '@/configs/firebase.config'
+import { getStorage } from 'firebase/storage';
 
 const firebaseApp = initializeApp(firebaseConfig)
 const analytics = getAnalytics(firebaseApp);
@@ -21,6 +22,7 @@ const analytics = getAnalytics(firebaseApp);
 const db = getFirestore(firebaseApp)
 const auth = getAuth(firebaseApp)
 
+export const storage = getStorage(firebaseApp)
 export const functions = getFunctions(firebaseApp)
 const currentUser = auth.currentUser
 export const generateDownloadLink = httpsCallable(functions, "generateDownloadLink")

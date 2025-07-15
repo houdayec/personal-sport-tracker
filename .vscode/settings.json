@@ -1,5 +1,8 @@
 {
     "workbench.colorCustomizations": {
+        "statusBar.background": "#dd2c01",
+        "statusBar.noFolderBackground": "#E49427",
+        "statussBar.prominentBackground": "#E49427",
         "activityBar.activeBackground": "#fe4113",
         "activityBar.background": "#fe4113",
         "activityBar.foreground": "#e7e7e7",
@@ -8,7 +11,6 @@
         "activityBarBadge.foreground": "#e7e7e7",
         "commandCenter.border": "#e7e7e799",
         "sash.hoverBorder": "#fe4113",
-        "statusBar.background": "#dd2c01",
         "statusBar.foreground": "#e7e7e7",
         "statusBarItem.hoverBackground": "#fe4113",
         "statusBarItem.remoteBackground": "#dd2c01",

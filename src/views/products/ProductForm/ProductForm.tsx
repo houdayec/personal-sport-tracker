@@ -5,7 +5,7 @@ import hooks from '@/components/ui/hooks'
 import StickyFooter from '@/components/shared/StickyFooter'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import { Form, Formik, FormikProps } from 'formik'
-import BasicInformationFields from './BasicInformationFields'
+import ProductInfoFields from './BasicInformationFields'
 import PricingFields from './PricingFields'
 import OrganizationFields from './OrganizationFields'
 import ProductImages from './ProductImages'
@@ -14,7 +14,7 @@ import { HiOutlineTrash } from 'react-icons/hi'
 import { AiOutlineSave } from 'react-icons/ai'
 import * as Yup from 'yup'
 import { Product } from '@/@types/product'
-import EtsyFields from './EtsyFields'
+import AssetsFields from './AssetsFields'
 import EmbroideryFontDataFields from './EmbroideryFontData'
 import FontDataFields from './FontData'
 import { Tabs } from '@/components/ui'
@@ -22,6 +22,8 @@ import TabContent from '@/components/ui/Tabs/TabContent'
 import TabList from '@/components/ui/Tabs/TabList'
 import TabNav from '@/components/ui/Tabs/TabNav'
 import ThumbnailMetadataForm from './ThumbnailMetadataForm'
+import { useFormikContext } from 'formik';
+import ThumbnailForm from './ThumbnailForm'
 
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 type FormikRef = FormikProps<any>
@@ -73,6 +75,10 @@ const validationSchema = Yup.object().shape({
     name: Yup.string().required('Product Name Required'),
     sku: Yup.string().required('SKU Required'),
     category: Yup.string().required('Category Required'),
+    mainKeyword: Yup.string().required('Main Keyword Required'),
+    secondKeyword: Yup.string().required('Second Keyword Required'),
+    price: Yup.string().required('Price Required'),
+
 })
 
 const DeleteProductButton = ({ onDelete }: { onDelete: OnDelete }) => {
@@ -137,32 +143,19 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
         <>
             <Formik
                 innerRef={ref}
-                initialValues={{
-                    ...initialProduct,
-                    tags: initialProduct?.etsy.tags
-                        ? initialProduct?.etsy.tags.map((value) => ({
-                            label: value,
-                            value,
-                        }))
-                        : [],
-                }}
                 validationSchema={validationSchema}
+                initialValues={initialProduct}
                 onSubmit={(newProductValues: Product, { setSubmitting }) => {
                     const newProduct = cloneDeep(newProductValues)
-
-                    newProduct.etsy.tags = newProduct.etsy.tags.map((tag: any) =>
-                        typeof tag === 'string' ? tag : tag.value
-                    )
 
                     if (type === 'new') {
                         newProduct.sku = newProductValues.sku
                     }
 
                     onFormSubmit?.(newProduct, setSubmitting)
-                }}
-            >
+                }}>
                 {({ values, touched, errors, isSubmitting }) => {
-                    const category = values.category
+                    const category = values?.category
 
                     return (
                         <Form>
@@ -171,27 +164,25 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                                     <div className="lg:col-span-3">
                                         <Tabs defaultValue="product">
                                             <TabList>
-                                                <TabNav value="product">Product</TabNav>
-                                                <TabNav value="etsy">Etsy</TabNav>
-                                                <TabNav value="website" disabled>Website (Coming)</TabNav>
-                                                <TabNav value="thumbnails">Thumbnails Metadata</TabNav>
+                                                <TabNav value="product">🗂 Product Info</TabNav>
+                                                <TabNav value="assets">📦 Assets</TabNav>
+                                                <TabNav value="thumbnails">🖼 Thumbnails</TabNav>
+                                                <TabNav value="thumbnails_meta">🖼 Thumbnails</TabNav>
+                                                <TabNav value="wordpress">📝 WordPress Post</TabNav>
+                                                <TabNav value="export">📤 Export & Upload</TabNav>
                                             </TabList>
 
                                             <div className="p-4">
                                                 <TabContent value="product">
-                                                    <BasicInformationFields touched={touched} errors={errors} />
+                                                    <ProductInfoFields touched={touched} errors={errors} />
 
-                                                    {category === 'football_font' && (
-                                                        <EmbroideryFontDataFields touched={touched} errors={errors} />
-                                                    )}
-
-                                                    {category === 'font' && (
+                                                    {values?.category === 'font' && (
                                                         <FontDataFields touched={touched} errors={errors} />
                                                     )}
                                                 </TabContent>
 
-                                                <TabContent value="etsy">
-                                                    <EtsyFields touched={touched} errors={errors} values={values} />
+                                                <TabContent value="assets">
+                                                    <AssetsFields touched={touched} errors={errors} />
                                                 </TabContent>
 
                                                 <TabContent value="website">
@@ -199,6 +190,10 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                                                 </TabContent>
 
                                                 <TabContent value="thumbnails">
+                                                    <ThumbnailForm touched={touched} errors={errors} />
+                                                </TabContent>
+
+                                                <TabContent value="thumbnails_meta">
                                                     <ThumbnailMetadataForm touched={touched} errors={errors} />
                                                 </TabContent>
                                             </div>

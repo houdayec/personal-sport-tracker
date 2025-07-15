@@ -87,12 +87,6 @@ export const protectedRoutes = [
         component: lazy(() => import("@/views/etsy/DiscountGenerator")),
         authority: ['USER'],
     },
-    {
-        key: "etsy.scraper",
-        path: "/etsy/scraper",
-        component: lazy(() => import("@/views/etsy/EtsyScraperAssistant")),
-        authority: ['USER'],
-    },
     // Product Management
     {
         key: "products.manage",
