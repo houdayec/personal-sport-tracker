@@ -1,4 +1,6 @@
-# elstar-ts
+# FontMaze Dashboard
+
+Start: npm start
 
 ## Firebase Functions
 

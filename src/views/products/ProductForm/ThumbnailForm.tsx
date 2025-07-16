@@ -5,7 +5,8 @@ import { Field, FormikErrors, FormikTouched, FieldProps, useFormikContext } from
 import Button from '@/components/ui/Button'
 import { HiOutlineClipboardCopy } from 'react-icons/hi'
 import { useEffect, useState } from 'react'
-import ThumbnailPreviewStudio from './MainThumbnailStudio'
+import ThumbnailPreviewStudio from './ThumbnailStudio_Main'
+import ThumbnailStudioSecondSentence from './ThumbnailStudio_Second'
 
 type FormFieldsName = {
     name: string
@@ -91,6 +92,7 @@ const ThumbnailForm = (props: ThumbnailFormFields) => {
             </div>
 
             <ThumbnailPreviewStudio />
+            <ThumbnailStudioSecondSentence />
         </AdaptableCard>
     )
 }

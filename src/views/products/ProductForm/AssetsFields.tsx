@@ -1,15 +1,24 @@
-// Required: set up firebase.ts with your config
-import { storage } from '@/firebase'
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
+// AssetsFields.tsx
 import { useEffect, useState } from 'react'
-import opentype from 'opentype.js'
-import JSZip from 'jszip'
-import { saveAs } from 'file-saver'
+import { Field, useFormikContext } from 'formik'
 import AdaptableCard from '@/components/shared/AdaptableCard'
 import { FormItem } from '@/components/ui/Form'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
-import { Field, useFormikContext } from 'formik'
+import Spinner from '@/components/ui/Spinner'
+import Notification from '@/components/ui/Notification'
+import { toast } from '@/components/ui'
+import { storage } from '@/firebase'
+import { ref, getDownloadURL, uploadBytesResumable } from 'firebase/storage'
+import opentype from 'opentype.js'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
+
+interface GlyphAsset {
+    char: string
+    svgBlob: Blob
+    pngBlob: Blob
+}
 
 const AssetsFields = () => {
     const { values } = useFormikContext<any>()
@@ -17,20 +26,47 @@ const AssetsFields = () => {
     const [font, setFont] = useState<opentype.Font | null>(null)
     const [glyphCount, setGlyphCount] = useState(0)
     const [previewSvg, setPreviewSvg] = useState<string | null>(null)
-    const [uploadProgress, setUploadProgress] = useState(0)
+    const [glyphAssets, setGlyphAssets] = useState<GlyphAsset[]>([])
+    const [isGenerating, setIsGenerating] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
-    const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
+    const [uploadCount, setUploadCount] = useState(0)
+    const [trademarkSvgUrl, setTrademarkSvgUrl] = useState<string | null>(null)
+    const [isFontLoading, setIsFontLoading] = useState(false)
+    const [finalFontBuffer, setFinalFontBuffer] = useState<ArrayBuffer | null>(null)
+
+    useEffect(() => {
+        const loadExistingFont = async () => {
+            const sku = values.sku
+            if (!sku) return
+            setIsFontLoading(true)
+            try {
+                const fontRef = ref(storage, `products/${sku}/files/font.ttf`)
+                const url = await getDownloadURL(fontRef)
+                const resp = await fetch(url)
+                const arrayBuffer = await resp.arrayBuffer()
+                const parsed = opentype.parse(arrayBuffer)
+                setFont(parsed)
+                setGlyphCount(parsed.glyphs.length)
+                generatePreviewSVG(parsed)
+                const blob = await resp.blob()
+                setTtfFile(new File([blob], 'font.ttf', { type: blob.type }))
+            } catch {
+                console.info('No existing font found at ', storage, `products/${sku}/files/font.ttf`)
+            }
+            setIsFontLoading(false)
+        }
+        loadExistingFont()
+    }, [values.sku])
 
     const handleTtfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
-
         setTtfFile(file)
-        const arrayBuffer = await file.arrayBuffer()
-        const parsedFont = opentype.parse(arrayBuffer)
-        setFont(parsedFont)
-        setGlyphCount(parsedFont.glyphs.length)
-        generatePreviewSVG(parsedFont)
+        const buf = await file.arrayBuffer()
+        const parsed = opentype.parse(buf)
+        setFont(parsed)
+        setGlyphCount(parsed.glyphs.length)
+        generatePreviewSVG(parsed)
     }
 
     const applyMetadata = () => {
@@ -46,199 +82,353 @@ const AssetsFields = () => {
         font.names.manufacturer = { en: 'FontMaze' }
         font.names.copyright = { en: 'All rights reserved to FontMaze' }
         font.names.description = { en: `${fullName} designed by FontMaze Studio` }
-        font.names.license = { en: 'Personal Use Only. Purchase a commercial license to use it commercially.' }
+        font.names.license = { en: 'Personal Use Only.' }
         font.names.licenseURL = { en: 'https://www.fontmaze.com/licenses/font-license/' }
         font.names.trademark = { en: 'FontMaze' }
-            ; (font.names as any).sampleText = {
-                en: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789',
-            }
-
-        // Hidden glyph with FontMaze signature SVG at unicode 0xE000 (PUA start)
-        const path = new opentype.Path()
-        path.moveTo(0, 0)
-        path.lineTo(500, 0)
-        path.lineTo(500, 500)
-        path.lineTo(0, 500)
-        path.close()
-        const trademarkGlyph = new opentype.Glyph({
-            name: 'hidden_trademark',
-            unicode: 0xE000,
-            advanceWidth: 600,
-            path: path
-        })
-        const glyph = font.charToGlyph(String.fromCharCode(0xE000))
-
-        if (glyph) {
-            const path = new opentype.Path()
-            path.moveTo(0, 0)
-            path.lineTo(300, 0)
-            path.lineTo(300, 300)
-            path.lineTo(0, 300)
-            path.close()
-
-            glyph.path = path
-            glyph.advanceWidth = 600
-            glyph.name = 'hidden_trademark'
-        }
+            ; (font.names as any).sampleText = { en: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789' }
     }
 
+    // Generate a visual preview of the .notdef glyph (trademark marker)
+    const generateTrademarkPreview = () => {
+        if (!font) return
+        const glyph = font.glyphs.get(0)
+        const svg = generateScaledGlyphSVG(glyph)
+        const base64 = `data:image/svg+xml;base64,${btoa(svg)}`
+        setTrademarkSvgUrl(base64)
+    }
+
+    // Add hidden FontMaze trademark glyph in Private Use Area
+    const injectTrademarkIntoNotdef = () => {
+        if (!font) return
+
+        const glyphSize = 1000
+        const textSize = 160
+
+        const fontPath = font.getPath('font', 0, 0, textSize)
+        const mazePath = font.getPath('maze', 0, 0, textSize)
+
+        const transformPathY = (path: opentype.Path, y: number) => {
+            const bb = path.getBoundingBox()
+            const dx = (glyphSize - (bb.x2 - bb.x1)) / 2 - bb.x1
+            const dy = y - bb.y1
+
+            path.commands.forEach(cmd => {
+                if ('x' in cmd) cmd.x += dx
+                if ('x1' in cmd) cmd.x1 += dx
+                if ('x2' in cmd) cmd.x2 += dx
+                if ('y' in cmd) cmd.y = glyphSize - (cmd.y + dy)
+                if ('y1' in cmd) cmd.y1 = glyphSize - (cmd.y1 + dy)
+                if ('y2' in cmd) cmd.y2 = glyphSize - (cmd.y2 + dy)
+            })
+        }
+
+        transformPathY(fontPath, 380)
+        transformPathY(mazePath, 650)
+
+        const fullPath = new opentype.Path()
+        fullPath.commands.push(...fontPath.commands, ...mazePath.commands)
+
+        const notdefGlyph = font.glyphs.get(0)
+        notdefGlyph.path = fullPath
+        notdefGlyph.advanceWidth = glyphSize
+    }
+
+
+
+    // Generate SVG preview showing glyphs in rows & columns (more compact layout)
     const generatePreviewSVG = (font: opentype.Font) => {
-        const lines = [
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-            'abcdefghijklmnopqrstuvwxyz',
-            '0123456789!@#$%^&*()[]{}<>.,;:"'
-        ]
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+        const size = 24
+        const pad = 12
+        const cols = 16
+        const rows = Math.ceil(chars.length / cols)
 
-        const fontSize = 32
-        const lineHeight = 60
-        const padding = 20
-        const charsPerLine = lines[0].length
-        const width = charsPerLine * 36 + padding * 2
-        const height = lines.length * lineHeight + padding * 2
+        const cellSize = size + pad
+        const w = cols * cellSize + pad
+        const h = rows * cellSize + pad
 
-        const svgPaths = lines.map((line, row) => {
-            return line.split('').map((char, i) => {
-                const glyph = font.charToGlyph(char)
-                const path = glyph.getPath(padding + i * 36, padding + (row + 1) * lineHeight - 10, fontSize)
-                return path.toSVG(3)
-            }).join('')
-        }).join('')
+        let paths = ''
 
-        const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <rect width="100%" height="100%" fill="#fff" />
-  <g fill="black">${svgPaths}</g>
-</svg>
-        `.trim()
+        for (let i = 0; i < chars.length; i++) {
+            const char = chars[i]
+            const col = i % cols
+            const row = Math.floor(i / cols)
+            const x = pad + col * cellSize
+            const y = pad + row * cellSize + size // baseline offset
+            const path = font.charToGlyph(char).getPath(x, y, size).toSVG(3)
+            paths += path
+        }
+
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+        <rect width="100%" height="100%" fill="#fff"/>
+        <g fill="black">${paths}</g>
+    </svg>`
 
         setPreviewSvg(svg)
     }
 
-    const uploadWithProgress = (path: string, file: Blob): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const storageRef = ref(storage, path)
-            const uploadTask = uploadBytesResumable(storageRef, file)
-            setIsUploading(true)
 
-            uploadTask.on(
-                'state_changed',
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-                    setUploadProgress(Math.round(progress))
-                },
-                (error) => {
-                    setIsUploading(false)
-                    reject(error)
-                },
-                async () => {
-                    setIsUploading(false)
-                    const url = await getDownloadURL(uploadTask.snapshot.ref)
-                    resolve(url)
-                }
+    // Center glyph in fixed canvas for PNG
+    // Create centered PNG blob of glyph in a square canvas
+    // Create centered PNG blob of glyph using transform matrix
+    const createPngBlob = (glyph: opentype.Glyph, size: number): Promise<Blob> => {
+        return new Promise(res => {
+            const canvas = document.createElement('canvas')
+            canvas.width = size
+            canvas.height = size
+            const ctx = canvas.getContext('2d')!
+
+            const path = glyph.getPath(0, 0, size)
+            const bbox = path.getBoundingBox()
+
+            const padding = 0.1 * size
+            const scale = Math.min(
+                (size - 2 * padding) / (bbox.x2 - bbox.x1),
+                (size - 2 * padding) / (bbox.y2 - bbox.y1)
             )
+
+            const x = (size - (bbox.x2 - bbox.x1) * scale) / 2 - bbox.x1 * scale
+            const y = (size - (bbox.y2 - bbox.y1) * scale) / 2 - bbox.y1 * scale
+
+            ctx.fillStyle = '#000'
+            ctx.setTransform(scale, 0, 0, -scale, x, y + size) // mirror y
+            path.draw(ctx)
+
+            canvas.toBlob(blob => res(blob!), 'image/png')
         })
     }
 
-    const generateAllAssets = async () => {
-        const { fontFamily, fullName, version } = values.fontData.generated || {}
-        if (!font || !ttfFile || !fontFamily || !fullName || !version) return
+    const generateScaledGlyphPNG = (glyph: opentype.Glyph): Promise<Blob> => {
+        return new Promise((resolve) => {
+            const path = glyph.getPath(0, 0, 100)
+            const bbox = path.getBoundingBox()
+            const glyphHeight = bbox.y2 - bbox.y1 || 1
+            const targetHeight = 512
+            const scale = targetHeight / glyphHeight
 
-        applyMetadata()
-        const { sku } = values
-        const ttfBuffer = font.toArrayBuffer()
-        const ttfBlob = new Blob([ttfBuffer], { type: 'font/ttf' })
+            const canvas = document.createElement('canvas')
+            const width = Math.ceil((bbox.x2 - bbox.x1) * scale)
+            const height = Math.ceil(targetHeight)
 
-        const zip = new JSZip()
-        zip.file('font.ttf', ttfBlob)
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')!
 
-        const zipBlob = await zip.generateAsync({ type: 'blob' })
-        const zipFile = new File([zipBlob], 'client_package.zip', { type: 'application/zip' })
+            ctx.fillStyle = '#fff'
+            ctx.fillRect(0, 0, width, height)
 
-        const folderPath = `products/${sku}/files`
-        const zipUrl = await uploadWithProgress(`${folderPath}/client_package.zip`, zipFile)
-        await uploadWithProgress(`${folderPath}/font.ttf`, ttfBlob)
+            ctx.fillStyle = '#000'
+            ctx.translate(-bbox.x1 * scale, -bbox.y1 * scale)
+            ctx.scale(scale, scale)
+            path.draw(ctx)
 
-        setDownloadUrl(zipUrl)
+            canvas.toBlob((blob) => {
+                if (blob) resolve(blob)
+            }, 'image/png')
+        })
     }
 
-    useEffect(() => {
-        const loadFontFromBucket = async () => {
-            try {
-                const sku = values.sku
-                if (!sku) return
-                const fontRef = ref(storage, `products/${sku}/files/font.ttf`)
-                const url = await getDownloadURL(fontRef)
-                const res = await fetch(url)
-                const arrayBuffer = await res.arrayBuffer()
-                const parsedFont = opentype.parse(arrayBuffer)
-                setFont(parsedFont)
-                setGlyphCount(parsedFont.glyphs.length)
-                generatePreviewSVG(parsedFont)
-            } catch (err) {
-                console.info('No existing font found in bucket.')
+    const generateScaledGlyphSVG = (glyph: opentype.Glyph): string => {
+        const path = glyph.getPath(0, 0, 100)
+        const bbox = path.getBoundingBox()
+        const targetHeight = 1000
+        const scale = targetHeight / (bbox.y2 - bbox.y1)
+        const width = (bbox.x2 - bbox.x1) * scale
+        const height = targetHeight
+
+        return `
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <g transform="scale(${scale}) translate(${-bbox.x1}, ${-bbox.y1})">
+    <path d="${path.toPathData(3)}" fill="black" />
+  </g>
+</svg>
+`.trim()
+        /*const width = bbox.x2 - bbox.x1
+        const height = bbox.y2 - bbox.y1
+
+        return `
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${bbox.x1} ${bbox.y1} ${width} ${height}">
+  <path d="${path.toPathData(3)}" fill="black" />
+</svg>
+`.trim()*/
+    }
+
+    const upload = (path: string, blob: Blob): Promise<void> => new Promise((res, rej) => {
+        const task = uploadBytesResumable(ref(storage, path), blob)
+        task.on('state_changed', snap => console.log(path, (snap.bytesTransferred / snap.totalBytes * 100).toFixed(0) + '%'), err => rej(err), () => res())
+    })
+
+    // Generate SVG and PNG glyph assets using the working logic from previous version
+    const generateGlyphAssets = async () => {
+        if (!font) return
+
+        setIsGenerating(true)
+        applyMetadata()
+        injectTrademarkIntoNotdef()
+
+        const buffer = font.toArrayBuffer()
+        setFinalFontBuffer(buffer)
+
+        const chars = {
+            uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            lowercase: 'abcdefghijklmnopqrstuvwxyz',
+            numbers: '0123456789',
+            special: '!@#$%^&*()-_=+[]{};:\'",.<>/?\\|`~',
+        }
+
+        const assets: GlyphAsset[] = []
+
+        for (const characters of Object.values(chars)) {
+            for (const char of characters) {
+                const glyph = font.charToGlyph(char)
+                if (!glyph || !glyph.path || glyph.path.commands.length === 0) continue
+
+                const svgBlob = new Blob(
+                    [generateScaledGlyphSVG(glyph)],
+                    { type: 'image/svg+xml' }
+                )
+
+                const pngBlob = await generateScaledGlyphPNG(glyph)
+
+                assets.push({ char, svgBlob, pngBlob })
             }
         }
-        loadFontFromBucket()
-    }, [values.sku])
+
+        setGlyphAssets(assets)
+        toast.push(
+            <Notification title="Generated" type="success" duration={2500}>
+                {assets.length} glyphs ready
+            </Notification>,
+            { placement: 'top-center' }
+        )
+
+        generateTrademarkPreview()
+        setIsGenerating(false)
+    }
+
+
+    const uploadGlyphAssets = async () => {
+        if (!glyphAssets.length) return
+        const sku = values.sku
+        if (!sku) return
+        setIsUploading(true)
+
+        let count = 0
+        let total = glyphAssets.length * 2
+
+        const hasFontFiles = finalFontBuffer && values.fontData?.generated?.fullName
+        if (hasFontFiles) total += 4
+
+        for (const { char, svgBlob, pngBlob } of glyphAssets) {
+            await upload(`products/${sku}/files/Final Product/SVG/${char}.svg`, svgBlob)
+            count++; setUploadCount(count)
+            await upload(`products/${sku}/files/Final Product/PNG/${char}.png`, pngBlob)
+            count++; setUploadCount(count)
+        }
+
+        if (hasFontFiles) {
+            const finalName = values.fontData.generated.fullName
+            const ttfBlob = new Blob([finalFontBuffer], { type: 'font/ttf' })
+            const otfBlob = new Blob([finalFontBuffer], { type: 'font/otf' })
+
+            await upload(`products/${sku}/files/font.ttf`, ttfBlob)
+            count++; setUploadCount(count)
+            await upload(`products/${sku}/files/font.otf`, otfBlob)
+            count++; setUploadCount(count)
+
+            await upload(`products/${sku}/files/Final Product/Font Files To Install/${finalName}.ttf`, ttfBlob)
+            count++; setUploadCount(count)
+            await upload(`products/${sku}/files/Final Product/Font Files To Install/${finalName}.otf`, otfBlob)
+            count++; setUploadCount(count)
+        }
+
+        toast.push(
+            <Notification title="Uploaded" type="success" duration={2500}>
+                Uploaded {uploadCount}/{total}
+            </Notification>,
+            { placement: 'top-center' }
+        )
+
+        setIsUploading(false)
+    }
+
+
+    const downloadZip = async () => {
+        if (!glyphAssets.length) return
+        const zip = new JSZip()
+        const svgF = zip.folder('SVG')!, pngF = zip.folder('PNG')!
+        glyphAssets.forEach(({ char, svgBlob, pngBlob }) => { svgF.file(`${char}.svg`, svgBlob); pngF.file(`${char}.png`, pngBlob) })
+        const content = await zip.generateAsync({ type: 'blob' })
+        const name = values.fontData.generated.fullName || values.sku || 'glyphs'
+        saveAs(content, `${name}.zip`)
+    }
 
     return (
         <AdaptableCard divider className="mb-4">
             <h5 className="mb-2">📦 Generate Font Assets</h5>
-
             <FormItem label="Upload .TTF File">
                 <input type="file" accept=".ttf" onChange={handleTtfUpload} />
-                {ttfFile && <p className="text-sm text-gray-500 mt-1">{ttfFile.name}</p>}
+                {ttfFile ? (
+                    <p className="text-sm text-green-600 mt-1">✅ {ttfFile.name} loaded</p>
+                ) : (
+                    <p className="text-sm text-gray-400 mt-1">No font file selected</p>
+                )}
             </FormItem>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <FormItem label="Font Family Name">
-                    <Field name="fontData.generated.fontFamily" placeholder="Font Family" component={Input} />
-                </FormItem>
-                <FormItem label="Full Name">
-                    <Field name="fontData.generated.fullName" placeholder="Full Name" component={Input} />
-                </FormItem>
-                <FormItem label="Version">
-                    <Field name="fontData.generated.version" placeholder="Version" component={Input} />
-                </FormItem>
+                <FormItem label="Font Family Name"><Field name="fontData.generated.fontFamily" component={Input} /></FormItem>
+                <FormItem label="Full Name"><Field name="fontData.generated.fullName" component={Input} /></FormItem>
+                <FormItem label="Version"><Field name="fontData.generated.version" component={Input} /></FormItem>
             </div>
-
             <p className="text-sm mt-4">🔢 Glyphs: <strong>{glyphCount}</strong></p>
+            {previewSvg && <div className="mt-4 w-full"><h6 className="font-semibold mb-2">Preview</h6><div dangerouslySetInnerHTML={{ __html: previewSvg }} className="w-full" /></div>}
 
-            {previewSvg && (
-                <div className="mt-4">
-                    <h6 className="font-semibold mb-2">Preview</h6>
-                    <div
-                        className="rounded border w-full max-w-xl overflow-x-auto bg-white px-6 py-4"
-                        dangerouslySetInnerHTML={{ __html: previewSvg }}
-                    />
+            {glyphAssets.length > 0 && (
+                <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-4">
+                    {glyphAssets.map(({ char, svgBlob }) => {
+                        const url = URL.createObjectURL(svgBlob)
+                        return (
+                            <div key={char} className="flex flex-col items-center">
+                                <img src={url} alt={char} className="w-12 h-12" />
+                                <span className="text-xs mt-1">{char}</span>
+                            </div>
+                        )
+                    })}
                 </div>
             )}
 
-            <Button onClick={generateAllAssets}
-                disabled={!font || !ttfFile || !values.fontData.generated?.fontFamily || !values.fontData.generated?.fullName || !values.fontData.generated?.version}
-                className="mt-6" variant="solid" type="button">
-                ⚙️ Generate & Upload
-            </Button>
-
-            {isUploading && (
-                <div className="mt-3 w-full bg-gray-200 rounded">
-                    <div
-                        className="bg-blue-500 text-xs text-white p-1 text-center rounded"
-                        style={{ width: `${uploadProgress}%` }}
-                    >{uploadProgress}%</div>
+            {trademarkSvgUrl && (
+                <div className="mt-6">
+                    <h6 className="font-semibold mb-2">Trademark (.notdef)</h6>
+                    <div className="w-24 h-24 border rounded bg-white flex items-center justify-center">
+                        <img src={trademarkSvgUrl} alt=".notdef glyph" className="w-20 h-20" />
+                    </div>
                 </div>
             )}
+            <div className="mt-6 flex gap-4">
 
-            {downloadUrl && (
-                <Button
-                    onClick={() => saveAs(downloadUrl, 'client_package.zip')}
-                    className="mt-3"
-                    variant="twoTone"
-                    type="button"
-                >📥 Download ZIP</Button>
-            )}
+                <Button onClick={generateGlyphAssets} disabled={!font || isGenerating} type="button" variant="solid">
+                    {isGenerating ? (
+                        <span className="flex items-center gap-2">
+                            <Spinner /> Generating…
+                        </span>
+                    ) : '⚙️ Generate Assets'}
+                </Button>
+
+                <Button onClick={uploadGlyphAssets} disabled={!glyphAssets.length || isUploading} type="button">
+                    {isUploading ? (
+                        <span className="flex items-center gap-2">
+                            <Spinner /> Uploading… {uploadCount}/{glyphAssets.length * 2}
+                        </span>
+                    ) : '📤 Upload Assets'}
+                </Button>
+
+                <Button onClick={downloadZip} disabled={!glyphAssets.length} type="button">
+                    ⬇️ Download Assets
+                </Button>
+
+
+            </div>
         </AdaptableCard>
     )
 }
-
 export default AssetsFields

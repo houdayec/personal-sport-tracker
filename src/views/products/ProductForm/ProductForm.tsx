@@ -167,7 +167,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                                                 <TabNav value="product">🗂 Product Info</TabNav>
                                                 <TabNav value="assets">📦 Assets</TabNav>
                                                 <TabNav value="thumbnails">🖼 Thumbnails</TabNav>
-                                                <TabNav value="thumbnails_meta">🖼 Thumbnails</TabNav>
+                                                <TabNav value="thumbnails_meta">🖼 Thumbnails Metadata</TabNav>
                                                 <TabNav value="wordpress">📝 WordPress Post</TabNav>
                                                 <TabNav value="export">📤 Export & Upload</TabNav>
                                             </TabList>
@@ -183,10 +183,6 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
 
                                                 <TabContent value="assets">
                                                     <AssetsFields touched={touched} errors={errors} />
-                                                </TabContent>
-
-                                                <TabContent value="website">
-                                                    <div className="text-muted">Coming soon...</div>
                                                 </TabContent>
 
                                                 <TabContent value="thumbnails">
