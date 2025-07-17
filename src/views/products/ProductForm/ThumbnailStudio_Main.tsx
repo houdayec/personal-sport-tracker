@@ -5,36 +5,16 @@ import { FormItem } from '@/components/ui/Form'
 import { storage } from '@/firebase'
 import { ref, getDownloadURL } from 'firebase/storage'
 import ThumbnailUploader from './ThumbnailUploader'
+import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
+import { ThumbnailsMetadata } from '@/@types/product'
 
 const CANVAS_SIZE = 2000
-const PADDING = 80
+const PADDING = 100
 
 const PATTERNS = [
     { name: 'none', label: 'None', src: '' },
     { name: 'maze', label: 'Maze', src: '/img/others/maze.svg' },
 ]
-
-type ThumbnailsMetadata = {
-    main_titleText?: string
-    main_bgColor?: string
-    main_patternType?: string
-    main_patternColor?: string
-    main_patternOpacity?: number
-    main_titleColor?: string
-    main_titleStrokeColor?: string
-    main_titleStrokeWidth?: number
-    main_charColor?: string
-    main_titleScale?: number
-    main_charScale?: number
-    main_topOffset?: number
-    main_showUppercase?: boolean
-    main_showLowercase?: boolean
-    main_showNumbers?: boolean
-    main_showSpecials?: boolean
-    main_charset?: string
-    main_watermarkOpacity?: number
-    main_watermarkColor?: string
-}
 
 const ThumbnailPreviewStudio = () => {
     const { values, setFieldValue } = useFormikContext<{ sku: string; thumbnailsMetadata: ThumbnailsMetadata }>()
@@ -54,6 +34,11 @@ const ThumbnailPreviewStudio = () => {
         main_watermarkOpacity = 0.02,
         main_watermarkColor = '#000000',
         main_charset = '',
+        shadowColor = '#000000',
+        shadowBlur = 0,
+        shadowOffsetX = 0,
+        shadowOffsetY = 0,
+        shadowOpacity = 0.3,
     } = meta
 
     // Load watermark image
@@ -146,6 +131,29 @@ const ThumbnailPreviewStudio = () => {
         const titleArea = CANVAS_SIZE * 0.25
         const yTitle = PADDING + main_topOffset
         const tf = Math.floor(titleArea * main_titleScale)
+
+        const hexToRgba = (hex: string, opacity: number): string => {
+            const r = parseInt(hex.slice(1, 3), 16)
+            const g = parseInt(hex.slice(3, 5), 16)
+            const b = parseInt(hex.slice(5, 7), 16)
+            return `rgba(${r}, ${g}, ${b}, ${opacity})`
+        }
+
+        // Apply shadow style
+        ctx.shadowColor = hexToRgba(shadowColor, shadowOpacity)
+        ctx.shadowBlur = shadowBlur
+        ctx.shadowOffsetX = shadowOffsetX
+        ctx.shadowOffsetY = shadowOffsetY
+
+        // Apply shadow style
+        ctx.shadowColor = hexToRgba(shadowColor, shadowOpacity)
+        ctx.shadowBlur = shadowBlur
+        ctx.shadowOffsetX = shadowOffsetX
+        ctx.shadowOffsetY = shadowOffsetY
+        ctx.shadowBlur = shadowBlur
+        ctx.shadowOffsetX = shadowOffsetX
+        ctx.shadowOffsetY = shadowOffsetY
+
         ctx.textAlign = 'center'; ctx.textBaseline = 'top'
         ctx.font = `${tf}px ProductFont, sans-serif`
         ctx.fillStyle = main_titleColor
@@ -155,6 +163,7 @@ const ThumbnailPreviewStudio = () => {
             ctx.strokeStyle = main_titleStrokeColor
             ctx.strokeText(main_titleText, CANVAS_SIZE / 2, yTitle)
         }
+        ctx.shadowColor = 'transparent'
 
         // Characters
         const topChars = yTitle + tf + PADDING
@@ -185,7 +194,7 @@ const ThumbnailPreviewStudio = () => {
 
     return (
         <div className="mt-8">
-            <h6 className="font-semibold text-lg mb-4">🖼️ Miniature Generator</h6>
+            <h6 className="font-semibold text-lg mb-4">🖼️ Main Thumbnail</h6>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 <div>
@@ -205,7 +214,8 @@ const ThumbnailPreviewStudio = () => {
                     </div>
                     {/* Upload */}
                     <div className="pt-2">
-                        <ThumbnailUploader canvasRef={canvasRef} main_bgColor={main_bgColor} slug="main" />
+                        <ThumbnailStudioMetadata slug="main" />
+                        <ThumbnailUploader canvasRef={canvasRef} bgColor={main_bgColor} slug="main" />
                     </div>
                 </div>
 
@@ -249,6 +259,30 @@ const ThumbnailPreviewStudio = () => {
                             <InputWrapper label="Color"><Field name="thumbnailsMetadata.main_titleColor" type="color" component={Input} /></InputWrapper>
                             <InputWrapper label="Stroke Color"><Field name="thumbnailsMetadata.main_titleStrokeColor" type="color" component={Input} /></InputWrapper>
                             <InputWrapper label="Stroke Width"><Field name="thumbnailsMetadata.main_titleStrokeWidth">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={20} step={1} className="w-full" />}</Field></InputWrapper>
+                            <InputWrapper label="Shadow Color">
+                                <Field name="thumbnailsMetadata.main.shadowColor" type="color" component={Input} />
+                            </InputWrapper>
+                            <InputWrapper label="Shadow Opacity">
+                                <Field name="thumbnailsMetadata.main.shadowOpacity">
+                                    {({ field }: FieldProps) => <input {...field} type="range" min={0} max={1} step={0.05} className="w-full" />}
+                                </Field>
+                            </InputWrapper>
+                            <InputWrapper label="Shadow Blur">
+                                <Field name="thumbnailsMetadata.main.shadowBlur">
+                                    {({ field }: FieldProps) => <input {...field} type="range" min={0} max={50} step={1} className="w-full" />}
+                                </Field>
+                            </InputWrapper>
+                            <InputWrapper label="Shadow X Offset">
+                                <Field name="thumbnailsMetadata.main.shadowOffsetX">
+                                    {({ field }: FieldProps) => <input {...field} type="range" min={-100} max={100} step={1} className="w-full" />}
+                                </Field>
+                            </InputWrapper>
+                            <InputWrapper label="Shadow Y Offset">
+                                <Field name="thumbnailsMetadata.main.shadowOffsetY">
+                                    {({ field }: FieldProps) => <input {...field} type="range" min={-100} max={100} step={1} className="w-full" />}
+                                </Field>
+                            </InputWrapper>
+
                         </div>
                     </div>
 
@@ -265,7 +299,7 @@ const ThumbnailPreviewStudio = () => {
                     <div>
                         <h5 className="font-semibold mb-2">🔠 Characters</h5>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                            <InputWrapper label="Alphabet Size"><Field name="thumbnailsMetadata.main_charScale">{({ field }: FieldProps) => <input {...field} type="range" min={0.1} max={2} step={0.1} className="w-full" />}</Field></InputWrapper>
+                            <InputWrapper label="Alphabet Size"><Field name="thumbnailsMetadata.main_charScale">{({ field }: FieldProps) => <input {...field} type="range" min={0.05} max={2} step={0.05} className="w-full" />}</Field></InputWrapper>
                             <InputWrapper label="Color"><Field name="thumbnailsMetadata.main_charColor" type="color" component={Input} /></InputWrapper>
                         </div>
                         <FormItem label="Character Sets">

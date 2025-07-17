@@ -3,7 +3,8 @@ import { useFormikContext, Field, FieldProps } from 'formik'
 import Input from '@/components/ui/Input'
 import { FormItem } from '@/components/ui/Form'
 import ThumbnailUploader from './ThumbnailUploader'
-import { Product } from '@/@types/product'
+import { Product, ThumbnailsMetadata } from '@/@types/product'
+import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
 
 const PADDING = 100
 const CANVAS_WIDTH = 3000
@@ -16,28 +17,19 @@ const TEXT_BOX = {
     height: 2000,
 }
 
-type ThumbnailsMetadata = {
-    third_charColor?: string
-    third_showTextAreaBox?: boolean
-    third_showUppercase?: boolean
-    third_showLowercase?: boolean
-    third_showNumbers?: boolean
-    third_showSpecials?: boolean
-}
-
 const ThumbnailStudioThirdCharacters = () => {
     const { values, setFieldValue } = useFormikContext<Product>()
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
     const metadata = (values.thumbnailsMetadata || {}) as ThumbnailsMetadata
-    const fontColor = metadata.third_charColor || '#000000'
-    const showTextBox = metadata.third_showTextAreaBox !== false
+    const fontColor = metadata.characters_preview_charColor || '#000000'
+    const showTextBox = metadata.characters_preview_showTextAreaBox !== false
 
-    const main_showUppercase = metadata.third_showUppercase ?? true
-    const showLowercase = metadata.third_showLowercase ?? true
-    const showNumbers = metadata.third_showNumbers ?? true
-    const showSpecials = metadata.third_showSpecials ?? true
+    const main_showUppercase = metadata.characters_preview_showUppercase ?? true
+    const showLowercase = metadata.characters_preview_showLowercase ?? true
+    const showNumbers = metadata.characters_preview_showNumbers ?? true
+    const showSpecials = metadata.characters_preview_showSpecials ?? true
 
     // Compute character lines
     const letterPairs = [
@@ -145,19 +137,20 @@ const ThumbnailStudioThirdCharacters = () => {
                         }
                     </div>
                     <div className="pt-2">
+                        <ThumbnailStudioMetadata slug="characters_preview" />
                         <ThumbnailUploader
                             canvasRef={canvasRef}
                             bgColor="#ffffff"
-                            slug="characters"
+                            slug="characters_preview"
                         />
                     </div>
                 </div>
                 <div className="space-y-4 w-full max-w-md">
                     <FormItem label="Font Color">
-                        <Field name="thumbnailsMetadata.third_charColor" type="color" component={Input} />
+                        <Field name="thumbnailsMetadata.characters_preview_charColor" type="color" component={Input} />
                     </FormItem>
                     <FormItem label="Show Text Area Box">
-                        <Field name="thumbnailsMetadata.third_showTextAreaBox">
+                        <Field name="thumbnailsMetadata.characters_preview_showTextAreaBox">
                             {({ field }: FieldProps) => (
                                 <input
                                     {...field}
@@ -172,7 +165,7 @@ const ThumbnailStudioThirdCharacters = () => {
                         <div className="flex flex-wrap gap-4">
                             {['Uppercase', 'Lowercase', 'Numbers', 'Specials'].map((opt, key) => (
                                 <label key={key} className="flex items-center space-x-2">
-                                    <Field name={`thumbnailsMetadata.third_show${opt}` as any}>
+                                    <Field name={`thumbnailsMetadata.characters_preview_show${opt}` as any}>
                                         {({ field }: FieldProps) => (
                                             <input
                                                 {...field}

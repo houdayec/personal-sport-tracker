@@ -50,9 +50,22 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
     const filename = `${main}-font-${second}-font-${slug}`
 
     // Generate square & landscape image versions
-    const generateThumbnails = async () => {
+    const generateThumbnails2 = async () => {
         if (!canvasRef.current) return
-        const landscapeCanvas = canvasRef.current
+        const originalCanvas = canvasRef.current
+        const squareHeight = originalCanvas.height
+        const landscapeWidth = Math.floor((3 / 2) * squareHeight)
+
+        const landscapeCanvas = document.createElement('canvas')
+        landscapeCanvas.width = landscapeWidth
+        landscapeCanvas.height = squareHeight
+
+        const lctx = landscapeCanvas.getContext('2d')!
+        lctx.drawImage(
+            originalCanvas,
+            (originalCanvas.width - landscapeWidth) / 2, 0, landscapeWidth, squareHeight, // source crop
+            0, 0, landscapeWidth, squareHeight // destination
+        )
         const squareCanvas = cropSquareFromCanvas(landscapeCanvas)
 
         const generate = async (canvas: HTMLCanvasElement) => ({
@@ -96,6 +109,65 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
             { placement: 'top-center' }
         )
     }
+    const generateThumbnails = async () => {
+        if (!canvasRef.current) return
+
+        const originalCanvas = canvasRef.current
+        const squareSize = originalCanvas.height
+        const landscapeWidth = Math.floor((3 / 2) * squareSize)
+
+        // Generate square thumbnail
+        const squareCanvas = document.createElement('canvas')
+        squareCanvas.width = squareSize
+        squareCanvas.height = squareSize
+        squareCanvas
+            .getContext('2d')!
+            .drawImage(originalCanvas, (originalCanvas.width - squareSize) / 2, 0, squareSize, squareSize, 0, 0, squareSize, squareSize)
+
+        // Generate landscape thumbnail with same height
+        const landscapeCanvas = document.createElement('canvas')
+        landscapeCanvas.width = landscapeWidth
+        landscapeCanvas.height = squareSize
+        landscapeCanvas
+            .getContext('2d')!
+            .drawImage(originalCanvas, (originalCanvas.width - landscapeWidth) / 2, 0, landscapeWidth, squareSize, 0, 0, landscapeWidth, squareSize)
+
+        const generate = async (canvas: HTMLCanvasElement) => ({
+            png: await canvasToBlob(canvas, 'image/png'),
+            jpg: await canvasToBlob(canvas, 'image/jpeg', 0.8),
+            webp: await canvasToBlob(canvas, 'image/webp', 0.7),
+        })
+
+        const squareBlobs = await generate(squareCanvas)
+        const landscapeBlobs = await generate(landscapeCanvas)
+
+        const images = [
+            { type: 'square', format: 'png', blob: squareBlobs.png },
+            { type: 'square', format: 'jpg', blob: squareBlobs.jpg },
+            { type: 'square', format: 'webp', blob: squareBlobs.webp },
+            { type: 'landscape', format: 'png', blob: landscapeBlobs.png },
+            { type: 'landscape', format: 'jpg', blob: landscapeBlobs.jpg },
+            { type: 'landscape', format: 'webp', blob: landscapeBlobs.webp },
+        ]
+
+        setThumbnails(images.map(i => i.blob))
+        setPreviewData({
+            format: 'webp',
+            images: images.map(i => ({
+                type: i.type as 'square' | 'landscape',
+                format: i.format as 'png' | 'jpg' | 'webp',
+                url: URL.createObjectURL(i.blob),
+                size: i.blob.size,
+            })),
+        })
+
+        toast.push(
+            <Notification title="Thumbnails Ready" type="success" duration={2500}>
+                {images.length} versions generated
+            </Notification>,
+            { placement: 'top-center' }
+        )
+    }
 
     // Upload only JPG & WEBP versions to Firebase
     const handleUpload = async () => {
@@ -126,11 +198,25 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
 
     return (
         <div className="w-full">
-            <div className="space-y-6">
+            <div className="space-y-2">
                 <Button onClick={generateThumbnails} className="w-full" type='button'>
                     ⚙️ Generate Thumbnails
                 </Button>
-
+                <Button
+                    onClick={handleUpload}
+                    type="button"
+                    variant="twoTone"
+                    disabled={isUploading || !thumbnails.length}
+                    className="w-full"
+                >
+                    {isUploading ? (
+                        <div className="flex items-center gap-2">
+                            <Spinner size={16} /> Uploading…
+                        </div>
+                    ) : (
+                        <>📤 Upload Thumbnails</>
+                    )}
+                </Button>
                 {previewData && (
                     <>
                         <div>
@@ -164,22 +250,6 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
                         </div>
                     </>
                 )}
-
-                <Button
-                    onClick={handleUpload}
-                    type="button"
-                    variant="twoTone"
-                    disabled={isUploading || !thumbnails.length}
-                    className="w-full"
-                >
-                    {isUploading ? (
-                        <div className="flex items-center gap-2">
-                            <Spinner size={16} /> Uploading…
-                        </div>
-                    ) : (
-                        <>📤 Upload Thumbnails</>
-                    )}
-                </Button>
             </div>
         </div>
     )

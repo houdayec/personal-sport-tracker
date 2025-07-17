@@ -3,7 +3,8 @@ import { useFormikContext, Field, FieldProps } from 'formik'
 import Input from '@/components/ui/Input'
 import { FormItem } from '@/components/ui/Form'
 import ThumbnailUploader from './ThumbnailUploader'
-import { Product } from '@/@types/product'
+import { Product, ThumbnailsMetadata } from '@/@types/product'
+import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
 
 const IMAGE_SRC = '/img/others/thumbnail-preview.png'
 const CANVAS_WIDTH = 3000
@@ -15,11 +16,7 @@ const TEXT_BOX = {
     width: 1710,
     height: 960,
 }
-type ThumbnailsMetadata = {
-    second_charColor?: string
-    second_showTextAreaBox?: boolean
-    // Add other fields you plan to use
-}
+
 const ThumbnailStudioSecondSentence = () => {
     const { values, setFieldValue } = useFormikContext<Product>()
     const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -27,8 +24,8 @@ const ThumbnailStudioSecondSentence = () => {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
     const metadata = (values.thumbnailsMetadata || {}) as ThumbnailsMetadata
-    const fontColor = metadata.second_charColor || '#000000'
-    const showTextBox = metadata.second_showTextAreaBox !== false
+    const fontColor = metadata.sentence_charColor || '#000000'
+    const showTextBox = metadata.sentence_showTextAreaBox !== false
 
     useEffect(() => {
         const img = new Image()
@@ -113,6 +110,7 @@ const ThumbnailStudioSecondSentence = () => {
                         }
                     </div>
                     <div className="pt-2">
+                        <ThumbnailStudioMetadata slug="sentence" />
                         <ThumbnailUploader
                             canvasRef={canvasRef}
                             bgColor="#ffffff"
@@ -122,10 +120,10 @@ const ThumbnailStudioSecondSentence = () => {
                 </div>
                 <div className="space-y-4 w-full max-w-md">
                     <FormItem label="Font Color">
-                        <Field name="thumbnailsMetadata.second_charColor" type="color" component={Input} />
+                        <Field name="thumbnailsMetadata.sentence_charColor" type="color" component={Input} />
                     </FormItem>
                     <FormItem label="Show Text Area Box">
-                        <Field name="thumbnailsMetadata.second_showTextAreaBox">
+                        <Field name="thumbnailsMetadata.sentence_showTextAreaBox">
                             {({ field }: FieldProps) => (
                                 <input
                                     {...field}

@@ -52,7 +52,7 @@ WordpressService.interceptors.response.use(
 )
 
 const WordpressApiService = {
-    fetchData<Response = unknown, Request = Record<string, unknown>>(
+    fetchData<Response = unknown, Request = Record<string, unknown> | FormData>(
         param: AxiosRequestConfig<Request>,
     ) {
         return new Promise<AxiosResponse<Response>>((resolve, reject) => {

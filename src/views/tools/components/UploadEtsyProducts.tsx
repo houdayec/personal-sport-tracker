@@ -43,18 +43,6 @@ const uploadEtsyCSVToFirebase = async (etsyProducts: any[]) => {
 
         const images = [IMAGE1, IMAGE2, IMAGE3, IMAGE4, IMAGE5, IMAGE6, IMAGE7, IMAGE8, IMAGE9, IMAGE10].filter(Boolean)
 
-        product.publishedOnEtsy = true
-        product.etsy = {
-            title: TITLE,
-            description: DESCRIPTION,
-            price: parseFloat(PRICE) || 0,
-            quantity: parseInt(QUANTITY) || 0,
-            currency: CURRENCY_CODE || 'USD',
-            tags: TAGS?.split(',').map((s: string) => s.trim()) || [],
-            materials: MATERIALS?.split(',').map((s: string) => s.trim()) || [],
-            images,
-        }
-
         try {
             await setDoc(ref, product.cleanForDatabase(), { merge: true })
             console.log(`🔄 Updated product ${SKU} from CSV`)

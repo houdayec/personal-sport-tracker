@@ -205,6 +205,55 @@ export type ThumbnailsMetadata = {
     comments: string
     mainKeyword: string
     secondKeyword: string
+
+    main_titleText?: string
+    main_bgColor?: string
+    main_patternType?: string
+    main_patternColor?: string
+    main_patternOpacity?: number
+    main_titleColor?: string
+    main_titleStrokeColor?: string
+    main_titleStrokeWidth?: number
+    main_charColor?: string
+    main_titleScale?: number
+    main_charScale?: number
+    main_topOffset?: number
+    main_showUppercase?: boolean
+    main_showLowercase?: boolean
+    main_showNumbers?: boolean
+    main_showSpecials?: boolean
+    main_charset?: string
+    main_watermarkOpacity?: number
+    main_watermarkColor?: string
+    shadowColor?: string
+    shadowBlur?: number
+    shadowOffsetX?: number
+    shadowOffsetY?: number
+    shadowOpacity?: number
+
+    sentence_charColor?: string
+    sentence_showTextAreaBox?: boolean
+
+    characters_preview_charColor?: string
+    characters_preview_showTextAreaBox?: boolean
+    characters_preview_showUppercase?: boolean
+    characters_preview_showLowercase?: boolean
+    characters_preview_showNumbers?: boolean
+    characters_preview_showSpecials?: boolean
+
+    example_laptop_charColor?: string
+    example_laptop_showTextAreaBox?: boolean
+    example_laptop_showUppercase?: boolean
+    example_laptop_showLowercase?: boolean
+    example_laptop_showNumbers?: boolean
+    example_laptop_showSpecials?: boolean
+
+    example_tablet_charColor?: string
+    example_tablet_showTextAreaBox?: boolean
+    example_tablet_showUppercase?: boolean
+    example_tablet_showLowercase?: boolean
+    example_tablet_showNumbers?: boolean
+    example_tablet_showSpecials?: boolean
 }
 
 export type WebsiteMetadata = {
@@ -229,4 +278,13 @@ export type WordPressData = {
     images?: string[]
     status?: 'draft' | 'pending' | 'publish'
     lastSyncedAt?: number
+    excerpt?: string
+    content?: string
+    rankMath?: {
+        title?: string
+        permalink?: string
+        slug?: string
+        description?: string
+        focusKeyword?: string
+    }
 }

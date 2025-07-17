@@ -24,6 +24,9 @@ import TabNav from '@/components/ui/Tabs/TabNav'
 import ThumbnailMetadataForm from './ThumbnailMetadataForm'
 import { useFormikContext } from 'formik';
 import ThumbnailForm from './ThumbnailForm'
+import WordPressFields from './WordpressFields'
+import WordpressForm from './WordpressForm'
+import ExportForm from './ExportForm'
 
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 type FormikRef = FormikProps<any>
@@ -167,7 +170,6 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                                                 <TabNav value="product">🗂 Product Info</TabNav>
                                                 <TabNav value="assets">📦 Assets</TabNav>
                                                 <TabNav value="thumbnails">🖼 Thumbnails</TabNav>
-                                                <TabNav value="thumbnails_meta">🖼 Thumbnails Metadata</TabNav>
                                                 <TabNav value="wordpress">📝 WordPress Post</TabNav>
                                                 <TabNav value="export">📤 Export & Upload</TabNav>
                                             </TabList>
@@ -189,8 +191,12 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                                                     <ThumbnailForm touched={touched} errors={errors} />
                                                 </TabContent>
 
-                                                <TabContent value="thumbnails_meta">
-                                                    <ThumbnailMetadataForm touched={touched} errors={errors} />
+                                                <TabContent value="wordpress">
+                                                    <WordpressForm touched={touched} errors={errors} />
+                                                </TabContent>
+
+                                                <TabContent value="export">
+                                                    <ExportForm touched={touched} errors={errors} />
                                                 </TabContent>
                                             </div>
                                         </Tabs>

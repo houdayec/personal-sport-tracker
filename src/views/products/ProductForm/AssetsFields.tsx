@@ -1,6 +1,5 @@
 // AssetsFields.tsx
 import { useEffect, useState } from 'react'
-import { Field, useFormikContext } from 'formik'
 import AdaptableCard from '@/components/shared/AdaptableCard'
 import { FormItem } from '@/components/ui/Form'
 import Button from '@/components/ui/Button'
@@ -13,6 +12,18 @@ import { ref, getDownloadURL, uploadBytesResumable } from 'firebase/storage'
 import opentype from 'opentype.js'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
+import { Field, FormikErrors, FormikTouched, FieldProps, useFormikContext } from 'formik'
+
+type FormFieldsName = {
+    name: string
+    sku: string
+    category: string
+}
+
+type ThumbnailFormFields = {
+    touched: FormikTouched<FormFieldsName>
+    errors: FormikErrors<FormFieldsName>
+}
 
 interface GlyphAsset {
     char: string
@@ -20,7 +31,7 @@ interface GlyphAsset {
     pngBlob: Blob
 }
 
-const AssetsFields = () => {
+const AssetsFields = (props: ThumbnailFormFields) => {
     const { values } = useFormikContext<any>()
     const [ttfFile, setTtfFile] = useState<File | null>(null)
     const [font, setFont] = useState<opentype.Font | null>(null)

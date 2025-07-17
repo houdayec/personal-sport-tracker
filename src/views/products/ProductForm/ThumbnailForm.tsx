@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react'
 import ThumbnailPreviewStudio from './ThumbnailStudio_Main'
 import ThumbnailStudioSecondSentence from './ThumbnailStudio_Second'
 import ThumbnailStudioThirdCharacters from './ThumbnailStudio_Third'
+import ThumbnailStudioFifthMockupLaptop from './ThumbnailStudio_Fifth'
+import ThumbnailStudioSixthMockupTablet from './ThumbnailStudio_Sixth'
 
 type FormFieldsName = {
     name: string
@@ -68,33 +70,14 @@ const ThumbnailForm = (props: ThumbnailFormFields) => {
 
     return (
         <AdaptableCard divider className="mb-4">
-            <h5 className="mt-0">Thumbnail Metadata</h5>
-            <p className="mb-6">Complete metadata to optimize your SEO thumbnails</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {['mainKeyword', 'secondKeyword', 'permalink', 'comments'].map((fieldKey) => (
-                    <FormItem key={fieldKey} label={fieldKey.charAt(0).toUpperCase() + fieldKey.slice(1)}>
-                        <Field name={`thumbnailsMetadata.${fieldKey}`}>
-                            {({ field }: FieldProps) => (
-                                <div className="flex gap-2">
-                                    <Input {...field} />
-                                    <Button
-                                        size="md"
-                                        icon={<HiOutlineClipboardCopy />}
-                                        onClick={(e) => {
-                                            e.preventDefault()
-                                            copy(field.value, fieldKey)
-                                        }} />
-                                </div>
-                            )}
-                        </Field>
-                    </FormItem>
-                ))}
-            </div>
+            <h2 className="mt-0">🖼️ Thumbnail Generation</h2>
+            <p className="mb-6">Generate all thumbnails images & metadata</p>
 
             <ThumbnailPreviewStudio />
             <ThumbnailStudioSecondSentence />
             <ThumbnailStudioThirdCharacters />
+            <ThumbnailStudioFifthMockupLaptop />
+            <ThumbnailStudioSixthMockupTablet />
         </AdaptableCard>
     )
 }
