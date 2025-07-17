@@ -7,6 +7,7 @@ import { HiOutlineClipboardCopy } from 'react-icons/hi'
 import { useEffect, useState } from 'react'
 import ThumbnailPreviewStudio from './ThumbnailStudio_Main'
 import ThumbnailStudioSecondSentence from './ThumbnailStudio_Second'
+import ThumbnailStudioThirdCharacters from './ThumbnailStudio_Third'
 
 type FormFieldsName = {
     name: string
@@ -93,6 +94,7 @@ const ThumbnailForm = (props: ThumbnailFormFields) => {
 
             <ThumbnailPreviewStudio />
             <ThumbnailStudioSecondSentence />
+            <ThumbnailStudioThirdCharacters />
         </AdaptableCard>
     )
 }

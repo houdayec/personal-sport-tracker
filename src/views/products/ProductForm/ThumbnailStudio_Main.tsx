@@ -15,23 +15,25 @@ const PATTERNS = [
 ]
 
 type ThumbnailsMetadata = {
-    titleText?: string
-    bgColor?: string
-    patternType?: string
-    patternColor?: string
-    patternOpacity?: number
-    titleColor?: string
-    titleStrokeColor?: string
-    titleStrokeWidth?: number
-    charColor?: string
-    titleScale?: number
-    charScale?: number
-    topOffset?: number
-    showUppercase?: boolean
-    showLowercase?: boolean
-    showNumbers?: boolean
-    showSpecials?: boolean
-    charset?: string
+    main_titleText?: string
+    main_bgColor?: string
+    main_patternType?: string
+    main_patternColor?: string
+    main_patternOpacity?: number
+    main_titleColor?: string
+    main_titleStrokeColor?: string
+    main_titleStrokeWidth?: number
+    main_charColor?: string
+    main_titleScale?: number
+    main_charScale?: number
+    main_topOffset?: number
+    main_showUppercase?: boolean
+    main_showLowercase?: boolean
+    main_showNumbers?: boolean
+    main_showSpecials?: boolean
+    main_charset?: string
+    main_watermarkOpacity?: number
+    main_watermarkColor?: string
 }
 
 const ThumbnailPreviewStudio = () => {
@@ -40,17 +42,28 @@ const ThumbnailPreviewStudio = () => {
     const [fontLoaded, setFontLoaded] = useState(false)
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [patternImages, setPatternImages] = useState<Record<string, HTMLImageElement>>({})
+    const [watermarkImg, setWatermarkImg] = useState<HTMLImageElement | null>(null)
 
     const meta = values.thumbnailsMetadata || {}
     const {
-        titleText = 'Font Name', bgColor = '#ffffff',
-        patternType = 'none', patternColor = '#000000', patternOpacity = 0.2,
-        titleColor = '#000000', titleStrokeColor = '#000000', titleStrokeWidth = 0,
-        charColor = '#333333', titleScale = 0.7, charScale = 1.0, topOffset = 150,
-        showUppercase = true, showLowercase = false, showNumbers = true, showSpecials = false,
-        charset = '',
+        main_titleText = 'Font Name', main_bgColor = '#ffffff',
+        main_patternType = 'none', main_patternColor = '#000000', main_patternOpacity = 0.2,
+        main_titleColor = '#000000', main_titleStrokeColor = '#000000', main_titleStrokeWidth = 0,
+        main_charColor = '#333333', main_titleScale = 0.7, main_charScale = 1.0, main_topOffset = 150,
+        main_showUppercase = true, main_showLowercase = false, main_showNumbers = true, main_showSpecials = false,
+        main_watermarkOpacity = 0.02,
+        main_watermarkColor = '#000000',
+        main_charset = '',
     } = meta
 
+    // Load watermark image
+    useEffect(() => {
+        const img = new Image()
+        img.src = '/img/others/fontmaze-watermark.png'
+        img.onload = () => setWatermarkImg(img)
+    }, [])
+
+    // Preload pattern images
     useEffect(() => {
         PATTERNS.forEach(p => {
             if (!p.src) return;
@@ -85,61 +98,62 @@ const ThumbnailPreviewStudio = () => {
     const numberLine = '0 1 2 3 4 5 6 7 8 9'
     const specialLine = '! @ # $ % ^ & * ( ) - _ = +'
     let lines: string[] = []
-    if (showUppercase && showLowercase) lines = [...letterPairs]
-    else if (showUppercase) lines = [...uppercaseLines]
-    else if (showLowercase) lines = [...lowercaseLines]
-    if (showNumbers) lines.push(numberLine)
-    if (showSpecials) lines.push(specialLine)
-    if (lines.length === 0) lines = charset.split('\n').filter(Boolean) || [...letterPairs]
+    if (main_showUppercase && main_showLowercase) lines = [...letterPairs]
+    else if (main_showUppercase) lines = [...uppercaseLines]
+    else if (main_showLowercase) lines = [...lowercaseLines]
+    if (main_showNumbers) lines.push(numberLine)
+    if (main_showSpecials) lines.push(specialLine)
+    if (lines.length === 0) lines = main_charset.split('\n').filter(Boolean) || [...letterPairs]
 
     // Draw canvas
     useEffect(() => {
-        if (!fontLoaded) return
+        if (!fontLoaded || !watermarkImg) return
         const canvas = canvasRef.current
         if (!canvas) return
         const ctx = canvas.getContext('2d')!
 
         // Clear + background
         ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
-        ctx.fillStyle = bgColor
+        ctx.fillStyle = main_bgColor
         ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
 
         // Draw pattern
-        if (patternType !== 'none' && patternImages[patternType]) {
-            const img = patternImages[patternType]
+        if (main_patternType !== 'none' && patternImages[main_patternType]) {
+            const img = patternImages[main_patternType]
             ctx.save()
-            ctx.globalAlpha = patternOpacity
+            ctx.globalAlpha = main_patternOpacity
             const pat = ctx.createPattern(img, 'repeat')!
             ctx.fillStyle = pat
             ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
             ctx.globalCompositeOperation = 'source-in'
-            ctx.fillStyle = patternColor
+            ctx.fillStyle = main_patternColor
             ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
             ctx.restore()
         }
 
-        // Watermark
+        // Draw watermark image with tint and opacity
         ctx.save()
-        const [r, g, b] = [patternColor.slice(1, 3), patternColor.slice(3, 5), patternColor.slice(5, 7)].map(h => parseInt(h, 16))
-        ctx.fillStyle = `rgba(${r},${g},${b},${patternOpacity})`
-        ctx.font = `${100 * titleScale}px ProductFont, sans-serif`
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-        ctx.translate(CANVAS_SIZE / 2, CANVAS_SIZE / 2); ctx.rotate(-Math.PI / 4)
-        for (let x = -CANVAS_SIZE; x < CANVAS_SIZE * 2; x += 400) for (let y = -CANVAS_SIZE; y < CANVAS_SIZE * 2; y += 400) ctx.fillText('fontmaze', x, y)
-        ctx.restore()
 
-        // Title
+        // Resize watermark if needed
+        if (watermarkImg) {
+            ctx.save()
+            ctx.globalAlpha = main_watermarkOpacity
+            ctx.drawImage(watermarkImg, 0, 0, CANVAS_SIZE, CANVAS_SIZE)
+            ctx.restore()
+        }
+
+        // Title text
         const titleArea = CANVAS_SIZE * 0.25
-        const yTitle = PADDING + topOffset
-        const tf = Math.floor(titleArea * titleScale)
+        const yTitle = PADDING + main_topOffset
+        const tf = Math.floor(titleArea * main_titleScale)
         ctx.textAlign = 'center'; ctx.textBaseline = 'top'
         ctx.font = `${tf}px ProductFont, sans-serif`
-        ctx.fillStyle = titleColor
-        ctx.fillText(titleText, CANVAS_SIZE / 2, yTitle)
-        if (titleStrokeWidth) {
-            ctx.lineWidth = titleStrokeWidth
-            ctx.strokeStyle = titleStrokeColor
-            ctx.strokeText(titleText, CANVAS_SIZE / 2, yTitle)
+        ctx.fillStyle = main_titleColor
+        ctx.fillText(main_titleText, CANVAS_SIZE / 2, yTitle)
+        if (main_titleStrokeWidth) {
+            ctx.lineWidth = main_titleStrokeWidth
+            ctx.strokeStyle = main_titleStrokeColor
+            ctx.strokeText(main_titleText, CANVAS_SIZE / 2, yTitle)
         }
 
         // Characters
@@ -148,9 +162,9 @@ const ThumbnailPreviewStudio = () => {
         const count = lines.length
         const spacing = 80
         const baseF = Math.floor((bottomHeight - spacing * (count - 1)) / count)
-        let cf = Math.floor(baseF * charScale)
+        let cf = Math.floor(baseF * main_charScale)
         ctx.textAlign = 'center'; ctx.textBaseline = 'top'
-        ctx.fillStyle = charColor
+        ctx.fillStyle = main_charColor
         ctx.font = `${cf}px ProductFont, sans-serif`
         const maxW = Math.max(...lines.map(l => ctx.measureText(l).width))
         if (maxW > CANVAS_SIZE - 2 * PADDING) {
@@ -163,129 +177,127 @@ const ThumbnailPreviewStudio = () => {
         lines.forEach((l, i) => ctx.fillText(l, CANVAS_SIZE / 2, sy + i * (cf + spacing)))
 
         setPreviewUrl(canvas.toDataURL('image/png'))
-    }, [fontLoaded, bgColor, patternType, patternColor, patternOpacity,
-        titleText, titleColor, titleStrokeColor, titleStrokeWidth,
-        titleScale, charScale, topOffset, showUppercase, showLowercase, showNumbers, showSpecials, charset,
-        patternImages
-    ])
+    }, [fontLoaded, watermarkImg, main_bgColor, main_patternType, main_patternColor, main_patternOpacity,
+        main_titleText, main_titleColor, main_titleStrokeColor, main_titleStrokeWidth,
+        main_titleScale, main_charScale, main_topOffset, main_showUppercase, main_showLowercase, main_showNumbers, main_showSpecials, main_charset,
+        patternImages, main_watermarkColor, main_watermarkOpacity])
+
 
     return (
         <div className="mt-8">
-            <h6 className="font-semibold mb-2">🖼️ Miniature Generator</h6>
+            <h6 className="font-semibold text-lg mb-4">🖼️ Miniature Generator</h6>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <canvas
-                    ref={canvasRef}
-                    width={CANVAS_SIZE}
-                    height={CANVAS_SIZE}
-                    style={{ display: 'none' }}
-                />
 
-                {/* Preview */}
-                <div className="border rounded bg-white overflow-hidden mx-auto" style={{ width: '100%', maxWidth: '600px', aspectRatio: '1' }}>
-                    {previewUrl
-                        ? <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                        : <div className="w-full h-full flex items-center justify-center">Loading…</div>
-                    }
-                </div>
-                {/* Controls */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Pattern Picker */}
-                    <FormItem label="Background Pattern">
-                        <div className="flex flex-wrap gap-3">
-                            {PATTERNS.map(p => (
-                                <button
-                                    key={p.name}
-                                    type="button"
-                                    onClick={() => setFieldValue('thumbnailsMetadata.patternType', p.name)}
-                                    className={`p-1 border rounded ${patternType === p.name ? 'border-blue-500' : 'border-gray-300'}`}
-                                >
-                                    {p.src
-                                        ? <img src={p.src} alt={p.label} className="w-12 h-12 object-contain" />
-                                        : <div className="w-12 h-12 flex items-center justify-center text-gray-400">None</div>
-                                    }
-                                </button>
-                            ))}
-                        </div>
-                    </FormItem>
-                    <FormItem label="Pattern Color">
-                        <Field
-                            name="thumbnailsMetadata.patternColor"
-                            type="color"
-                            component={Input}
-                        />
-                    </FormItem>
-                    <FormItem label="Pattern Opacity">
-                        <Field name="thumbnailsMetadata.patternOpacity">
-                            {({ field }: FieldProps) => (
-                                <input
-                                    {...field}
-                                    type="range"
-                                    min={0}
-                                    max={1}
-                                    step={0.05}
-                                    className="w-full"
-                                    onChange={e => {
-                                        console.log('Pattern opacity change:', e.target.value)
-                                        field.onChange(e)
-                                    }}
-                                />
-                            )}
-                        </Field>
-                    </FormItem>
-                    {/* Title Controls */}
-                    <FormItem label="Title & Style">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <InputWrapper label="Text"><Field name="thumbnailsMetadata.titleText" component={Input} /></InputWrapper>
-                            <InputWrapper label="Scale"><Field name="thumbnailsMetadata.titleScale">{({ field }: FieldProps) => <input {...field} type="range" min={0.1} max={2} step={0.1} className="w-full" />}</Field></InputWrapper>
-                            <InputWrapper label="Stroke W"><Field name="thumbnailsMetadata.titleStrokeWidth">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={20} step={1} className="w-full" />}</Field></InputWrapper>
-                            <InputWrapper label="Stroke Color"><Field name="thumbnailsMetadata.titleStrokeColor" type="color" component={Input} /></InputWrapper>
-                            <InputWrapper label="Top Offset"><Field name="thumbnailsMetadata.topOffset">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={200} step={10} className="w-full" />}</Field></InputWrapper>
-                        </div>
-                    </FormItem>
-                    {/* Alphabet & Watermark Controls */}
-                    <FormItem label="Alphabet & Watermark">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <InputWrapper label="Alphabet Size"><Field name="thumbnailsMetadata.charScale">{({ field }: FieldProps) => <input {...field} type="range" min={0.1} max={2} step={0.1} className="w-full" />}</Field></InputWrapper>
-                            <InputWrapper label="BG Color"><Field name="thumbnailsMetadata.bgColor" type="color" component={Input} /></InputWrapper>
-                            <InputWrapper label="Watermark Color"><Field name="thumbnailsMetadata.watermarkColor" type="color" component={Input} /></InputWrapper>
-                            <InputWrapper label="Watermark Opacity"><Field name="thumbnailsMetadata.watermarkOpacity">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={0.5} step={0.05} className="w-full" />}</Field></InputWrapper>
-                        </div>
-                    </FormItem>
-                    {/* Char Sets */}
-                    <FormItem label="Character Sets">
-                        <div className="flex flex-wrap gap-4">
-                            {['Uppercase', 'Lowercase', 'Numbers', 'Specials'].map((opt, key) => (
-                                <label key={key} className="flex items-center space-x-2">
-                                    <Field
-                                        name={`thumbnailsMetadata.show${opt}` as any}
-                                        type="checkbox"
-                                        render={({ field }: FieldProps) => <input
-                                            {...field}
-                                            type="checkbox"
-                                            checked={field.value}
-                                            onChange={e => setFieldValue(field.name, e.target.checked)}
-                                        />}
-                                    />
-                                    <span>{opt}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </FormItem>
-                    {/* Custom Charset */}
-                    {!showUppercase && !showLowercase && !showNumbers && !showSpecials &&
-                        <FormItem label="Custom Charset (newline separated)"><Field name="thumbnailsMetadata.charset" component={Input} /></FormItem>
-                    }
-                    {/* Text Colors */}
-                    <div className="flex flex-wrap gap-4">
-                        <InputWrapper label="Title Color"><Field name="thumbnailsMetadata.titleColor" type="color" component={Input} /></InputWrapper>
-                        <InputWrapper label="Char Color"><Field name="thumbnailsMetadata.charColor" type="color" component={Input} /></InputWrapper>
+                <div>
+                    <canvas
+                        ref={canvasRef}
+                        width={CANVAS_SIZE}
+                        height={CANVAS_SIZE}
+                        style={{ display: 'none' }}
+                    />
+
+                    {/* Preview */}
+                    <div className="border rounded bg-white overflow-hidden mx-auto" style={{ width: '100%', maxWidth: '600px', aspectRatio: '1' }}>
+                        {previewUrl
+                            ? <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                            : <div className="w-full h-full flex items-center justify-center">Loading…</div>
+                        }
                     </div>
-                    <ThumbnailUploader canvasRef={canvasRef} bgColor={bgColor} title="main-square" slug='main' />
+                    {/* Upload */}
+                    <div className="pt-2">
+                        <ThumbnailUploader canvasRef={canvasRef} main_bgColor={main_bgColor} slug="main" />
+                    </div>
+                </div>
 
+                {/* Controls */}
+                <div className="lg:col-span-2 space-y-8">
+
+                    {/* Section: Background */}
+                    <div>
+                        <h5 className="font-semibold mb-2">🎨 Background</h5>
+                        <FormItem label="Pattern">
+                            <div className="flex flex-wrap gap-3">
+                                {PATTERNS.map(p => (
+                                    <button
+                                        key={p.name}
+                                        type="button"
+                                        onClick={() => setFieldValue('thumbnailsMetadata.main_patternType', p.name)}
+                                        className={`p-1 border rounded ${main_patternType === p.name ? 'border-blue-500' : 'border-gray-300'}`}
+                                    >
+                                        {p.src
+                                            ? <img src={p.src} alt={p.label} className="w-12 h-12 object-contain" />
+                                            : <div className="w-12 h-12 flex items-center justify-center text-gray-400">None</div>
+                                        }
+                                    </button>
+                                ))}
+                            </div>
+                        </FormItem>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                            <InputWrapper label="Pattern Color"><Field name="thumbnailsMetadata.main_patternColor" type="color" component={Input} /></InputWrapper>
+                            <InputWrapper label="Pattern Opacity"><Field name="thumbnailsMetadata.main_patternOpacity">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={1} step={0.05} className="w-full" />}</Field></InputWrapper>
+                            <InputWrapper label="Background Color"><Field name="thumbnailsMetadata.main_bgColor" type="color" component={Input} /></InputWrapper>
+                        </div>
+                    </div>
+
+                    {/* Section: Title */}
+                    <div>
+                        <h5 className="font-semibold mb-2">📝 Title</h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <InputWrapper label="Text"><Field name="thumbnailsMetadata.main_titleText" component={Input} /></InputWrapper>
+                            <InputWrapper label="Scale"><Field name="thumbnailsMetadata.main_titleScale">{({ field }: FieldProps) => <input {...field} type="range" min={0.1} max={2} step={0.1} className="w-full" />}</Field></InputWrapper>
+                            <InputWrapper label="Top Offset"><Field name="thumbnailsMetadata.main_topOffset">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={200} step={10} className="w-full" />}</Field></InputWrapper>
+                            <InputWrapper label="Color"><Field name="thumbnailsMetadata.main_titleColor" type="color" component={Input} /></InputWrapper>
+                            <InputWrapper label="Stroke Color"><Field name="thumbnailsMetadata.main_titleStrokeColor" type="color" component={Input} /></InputWrapper>
+                            <InputWrapper label="Stroke Width"><Field name="thumbnailsMetadata.main_titleStrokeWidth">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={20} step={1} className="w-full" />}</Field></InputWrapper>
+                        </div>
+                    </div>
+
+                    {/* Section: Watermark */}
+                    <div>
+                        <h5 className="font-semibold mb-2">💧 Watermark</h5>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <InputWrapper label="Color"><Field name="thumbnailsMetadata.main_watermarkColor" type="color" component={Input} /></InputWrapper>
+                            <InputWrapper label="Opacity"><Field name="thumbnailsMetadata.main_watermarkOpacity">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={0.10} step={0.01} className="w-full" />}</Field></InputWrapper>
+                        </div>
+                    </div>
+
+                    {/* Section: Characters */}
+                    <div>
+                        <h5 className="font-semibold mb-2">🔠 Characters</h5>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                            <InputWrapper label="Alphabet Size"><Field name="thumbnailsMetadata.main_charScale">{({ field }: FieldProps) => <input {...field} type="range" min={0.1} max={2} step={0.1} className="w-full" />}</Field></InputWrapper>
+                            <InputWrapper label="Color"><Field name="thumbnailsMetadata.main_charColor" type="color" component={Input} /></InputWrapper>
+                        </div>
+                        <FormItem label="Character Sets">
+                            <div className="flex flex-wrap gap-4">
+                                {['Uppercase', 'Lowercase', 'Numbers', 'Specials'].map((opt, key) => (
+                                    <label key={key} className="flex items-center space-x-2">
+                                        <Field
+                                            name={`thumbnailsMetadata.show${opt}` as any}
+                                            type="checkbox"
+                                            render={({ field }: FieldProps) => <input
+                                                {...field}
+                                                type="checkbox"
+                                                checked={field.value}
+                                                onChange={e => setFieldValue(field.name, e.target.checked)}
+                                            />}
+                                        />
+                                        <span>{opt}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </FormItem>
+                        {!main_showUppercase && !main_showLowercase && !main_showNumbers && !main_showSpecials && (
+                            <FormItem label="Custom main_charset (newline separated)">
+                                <Field name="thumbnailsMetadata.main_charset" component={Input} />
+                            </FormItem>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
     )
+
 }
 
 // Helper for consistent label + control

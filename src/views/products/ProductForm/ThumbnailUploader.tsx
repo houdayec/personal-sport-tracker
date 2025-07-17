@@ -1,6 +1,7 @@
 import { useFormikContext } from 'formik'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
+import Radio from '@/components/ui/Radio'
 import { Product } from '@/@types/product'
 import { toast, Notification } from '@/components/ui'
 import { storage } from '@/firebase'
@@ -16,36 +17,21 @@ type Props = {
 const canvasToBlob = (canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> =>
     new Promise(resolve => canvas.toBlob(blob => resolve(blob!), type, quality))
 
-const createThreeTwoFromSquare = async (squareBlob: Blob, bgColor: string): Promise<HTMLCanvasElement> => {
-    const img = await createImageBitmap(squareBlob)
-    const canvas = document.createElement('canvas')
-    canvas.width = 3000
-    canvas.height = 2000
-    const ctx = canvas.getContext('2d')!
-    ctx.fillStyle = bgColor
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.drawImage(img, 500, 0)
-    return canvas
-}
-
-const upload = async (path: string, blob: Blob) => {
-    const storageRef = ref(storage, path)
-    await uploadBytes(storageRef, blob)
+// Crop square canvas from landscape source
+const cropSquareFromCanvas = (canvas: HTMLCanvasElement): HTMLCanvasElement => {
+    const size = canvas.height
+    const cropped = document.createElement('canvas')
+    cropped.width = size
+    cropped.height = size
+    const ctx = cropped.getContext('2d')!
+    ctx.drawImage(canvas, (canvas.width - size) / 2, 0, size, size, 0, 0, size, size)
+    return cropped
 }
 
 const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
     const { values } = useFormikContext<Product>()
     const [isUploading, setIsUploading] = useState(false)
-    const [thumbs, setThumbs] = useState<Record<string, Blob> | null>(null)
-
-    const sku = values.sku
-    const fontMeta = values.fontData as any
-    const main = values.mainKeyword?.toLowerCase?.() || 'main'
-    const second = values.secondKeyword?.toLowerCase?.() || 'second'
-    const filename = `${main}-font-${second}-font-${slug}`
-    const basePath = `products/${sku}/files/thumbnails`
     const [thumbnails, setThumbnails] = useState<Blob[]>([])
-    const [isGenerating, setIsGenerating] = useState(false)
     const [previewData, setPreviewData] = useState<{
         format: 'png' | 'jpg' | 'webp'
         images: {
@@ -55,79 +41,83 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
             format: 'png' | 'jpg' | 'webp'
         }[]
     } | null>(null)
-
-
     const [selectedFormat, setSelectedFormat] = useState<'png' | 'jpg' | 'webp'>('webp')
+    const [selectedAspect, setSelectedAspect] = useState<'square' | 'landscape'>('square')
 
-    // Generate blobs from canvas, log size
+    const sku = values.sku
+    const main = values.mainKeyword?.toLowerCase?.() || 'main'
+    const second = values.secondKeyword?.toLowerCase?.() || 'second'
+    const filename = `${main}-font-${second}-font-${slug}`
+
+    // Generate square & landscape image versions
     const generateThumbnails = async () => {
         if (!canvasRef.current) return
-        setIsGenerating(true)
+        const landscapeCanvas = canvasRef.current
+        const squareCanvas = cropSquareFromCanvas(landscapeCanvas)
 
-        const squareCanvas = canvasRef.current
-        const squarePng = await canvasToBlob(squareCanvas, 'image/png')
-        const squareJpg = await canvasToBlob(squareCanvas, 'image/jpeg', 0.8)
-        const squareWebp = await canvasToBlob(squareCanvas, 'image/webp', 0.7)
+        const generate = async (canvas: HTMLCanvasElement) => ({
+            png: await canvasToBlob(canvas, 'image/png'),
+            jpg: await canvasToBlob(canvas, 'image/jpeg', 0.8),
+            webp: await canvasToBlob(canvas, 'image/webp', 0.7),
+        })
 
-        const ratioCanvas = await createThreeTwoFromSquare(squarePng, bgColor)
-        const ratioPng = await canvasToBlob(ratioCanvas, 'image/png')
-        const ratioJpg = await canvasToBlob(ratioCanvas, 'image/jpeg', 0.8)
-        const ratioWebp = await canvasToBlob(ratioCanvas, 'image/webp', 0.7)
+        const landscapeBlobs = await generate(landscapeCanvas)
+        const squareBlobs = await generate(squareCanvas)
 
-        const blobs = [squarePng, squareJpg, squareWebp, ratioPng, ratioJpg, ratioWebp]
-        setThumbnails(blobs)
+        const images: {
+            type: 'square' | 'landscape'
+            format: 'png' | 'jpg' | 'webp'
+            blob: Blob
+        }[] = [
+                { type: 'square', format: 'png', blob: squareBlobs.png },
+                { type: 'square', format: 'jpg', blob: squareBlobs.jpg },
+                { type: 'square', format: 'webp', blob: squareBlobs.webp },
+                { type: 'landscape', format: 'png', blob: landscapeBlobs.png },
+                { type: 'landscape', format: 'jpg', blob: landscapeBlobs.jpg },
+                { type: 'landscape', format: 'webp', blob: landscapeBlobs.webp },
+            ]
 
-        blobs.forEach((blob, i) => {
-            const sizeKB = (blob.size / 1024).toFixed(1)
-            console.log(`Generated ${i + 1}/${blobs.length} - ${sizeKB} KB`)
+
+        setThumbnails(images.map(i => i.blob))
+        setPreviewData({
+            format: 'webp',
+            images: images.map(i => ({
+                type: i.type,
+                format: i.format,
+                url: URL.createObjectURL(i.blob),
+                size: i.blob.size,
+            })),
         })
 
         toast.push(
             <Notification title="Thumbnails Ready" type="success" duration={2500}>
-                {blobs.length} versions generated
+                {images.length} versions generated
             </Notification>,
             { placement: 'top-center' }
         )
-        setIsGenerating(false)
-
-        setPreviewData({
-            format: 'webp',
-            images: [
-                { type: 'square', url: URL.createObjectURL(squarePng), size: squarePng.size, format: 'png' },
-                { type: 'landscape', url: URL.createObjectURL(ratioPng), size: ratioPng.size, format: 'png' },
-                { type: 'square', url: URL.createObjectURL(squareJpg), size: squareJpg.size, format: 'jpg' },
-                { type: 'landscape', url: URL.createObjectURL(ratioJpg), size: ratioJpg.size, format: 'jpg' },
-                { type: 'square', url: URL.createObjectURL(squareWebp), size: squareWebp.size, format: 'webp' },
-                { type: 'landscape', url: URL.createObjectURL(ratioWebp), size: ratioWebp.size, format: 'webp' },
-            ],
-        })
-
     }
 
-    // Upload blobs to firebase
+    // Upload only JPG & WEBP versions to Firebase
     const handleUpload = async () => {
-        if (!canvasRef.current || !sku || !main || !second || thumbnails.length < 6) return
+        if (!thumbnails.length || !sku) return
         setIsUploading(true)
-
-        const filename = `${main}-font-${second}-font-${slug}`
         const basePath = `products/${sku}/files/thumbnails`
 
         const [
-            squarePng, squareJpg, squareWebp,
-            ratioPng, ratioJpg, ratioWebp
+            , squareJpg, squareWebp,
+            , landscapeJpg, landscapeWebp
         ] = thumbnails
 
-        //await upload(`${basePath}/square/${filename}-square.png`, squarePng)
-        await upload(`${basePath}/square/${filename}-square.jpg`, squareJpg)
-        await upload(`${basePath}/square/${filename}-square.webp`, squareWebp)
-
-        //await upload(`${basePath}/3_2/${filename}-landscape32.png`, ratioPng)
-        await upload(`${basePath}/3_2/${filename}-landscape32.jpg`, ratioJpg)
-        await upload(`${basePath}/3_2/${filename}-landscape32.webp`, ratioWebp)
+        await Promise.all([
+            uploadBytes(ref(storage, `${basePath}/square/${filename}-square.jpg`), squareJpg),
+            uploadBytes(ref(storage, `${basePath}/square/${filename}-square.webp`), squareWebp),
+            uploadBytes(ref(storage, `${basePath}/3_2/${filename}-landscape.jpg`), landscapeJpg),
+            uploadBytes(ref(storage, `${basePath}/3_2/${filename}-landscape.webp`), landscapeWebp),
+        ])
 
         toast.push(
             <Notification title="Thumbnails Uploaded" type="success" duration={2500}>
-                {filename} in PNG, JPG & WebP formats
+                {filename} in JPG & WEBP formats
             </Notification>,
             { placement: 'top-center' }
         )
@@ -135,50 +125,62 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
     }
 
     return (
-        <div className="flex items-center gap-4 flex-wrap">
-            <Button onClick={generateThumbnails} type="button" variant="solid">
-                ⚙️ Generate Thumbnails
-            </Button>
+        <div className="w-full">
+            <div className="space-y-6">
+                <Button onClick={generateThumbnails} className="w-full" type='button'>
+                    ⚙️ Generate Thumbnails
+                </Button>
 
-            {previewData && (
-                <div className="mt-6 mb-6">
-                    <div className="flex gap-2 mb-2">
-                        {['png', 'jpg', 'webp'].map(fmt => (
-                            <Button
-                                key={fmt}
-                                type='button'
-                                className={`px-2 py-1 text-sm border rounded ${selectedFormat === fmt ? 'bg-blue-600 text-black' : 'bg-white text-gray-700'}`}
-                                onClick={() => setSelectedFormat(fmt as any)}
-                            >
-                                {fmt.toUpperCase()}
-                            </Button>
-                        ))}
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        {previewData.images
-                            .filter(img => img.format === selectedFormat)
-                            .map((img, idx) => (
-                                <div key={idx} className="text-center">
-                                    <img src={img.url} alt={img.type} className="w-full border rounded" />
-                                    <div className="text-sm mt-1">
-                                        {img.type} – {(img.size / 1024).toFixed(1)} KB
+                {previewData && (
+                    <>
+                        <div>
+                            <label className="block mb-1 font-semibold">Format</label>
+                            <Radio.Group value={selectedFormat} onChange={val => setSelectedFormat(val as any)} className="flex gap-4">
+                                <Radio value="png">PNG</Radio>
+                                <Radio value="jpg">JPG</Radio>
+                                <Radio value="webp">WEBP</Radio>
+                            </Radio.Group>
+                        </div>
+
+                        <div>
+                            <label className="block mb-1 font-semibold">Aspect Ratio</label>
+                            <Radio.Group value={selectedAspect} onChange={val => setSelectedAspect(val as any)} className="flex gap-4">
+                                <Radio value="square">Square</Radio>
+                                <Radio value="landscape">Landscape</Radio>
+                            </Radio.Group>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                            {previewData.images
+                                .filter(img => img.format === selectedFormat && img.type === selectedAspect)
+                                .map((img, idx) => (
+                                    <div key={idx} className="text-center">
+                                        <img src={img.url} className="w-full max-w-full border rounded object-contain" alt={img.type} />
+                                        <div className="text-sm mt-1">
+                                            {img.type} – {(img.size / 1024).toFixed(1)} KB
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                    </div>
-                </div>
-            )}
-
-            <Button onClick={handleUpload} type="button" variant="solid" disabled={isUploading || !thumbnails.length}>
-                {isUploading ? (
-                    <div className="flex items-center gap-2">
-                        <Spinner size={16} /> Uploading…
-                    </div>
-                ) : (
-                    <>📤 Upload Thumbnails</>
+                                ))}
+                        </div>
+                    </>
                 )}
-            </Button>
 
+                <Button
+                    onClick={handleUpload}
+                    type="button"
+                    variant="twoTone"
+                    disabled={isUploading || !thumbnails.length}
+                    className="w-full"
+                >
+                    {isUploading ? (
+                        <div className="flex items-center gap-2">
+                            <Spinner size={16} /> Uploading…
+                        </div>
+                    ) : (
+                        <>📤 Upload Thumbnails</>
+                    )}
+                </Button>
+            </div>
         </div>
     )
 }
