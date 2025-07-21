@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import AdaptableCard from '@/components/shared/AdaptableCard'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
-import { fetchWooProductById, listWebpSquareThumbnails, uploadImageToWordPress } from '@/utils/wordpress/generateWordPressHtml'
 import _ from 'lodash'
 import { useFormikContext } from 'formik'
 import { Product } from '@/@types/product'
 import { HiCheckCircle } from 'react-icons/hi'
 import { getDownloadURL, ref } from 'firebase/storage'
 import { storage } from '@/firebase'
+import { fetchWooProductById, listWebpSquareThumbnails, uploadImageToWordPress } from '@/services/WooService'
 
 // This component fetches a WooCommerce product template, clones and modifies it
 const ExportForm = () => {
