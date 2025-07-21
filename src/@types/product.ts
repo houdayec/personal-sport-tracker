@@ -2,6 +2,7 @@ export class Product {
     sku!: string
     name!: string
     category!: string              // Category (e.g. 'football_font')
+    etsyId?: number | null
     wordpressId?: number | null
     publishedOnWebsite!: boolean
     wordpressReviewUpdatedAt?: number | null
@@ -17,6 +18,10 @@ export class Product {
             fullName: string
             version: string
         }
+    }
+    computedData?: {
+        numberOfSales: number
+        revenue: number
     }
 
     wordpress?: WordPressData
