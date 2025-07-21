@@ -13,242 +13,6 @@ import { EtsyOrder, EtsyOrderItem } from '@/@types/etsy_order'
 import { WooOrder } from '@/@types/woo_order'
 import { convertToUSD } from '@/utils/currency'
 
-export async function apigetEtsySalesDashboardData<T extends DashboardData, U extends DashboardQuery>(params: U) {
-    const { startDate, endDate } = params
-    console.log('[🔎] Fetching order items between:', {
-        startDate: new Date(startDate * 1000).toLocaleString(),
-        endDate: new Date(endDate * 1000).toLocaleString(),
-    })
-
-    const orderItemsRef = collection(db, 'etsy_orders_items')
-    const orderItemsQuery = query(
-        orderItemsRef,
-        where('saleDate', '>=', startDate * 1000),
-        where('saleDate', '<=', endDate * 1000),
-    )
-
-    console.log('[📤] Running Firestore query...')
-    let snapshot
-    /*try {
-        snapshot = await getDocsFromCache(orderItemsQuery)
-        console.log('[📥] Loaded from cache:', snapshot.size)
-        if (snapshot.size === 0) {
-            console.warn('[⚠️] Cache miss, fetching from server...')
-            snapshot = await getDocs(orderItemsQuery)
-        }
-    } catch (err) {
-        console.warn('[⚠️] Cache miss, fetching from server...')
-    }*/
-    snapshot = await getDocs(orderItemsQuery)
-
-    console.log(`[📥] Found ${snapshot.size} order items.`)
-
-    const items: EtsyOrderItem[] = snapshot.docs.map(doc => ({
-        ...(doc.data() as EtsyOrderItem),
-    }))
-    const grossRevenue = parseFloat(
-        items.reduce((acc, item) => acc + ((item.itemTotal || 0) - (item.discountAmount || 0)), 0).toFixed(2)
-    )
-
-    const orderCount = new Set(items.map(item => item.orderId)).size
-
-    const netRevenue = parseFloat(
-        items.reduce((acc, item) => acc + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)
-    )
-
-    // 🧮 Calculate number of days in the range
-    const daysInRange = Math.ceil(((endDate * 1000) - (startDate * 1000)) / (1000 * 60 * 60 * 24))
-
-    console.log("daysInRange", daysInRange)
-
-    // 📊 Compute daily average order count
-    const dailyOrderAverage = Math.round((items.length / daysInRange))
-    console.log("dailyOrderAverage", dailyOrderAverage)
-    // ✅ Extract unique SKUs
-    const uniqueSkus = Array.from(new Set(items.map(item => item.sku).filter(Boolean)))
-
-    // Fetch product info by SKU (used as Firestore document ID)
-    const productsMap: Record<string, { name: string; imageUrl: string }> = {}
-    const products: Product[] = []
-    console.log("Fetching data for found products. Number of unique SKUs:", uniqueSkus.length)
-    let counterProductsPushed = 0
-    const getProductWithTimeout = (sku: string, timeoutMs = 5000): Promise<Product | null> => {
-        const productRef = doc(db, "products", sku)
-
-        return Promise.race([
-            getDoc(productRef).then((snap) => {
-                if (snap.exists()) {
-                    return Product.fromFirestore(snap.id, snap.data())
-                }
-                return null
-            }),
-            new Promise<null>((_, reject) =>
-                setTimeout(() => reject(new Error(`Timeout for SKU: ${sku}`)), timeoutMs)
-            )
-        ])
-    }
-    const productPromises = uniqueSkus.map(async (sku) => {
-        try {
-            const product = await getProductWithTimeout(sku)
-            if (product) {
-                products.push(product)
-                counterProductsPushed++
-                console.log('Product data pushed for SKU:', sku)
-                console.log('Number of products fetched:', counterProductsPushed)
-            }
-        } catch (err) {
-            console.error('Failed to fetch product for SKU:', sku, err)
-        }
-    })
-
-    await Promise.all(productPromises)
-
-    console.log("Fetched product data for", products.length, "unique products.")
-
-    const productSalesMap: Record<string, { name: string; img: string; sold: number, revenue: number }> = {}
-
-    items.forEach(item => {
-        const key = item.sku || item.itemName || item.listingId
-        const product = products.find(p => p.sku === item.sku)
-
-        if (!productSalesMap[key]) {
-            productSalesMap[key] = {
-                name: product?.name || item.itemName,
-                img: product?.getImageThumbnail() || '',
-                sold: 0,
-                revenue: 0,
-            }
-        }
-
-        productSalesMap[key].sold += item.quantity || 1
-
-        const revenueDelta = (item.itemTotal || 0) - (item.discountAmount || 0)
-        if (revenueDelta < 0) {
-            /*console.log(`🛑 Negative revenue for item:`, {
-                sku: item.sku,
-                itemName: item.itemName,
-                itemTotal: item.itemTotal,
-                discountAmount: item.discountAmount,
-                quantity: item.quantity,
-                orderId: item.orderId,
-            })*/
-        } else {
-            productSalesMap[key].revenue += (item.itemTotal || 0) - (item.discountAmount || 0)
-        }
-    })
-
-    console.log("Product sales map:", productSalesMap)
-
-    const topProductsData = Object.entries(productSalesMap)
-        .sort(([, a], [, b]) => b.sold - a.sold)
-        .slice(0, 20)
-        .map(([id, data]) => ({
-            id,
-            name: data.name,
-            img: data.img,
-            sold: data.sold,
-        }))
-
-    const categoryMap: Record<string, number> = {}
-
-    items.forEach(item => {
-        const sku = item.sku
-        const product = products.find(p => p.sku === sku)
-        if (product !== undefined) {
-            const category = product.getCategoryName()
-            //const category = product?.category || "Autre"
-
-            if (!categoryMap[category]) {
-                categoryMap[category] = 0
-            }
-
-            categoryMap[category] += item.quantity || 1
-        }
-    })
-
-    console.log("Category map:", categoryMap)
-
-    const salesByCategoriesData = {
-        labels: Object.keys(categoryMap),
-        data: Object.values(categoryMap),
-    }
-
-    const sortedSales = products.map(p => {
-        if (!p.computedData) {
-            p.computedData = { numberOfSales: 0, revenue: 0 }
-        }
-        p.computedData.numberOfSales = productSalesMap[p.sku]?.sold || 0
-        p.computedData.revenue = parseFloat((productSalesMap[p.sku]?.revenue || 0).toFixed(2))
-        return p
-    })
-        .sort((a, b) =>
-            (b.computedData?.numberOfSales ?? 0) - (a.computedData?.numberOfSales ?? 0)
-        )
-
-    const productsSoldChartData = {
-        categories: sortedSales.map(p => p.getNameWithCategory()),
-        series: [
-            {
-                name: 'Sold',
-                data: sortedSales.map(p => p.computedData?.numberOfSales),
-            },
-            {
-                name: 'Revenues',
-                data: sortedSales.map(p => p.computedData?.revenue),
-            },
-        ],
-    }
-
-    console.log("Products sold chart data:", productsSoldChartData)
-
-    // Group sales by day
-    const dailySalesMap: Record<string, { sold: number; revenue: number }> = {}
-
-    items.forEach(item => {
-        const date = new Date(item.saleDate).toISOString().slice(0, 10) // 'YYYY-MM-DD'
-
-        if (!dailySalesMap[date]) {
-            dailySalesMap[date] = { sold: 0, revenue: 0 }
-        }
-
-        dailySalesMap[date].sold += item.quantity || 1
-        dailySalesMap[date].revenue += (item.itemTotal || 0) - (item.discountAmount || 0)
-    })
-
-    // Sort dates
-    const sortedDates = Object.keys(dailySalesMap).sort()
-
-    console.log("Daily sales map:", dailySalesMap)
-
-    const salesReportData = {
-        categories: sortedDates,
-        series: [
-            {
-                name: 'Orders',
-                data: sortedDates.map(date => Math.round(dailySalesMap[date].sold)),
-            },
-            {
-                name: 'Revenue ($)',
-                data: sortedDates.map(date => parseFloat(dailySalesMap[date].revenue.toFixed(2))),
-            },
-        ],
-    }
-    console.log("Sales report data:", salesReportData)
-
-    const data: DashboardData = {
-        statisticData: {
-            revenue: { value: grossRevenue, growShrink: 0 },
-            orders: { value: orderCount, growShrink: 0 },
-            dailyOrderAverage: { value: dailyOrderAverage, growShrink: 0 },
-        },
-        topProductsData,
-        salesByCategoriesData,
-        productsSoldChartData,
-        salesReportData,
-    }
-
-    return { data } as { data: T }
-}
 
 const TWO_MONTHS_AGO = Date.now() - 60 * 24 * 60 * 60 * 1000; // ✅ 60 days in milliseconds
 
@@ -344,7 +108,7 @@ export async function apiGetProduct<T, U extends { id: string }>(params: U): Pro
     return { data: product } // return in same shape as API response
 }
 
-export async function apiGetRandomProducts(params: { category: string, limit: number }): Promise<{ data: Product[] }> {
+/*export async function apiGetRandomProducts(params: { category: string, limit: number }): Promise<{ data: Product[] }> {
     const q = query(collection(db, "products"), where("category", "==", params.category))
     const snapshot = await getDocs(q)
 
@@ -362,7 +126,7 @@ export async function apiGetRandomProducts(params: { category: string, limit: nu
     const selected = shuffled.slice(0, params.limit)
 
     return { data: selected }
-}
+}*/
 
 export async function apiGetProducts<T, U extends TableQueries & { filterData?: ProductFilterQueries }>(
     params: U,
@@ -954,6 +718,8 @@ export async function apiGetWebsiteSalesDashboardData<T extends DashboardData, U
  * Update order status to "completed" in Firestore.
  * @param orderId - The WooCommerce order ID
  */
+
+
 export const markOrderAsCompleted = async (orderId: string) => {
     try {
         const orderRef = doc(db, "website_orders", orderId);

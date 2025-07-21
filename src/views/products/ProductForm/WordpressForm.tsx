@@ -4,8 +4,8 @@ import { Product } from '@/@types/product'
 import AdaptableCard from '@/components/shared/AdaptableCard'
 import { FormItem } from '@/components/ui/Form'
 import Input from '@/components/ui/Input'
-import { generateWordPressHtml } from '@/utils/wordpress/generateWordPressHtml'
 import Switcher from '@/components/ui/Switcher'
+import { generateWordPressHtml } from '@/services/WooService'
 
 const WordpressForm = () => {
     const { values, setFieldValue } = useFormikContext<Product>()
