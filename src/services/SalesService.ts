@@ -108,7 +108,7 @@ export async function apiGetProduct<T, U extends { id: string }>(params: U): Pro
     return { data: product } // return in same shape as API response
 }
 
-/*export async function apiGetRandomProducts(params: { category: string, limit: number }): Promise<{ data: Product[] }> {
+export async function apiGetRandomProducts(params: { category: string, limit: number }): Promise<{ data: Product[] }> {
     const q = query(collection(db, "products"), where("category", "==", params.category))
     const snapshot = await getDocs(q)
 
@@ -119,14 +119,14 @@ export async function apiGetProduct<T, U extends { id: string }>(params: U): Pro
     })
 
     // Filter out products without a valid etsyId
-    const filtered = allProducts.filter(p => !!p.etsyId)
+    const filtered = allProducts.filter(p => true /*!!p.etsyId*/)
 
     // Shuffle and slice to get random selection
     const shuffled = filtered.sort(() => 0.5 - Math.random())
     const selected = shuffled.slice(0, params.limit)
 
     return { data: selected }
-}*/
+}
 
 export async function apiGetProducts<T, U extends TableQueries & { filterData?: ProductFilterQueries }>(
     params: U,
