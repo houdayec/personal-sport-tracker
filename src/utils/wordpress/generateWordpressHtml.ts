@@ -1,6 +1,6 @@
 import WordpressApiService from '@/services/WordpressService'
 import axios from 'axios'
-import { getDownloadURL, ref } from 'firebase/storage'
+import { getDownloadURL, ref, listAll } from 'firebase/storage'
 import { storage } from '@/firebase'
 
 export const generateWordPressHtml = (
@@ -91,33 +91,55 @@ export const fetchWooProductById = async (id: number) => {
     }
 }
 
-export async function uploadImageToWordPress(firebasePath: string): Promise<number | null> {
-    try {
-        console.log('[Upload Image] Resolving Firebase URL:', firebasePath)
+// Uploads an image from Firebase Storage to WordPress Media Library
+export async function uploadImageToWordPress(firebasePath: string) {
+    console.log('[Upload] Starting upload for:', firebasePath)
 
-        const storageRef = ref(storage, firebasePath)
-        const downloadUrl = await getDownloadURL(storageRef)
+    const storageRef = ref(storage, firebasePath)
+    const downloadUrl = await getDownloadURL(storageRef)
+    console.log('[Upload] Download URL:', downloadUrl)
 
-        const imageBlob = await (await fetch(downloadUrl)).blob()
-        const fileName = firebasePath.split('/').pop() || 'image.webp'
+    const blob = await (await fetch(downloadUrl)).blob()
+    console.log('[Upload] Blob fetched, size:', blob.size)
 
-        const formData = new FormData()
-        formData.append('file', imageBlob, fileName)
+    const fileName = firebasePath.split('/').pop() || 'image.webp'
+    console.log('[Upload] File name resolved:', fileName)
 
-        const response = await WordpressApiService.fetchData<{ id: number }>({
-            url: '/wp/v2/media',
-            method: 'post',
-            headers: {
-                'Content-Disposition': `attachment; filename="${fileName}"`,
-                //'Content-Type': imageBlob.type,
-            },
-            data: formData,
-        })
+    const formData = new FormData()
+    formData.append('file', blob, fileName)
+    console.log('[Upload] FormData prepared')
 
-        console.log('[Upload Success] Media ID:', response.data.id)
-        return response.data.id
-    } catch (err) {
-        console.error('[Upload Error]', err)
-        return null
+    const response = await WordpressApiService.fetchData<{ id: number; source_url: string; alt_text: string }>({
+        url: 'https://fontmaze.com/wp-json/wp/v2/media',
+        method: 'post',
+        headers: {
+            'Content-Disposition': `attachment; filename="${fileName}"`,
+        },
+        data: formData,
+    })
+
+    console.log('[Upload] Upload successful:', response.data)
+
+    return {
+        id: response.data.id,
+        src: response.data.source_url,
+        name: fileName,
+        alt: '', // optionally use alt based on product name/category
     }
+}
+
+// Lists all .webp images under the square thumbnails path for a product
+export const listWebpSquareThumbnails = async (sku: string): Promise<string[]> => {
+    console.log('[List Images] Listing webp thumbnails for SKU:', sku)
+
+    const squareRef = ref(storage, `products/${sku}/files/thumbnails/square`)
+    const result = await listAll(squareRef)
+
+    const webpPaths = result.items
+        .filter(item => item.name.endsWith('.webp'))
+        .map(item => item.fullPath)
+
+    console.log('[List Images] Found webp files:', webpPaths)
+
+    return webpPaths
 }
