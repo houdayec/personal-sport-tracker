@@ -4,7 +4,7 @@ import toast from "@/components/ui/toast"
 import Notification from "@/components/ui/Notification"
 import { auth, db } from "@/firebase"
 import { collection, setDoc, doc, getDocs } from "firebase/firestore"
-import WordpressApiService from "@/services/WordpressService"
+import WooCommerceApiService from "@/services/WooCommerceService"
 import { WooOrder } from "@/@types/woo_order"
 import { Card } from "@/components/ui"
 import { showToast } from "@/utils/toastUtils"
@@ -36,7 +36,7 @@ const ImportWooOrders = () => {
 
         while (true) {
             try {
-                const response = await WordpressApiService.fetchData<any[]>({
+                const response = await WooCommerceApiService.fetchData<any[]>({
                     url: `/orders`,
                     method: "get",
                     params: {

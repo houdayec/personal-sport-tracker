@@ -1,7 +1,8 @@
-import WordpressApiService from '@/services/WordpressService'
+import WooCommerceApiService from '@/services/WooCommerceService'
 import axios from 'axios'
 import { getDownloadURL, ref, listAll } from 'firebase/storage'
 import { storage } from '@/firebase'
+import WordpressApiService from './WordpressService'
 
 export const generateWordPressHtml = (
     category: string,
@@ -67,15 +68,13 @@ export const generateWordPressHtml = (
     }
 }
 
-// Fetch a WordPress post by its ID
-const WOO_BASE_URL = import.meta.env.VITE_WOO_BASE_URL
-const WOO_CONSUMER_KEY = import.meta.env.VITE_WOO_CONSUMER_KEY
-const WOO_CONSUMER_SECRET = import.meta.env.VITE_WOO_CONSUMER_SECRET
-
 export const fetchWooProductById = async (id: number) => {
-    try {
 
-        const response = await WordpressApiService.fetchData<any[]>({
+
+    try {
+        //const proxyUrl = `https://dashboard-api.fontmaze.workers.dev?url=${encodeURIComponent(`https://fontmaze.com/wp-json/wc/v3/products/${id}`)}`
+
+        const response = await WooCommerceApiService.fetchData<any[]>({
             url: `/products/${id}`,
             method: "get",
             params: {
@@ -83,6 +82,7 @@ export const fetchWooProductById = async (id: number) => {
                 consumer_secret: import.meta.env.VITE_WOOCOMMERCE_CONSUMER_SECRET,
             },
         })
+
         console.log('[Loaded WP Template]', response.data)
         return response.data
     } catch (error) {
@@ -92,7 +92,7 @@ export const fetchWooProductById = async (id: number) => {
 }
 
 // Uploads an image from Firebase Storage to WordPress Media Library
-export async function uploadImageToWordPress(firebasePath: string) {
+export async function uploadImageToWordPress2(firebasePath: string) {
     console.log('[Upload] Starting upload for:', firebasePath)
 
     const storageRef = ref(storage, firebasePath)
@@ -109,8 +109,10 @@ export async function uploadImageToWordPress(firebasePath: string) {
     formData.append('file', blob, fileName)
     console.log('[Upload] FormData prepared')
 
+    const proxyUrl = `https://dashboard-api.fontmaze.workers.dev?url=${encodeURIComponent('https://fontmaze.com/wp-json/wp/v2/media')}`
+
     const response = await WordpressApiService.fetchData<{ id: number; source_url: string; alt_text: string }>({
-        url: 'https://fontmaze.com/wp-json/wp/v2/media',
+        url: proxyUrl,
         method: 'post',
         headers: {
             'Content-Disposition': `attachment; filename="${fileName}"`,
@@ -128,6 +130,66 @@ export async function uploadImageToWordPress(firebasePath: string) {
     }
 }
 
+// IMPORTANT: Store these securely, e.g., in environment variables,
+// NOT directly in your frontend code for production.
+const WP_USERNAME = 'font-station.com'; // Replace with your actual username
+const WP_APP_PASSWORD = 'dA6g IUhx cZKY 3RVY AxfR yDop'; // Replace with your actual application password
+
+// Base64 encode the credentials once
+const encodedCredentials = btoa(`${WP_USERNAME}:${WP_APP_PASSWORD}`);
+
+export async function uploadImageToWordPress(firebasePath: string) {
+    console.log('[Upload v2] Starting upload for:', firebasePath);
+
+    // 1. fetch the blob from Firebase
+    const storageRef = ref(storage, firebasePath);
+    const downloadUrl = await getDownloadURL(storageRef);
+    const blob = await (await fetch(downloadUrl)).blob();
+
+    // 2. build FormData
+    const fileName = firebasePath.split('/').pop() || 'upload';
+    const formData = new FormData();
+    formData.append('file', blob, fileName);
+
+    // 3. POST to WP media
+    try {
+        const { data } = await axios.post<{ // Assuming WordpressApiService.fetchData wraps Axios,
+            // or use axios directly if suitable
+            id: number
+            source_url: string
+            alt_text: string
+        }>(
+            'https://fontmaze.com/wp-json/wp/v2/media',
+            formData,
+            {
+                headers: {
+                    'Content-Disposition': `attachment; filename="${fileName}"`,
+                    'Authorization': `Basic ${encodedCredentials}`, // <-- THIS IS THE KEY LINE
+                    'Content-Type': 'multipart/form-data', // Axios usually sets this correctly for FormData, but good to be explicit
+                },
+                // You might need to add withCredentials: true if you're dealing with cookies/sessions
+                // but for Application Passwords, it's usually not necessary.
+                // withCredentials: true,
+            }
+        );
+
+        console.log('[Upload] Success:', data);
+        return {
+            id: data.id,
+            src: data.source_url,
+            name: fileName,
+            alt: '',
+        };
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            console.error('[Upload Error] Axios Error:', error.response?.data || error.message);
+            console.error('Status:', error.response?.status);
+        } else {
+            console.error('[Upload Error] General Error:', error);
+        }
+        throw error; // Re-throw to propagate the error
+    }
+}
 // Lists all .webp images under the square thumbnails path for a product
 export const listWebpSquareThumbnails = async (sku: string): Promise<string[]> => {
     console.log('[List Images] Listing webp thumbnails for SKU:', sku)

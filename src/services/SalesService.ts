@@ -1,6 +1,6 @@
 import { TableQueries } from '@/@types/common'
 import ApiService from './ApiService'
-import WordpressApiService from './WordpressService'
+import WooCommerceApiService from './WooCommerceService'
 import { SalesOrderDetailsResponse } from '@/views/website/OrderDetails/OrderDetails'
 import { collection, CollectionReference, doc, DocumentData, getDoc, getDocs, getDocsFromCache, limit, orderBy, query, QueryConstraint, QueryFieldFilterConstraint, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore'
 import { db } from '@/firebase'
@@ -545,7 +545,7 @@ export async function apiGetWooCommerceOrdersOld<T, U extends TableQueries>(para
 
     console.log("✅ WooCommerce API URL:", url);
 
-    const response = await WordpressApiService.fetchData<T>({
+    const response = await WooCommerceApiService.fetchData<T>({
         url,
         method: "get",
     });
@@ -671,7 +671,7 @@ export async function apiGetSalesOrderDetails<
     T,
     U extends Record<string, unknown>,
 >(params: U) {
-    const response = await WordpressApiService.fetchData<T>({
+    const response = await WooCommerceApiService.fetchData<T>({
         url: `orders/${params.id}?consumer_key=${import.meta.env.VITE_WOOCOMMERCE_CONSUMER_KEY}&consumer_secret=${import.meta.env.VITE_WOOCOMMERCE_CONSUMER_SECRET}`,
         method: "get",
     });
@@ -682,7 +682,7 @@ export async function apiGetSalesOrderDetails<
     // ✅ Fetch product images for each product
     const productsWithImages = await Promise.all(
         order.line_items.map(async (item: any) => {
-            const productResponse = await WordpressApiService.fetchData<any>({
+            const productResponse = await WooCommerceApiService.fetchData<any>({
                 url: `products/${item.product_id}?consumer_key=${import.meta.env.VITE_WOOCOMMERCE_CONSUMER_KEY}&consumer_secret=${import.meta.env.VITE_WOOCOMMERCE_CONSUMER_SECRET}`,
                 method: "get",
             });

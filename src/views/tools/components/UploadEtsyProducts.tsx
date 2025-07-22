@@ -3,7 +3,7 @@ import { collection, getDocs, updateDoc, doc, serverTimestamp, query, where, get
 import { db } from "@/firebase";
 import Button from "@/components/ui/Button";
 import { Product } from "@/@types/product";
-import WordpressApiService from "@/services/WordpressService";
+import WooCommerceApiService from "@/services/WooCommerceService";
 import Papa from "papaparse";
 import toast from "@/components/ui/toast";
 import { Card, Input, Upload } from "@/components/ui";
@@ -180,7 +180,7 @@ const UploadEtsyProducts = () => {
 
         while (true) {
             try {
-                const response = await WordpressApiService.fetchData<{ id: number; sku: string }[]>({
+                const response = await WooCommerceApiService.fetchData<{ id: number; sku: string }[]>({
                     url: `/products`,
                     method: "get",
                     params: {

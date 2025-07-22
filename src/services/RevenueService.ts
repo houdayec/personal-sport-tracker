@@ -1,6 +1,6 @@
 import { TableQueries } from '@/@types/common'
 import ApiService from './ApiService'
-import WordpressApiService from './WordpressService'
+import WooCommerceApiService from './WooCommerceService'
 import { LicenseOrder } from '@/views/website/OrderList/store'
 import { SalesOrderDetailsResponse } from '@/views/website/OrderDetails/OrderDetails'
 import { collection, doc, getDoc, getDocs, getDocsFromCache, query, QueryConstraint, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore'

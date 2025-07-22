@@ -4,7 +4,7 @@ import { db } from "@/firebase";
 import Button from "@/components/ui/Button";
 import { fonts, embroideryFonts } from "../../../../public/data/products"
 import { Product } from "@/@types/product";
-import WordpressApiService from "@/services/WordpressService";
+import WooCommerceApiService from "@/services/WooCommerceService";
 import Papa from "papaparse";
 import toast from "@/components/ui/toast";
 import Notification from "@/components/ui/Notification";
@@ -259,7 +259,7 @@ const UploadFonts = () => {
 
         while (true) {
             try {
-                const response = await WordpressApiService.fetchData<{ id: number; sku: string }[]>({
+                const response = await WooCommerceApiService.fetchData<{ id: number; sku: string }[]>({
                     url: `/products`,
                     method: "get",
                     params: {

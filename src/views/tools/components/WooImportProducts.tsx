@@ -2,7 +2,7 @@ import { useState } from "react"
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore"
 import { db } from "@/firebase"
 import Button from "@/components/ui/Button"
-import WordpressApiService from "@/services/WordpressService"
+import WooCommerceApiService from "@/services/WooCommerceService"
 import toast from "@/components/ui/toast"
 import Notification from "@/components/ui/Notification"
 import { Product } from "@/@types/product"
@@ -18,7 +18,7 @@ const ImportWoocommerceProducts = () => {
 
         while (true) {
             try {
-                const response = await WordpressApiService.fetchData<any[]>({
+                const response = await WooCommerceApiService.fetchData<any[]>({
                     url: `/products`,
                     method: "get",
                     params: {

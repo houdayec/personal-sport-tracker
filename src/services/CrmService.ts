@@ -1,6 +1,6 @@
 import { TableQueries } from '@/@types/common';
 import ApiService from './ApiService'
-import WordpressApiService from './WordpressService'
+import WooCommerceApiService from './WooCommerceService'
 import { Customer, Filter } from '@/views/website/Customers/store';
 
 export async function apiGetCrmDashboardData<T>() {
@@ -43,7 +43,7 @@ export async function apiGetCrmCustomers<T, U extends TableQueries & { filterDat
 
     console.log('✅ WooCommerce API URL:', url);
 
-    const response = await WordpressApiService.fetchData<T>({
+    const response = await WooCommerceApiService.fetchData<T>({
         url,
         method: 'get',
     });
@@ -62,7 +62,7 @@ export async function apiGetCrmCustomers<T, U extends TableQueries & { filterDat
 }
 
 export async function apiGetCrmCustomersStatistic<T>() {
-    return WordpressApiService.fetchData<T>({
+    return WooCommerceApiService.fetchData<T>({
         url: `reports/customers/totals?consumer_key=${import.meta.env.VITE_WOOCOMMERCE_CONSUMER_KEY}&consumer_secret=${import.meta.env.VITE_WOOCOMMERCE_CONSUMER_SECRET}`,
         method: 'get',
     })
@@ -143,7 +143,7 @@ export async function bulkTagProducts(tagId: number) {
         const url = `https://font-station.com/wp-json/wc/v3/products?per_page=100&page=${page}&consumer_key=${import.meta.env.VITE_WOOCOMMERCE_CONSUMER_KEY}&consumer_secret=${import.meta.env.VITE_WOOCOMMERCE_CONSUMER_SECRET}`;
         console.log(`📦 Fetching page ${page}`);
 
-        const response = await WordpressApiService.fetchData<typeof allProducts>({
+        const response = await WooCommerceApiService.fetchData<typeof allProducts>({
             url,
             method: 'get',
         });
@@ -172,7 +172,7 @@ export async function bulkTagProducts(tagId: number) {
             username: import.meta.env.VITE_WOOCOMMERCE_CONSUMER_KEY,
             password: import.meta.env.VITE_WOOCOMMERCE_CONSUMER_SECRET,
         }
-        await WordpressApiService.fetchData({
+        await WooCommerceApiService.fetchData({
             url: updateUrl,
             method: 'put',
             data: {

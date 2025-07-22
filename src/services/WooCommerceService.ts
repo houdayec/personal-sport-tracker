@@ -8,12 +8,12 @@ import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 
 const unauthorizedCode = [401]
 
-const WordpressService = axios.create({
+const WooCommerceService = axios.create({
     timeout: 60000,
-    baseURL: import.meta.env.VITE_WORDPRESS_API_URL,
+    baseURL: import.meta.env.VITE_WOOCOMMERCE_BASE_URL,
 })
 
-WordpressService.interceptors.request.use(
+WooCommerceService.interceptors.request.use(
     (config) => {
         const rawPersistData = localStorage.getItem(PERSIST_STORE_NAME)
         const persistData = deepParseJson(rawPersistData)
@@ -38,7 +38,7 @@ WordpressService.interceptors.request.use(
     },
 )
 
-WordpressService.interceptors.response.use(
+WooCommerceService.interceptors.response.use(
     (response) => response,
     (error) => {
         const { response } = error
@@ -51,12 +51,12 @@ WordpressService.interceptors.response.use(
     },
 )
 
-const WordpressApiService = {
+const WooCommerceApiService = {
     fetchData<Response = unknown, Request = Record<string, unknown> | FormData>(
         param: AxiosRequestConfig<Request>,
     ) {
         return new Promise<AxiosResponse<Response>>((resolve, reject) => {
-            WordpressService(param)
+            WooCommerceService(param)
                 .then((response: AxiosResponse<Response>) => {
                     resolve(response)
                 })
@@ -67,4 +67,4 @@ const WordpressApiService = {
     },
 }
 
-export default WordpressApiService
+export default WooCommerceApiService
