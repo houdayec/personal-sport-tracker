@@ -37,6 +37,7 @@ const ProductNew = () => {
                     placement: 'bottom-start',
                 },
             )
+            //navigate('/products')
             navigate('/products/' + values.sku + '/edit')
         } else {
             toast.push(

@@ -7,6 +7,7 @@ import { ref, getDownloadURL } from 'firebase/storage'
 import ThumbnailUploader from './ThumbnailUploader'
 import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
 import { Product, ThumbnailsMetadata } from '@/@types/product'
+import { HexColorPicker } from "react-colorful";
 
 const CANVAS_SIZE = 2000
 const PADDING = 100
@@ -189,7 +190,8 @@ const ThumbnailPreviewStudio = () => {
     }, [fontLoaded, watermarkImg, main_bgColor, main_patternType, main_patternColor, main_patternOpacity,
         main_titleText, main_titleColor, main_titleStrokeColor, main_titleStrokeWidth,
         main_titleScale, main_charScale, main_topOffset, main_showUppercase, main_showLowercase, main_showNumbers, main_showSpecials, main_charset,
-        patternImages, main_watermarkColor, main_watermarkOpacity])
+        patternImages, main_watermarkColor, main_watermarkOpacity, main_charColor,
+        shadowBlur, shadowColor, shadowOffsetX, shadowOffsetY, shadowOpacity])
 
     useEffect(() => {
         if (!values.thumbnailsMetadata?.main_titleText) {

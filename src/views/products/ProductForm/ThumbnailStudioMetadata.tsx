@@ -4,6 +4,7 @@ import Input from '@/components/ui/Input'
 import { FormItem } from '@/components/ui/Form'
 import { Product } from '@/@types/product'
 import Button from '@/components/ui/Button'
+import React from 'react'
 
 type Props = {
     slug: string
@@ -40,28 +41,24 @@ const ThumbnailStudioMetadata = ({ slug }: Props) => {
                 caption = `Character preview of the ${fontName} font by FontMaze.`
                 desc = `Discover the full character set of the ${fontName} font in this visual preview. Designed by FontMaze, this font blends aesthetic precision with expressive style. Ideal for crafting, branding, sublimation, and graphic design, it suits any project that needs a touch of originality.`
                 break
-
             case 'characters-preview':
                 alt = `Image showing all characters available in the ${fontName} font created by FontMaze.`
                 title = `${fontName} Font Characters - ${theme} Typography Preview`
                 caption = `Available characters in the ${fontName} font made by FontMaze.`
                 desc = `Explore the complete character set of the ${fontName} font in this thumbnail preview. With stylish letters and additional elements, this font is perfect for creating sophisticated designs, making it an excellent choice for graphic design, branding, sublimation and other creative projects.`
                 break
-
             case 'included-files':
                 alt = `Different Formats and Sizes of ${fontName} Font`
                 title = `${fontName} Font Formats and Sizes - OTF, TTF, SVG, PNG, PDF, Various Sizes`
                 caption = `Explore the versatility of the ${fontName} font with this image showcasing different formats (OTF, TTF, SVG, PNG, PDF) and various PNG sizes.`
                 desc = `${fontName} Font Formats and Sizes - OTF, TTF, SVG, PNG, PDF, Various Sizes`
                 break
-
             case 'sentence':
                 alt = `A complete showcase image of the ${fontName} font, featuring the text 'The quick brown fox jumps over the lazy dog' to display every letter of the alphabet.`
                 title = `${fontName} Font - Full Alphabet Display with Sentence Example`
                 caption = `A complete showcase of the ${fontName} font, featuring the text 'The quick brown fox jumps over the lazy dog' to display every letter of the alphabet.`
                 desc = `Explore the full alphabet of the ${fontName} font in this detailed showcase. The image displays the text 'The quick brown fox jumps over the lazy dog,' encompassing every letter and providing a comprehensive view of the font's design and legibility.`
                 break
-
             default:
                 alt = `Preview of ${fontName} font in use`
                 title = `${fontName} – Modern font style`
@@ -76,11 +73,9 @@ const ThumbnailStudioMetadata = ({ slug }: Props) => {
         setFieldValue(`thumbnails.${slug}.metadata.description`, desc)
     }
 
-
     useEffect(() => {
-        // Automatically generate metadata when keywords change
         handleGenerate()
-    }, [values.mainKeyword, values.secondKeyword])
+    }, [mainKeyword, secondKeyword, slug])
 
     return (
         <div className="mt-2 mb-2 space-y-4">
@@ -106,7 +101,6 @@ const ThumbnailStudioMetadata = ({ slug }: Props) => {
             )}
         </div>
     )
-
 }
 
-export default ThumbnailStudioMetadata
+export default React.memo(ThumbnailStudioMetadata, (prev, next) => prev.slug === next.slug)

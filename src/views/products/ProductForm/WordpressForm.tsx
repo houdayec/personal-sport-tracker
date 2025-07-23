@@ -46,7 +46,7 @@ const WordpressForm = () => {
                         </Field>
                     ) : (
                         <Field name="wordpress.excerpt">
-                            {({ field }: FieldProps) => <Input {...field} textArea rows={10} />}
+                            {({ field }: FieldProps) => <Input {...field} textArea rows={15} />}
                         </Field>
                     )}
                 </FormItem>
@@ -73,8 +73,8 @@ const WordpressForm = () => {
                 </FormItem>
             </div>
 
-            <div className="mt-10 space-y-6">
-                <h6 className="text-base font-semibold">🔍 Rank Math SEO</h6>
+            <div className="space-y-6">
+                <h5 className="text-base text-lg font-semibold">🔍 Rank Math SEO</h5>
 
                 <FormItem label="SEO Title">
                     <Field name="wordpress.rankMath.title">

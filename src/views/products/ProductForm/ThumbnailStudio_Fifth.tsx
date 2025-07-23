@@ -153,7 +153,7 @@ const ThumbnailStudioFifthMockupLaptop = () => {
                         }
                     </div>
                     <div className="pt-2">
-                        <ThumbnailStudioMetadata slug="example_laptop" />
+                        <ThumbnailStudioMetadata slug="example-laptop" />
                         <ThumbnailUploader
                             canvasRef={canvasRef}
                             bgColor="#ffffff"

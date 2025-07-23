@@ -488,7 +488,7 @@ const AssetsFields = (props: AssetsFormFields) => {
                     <Field name="fontData.generated.fontFamily" component={Input} />
                 </FormItem>
                 <FormItem label="Full Name"><Field name="fontData.generated.fullName" component={Input} /></FormItem>
-                <FormItem label="Version"><Field name="fontData.generated.version" component={Input} default="1.000" /></FormItem>
+                <FormItem label="Version"><Field name="fontData.generated.version" component={Input} /></FormItem>
             </div>
             {previewSvg && <div className="mt-4 w-full"><h6 className="font-semibold mb-2">Preview</h6><div dangerouslySetInnerHTML={{ __html: previewSvg }} className="w-full" /></div>}
 

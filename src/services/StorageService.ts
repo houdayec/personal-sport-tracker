@@ -9,8 +9,9 @@ import {
     uploadBytes,
     type ListResult,
     type StorageReference,
+    deleteObject,
+    ref,
 } from 'firebase/storage'
-import { storage } from '@/firebase'
 import {
     createFileBirdFolder,
     assignMediaToFileBirdFolder,
@@ -21,6 +22,9 @@ const WP_MEDIA_URL = `${WP_API}/wp/v2/media`
 const WP_BASIC = btoa(
     `${import.meta.env.VITE_WP_USERNAME}:${import.meta.env.VITE_WP_APP_PASSWORD}`
 )
+import { db, storage } from '@/firebase'
+import { ref as dbRef, remove } from 'firebase/database'
+import { deleteDoc, doc } from 'firebase/firestore'
 
 /**
  * Recursively lists all file references under a given Firebase Storage reference.
@@ -106,6 +110,11 @@ export async function uploadZipToFirebase(
     return url
 }
 
+export const deleteThumbnailFromStorage = async (path: string): Promise<void> => {
+    const fileRef = storageRef(storage, path)
+    await deleteObject(fileRef)
+}
+
 /**
  * Uploads a ZIP blob to WordPress media endpoint and returns
  * the new media object including its `id` and `source_url`.
@@ -142,4 +151,15 @@ export async function assignZipToFileBird(
     console.log(`[assignZipToFileBird] assigning media ${zipMediaId} to folder ${fbFolderId}`)
     await assignMediaToFileBirdFolder(fbFolderId, [zipMediaId])
     console.log(`[assignZipToFileBird] done`)
+}
+
+export const deleteFromFirebaseDB = async (sku: string) => {
+    await deleteDoc(doc(db, 'products', sku))
+
+}
+
+export const deleteFromFirebaseStorage = async (sku: string) => {
+    const folderRef = ref(storage, `products/${sku}`)
+    const { items } = await listAll(folderRef)
+    await Promise.all(items.map(item => deleteObject(item)))
 }

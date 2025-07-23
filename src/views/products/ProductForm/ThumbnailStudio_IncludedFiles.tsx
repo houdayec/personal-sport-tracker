@@ -43,40 +43,42 @@ const ThumbnailStudio_IncludedFilesAndCompatibility = () => {
     }, [filesImage, compatImage])
 
     return (
-        <div className="mt-8 space-y-12">
-            <h6 className="font-semibold text-lg">📁 Included Files & Compatibility</h6>
+        <div className="mt-8 space-y-6">
+            <h6 className="font-semibold text-lg mb-4">📁 Included Files & Compatibility</h6>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                {/* Included Files */}
+                <div>
+                    <h5 className="font-semibold mb-2">Included Files</h5>
+                    <canvas ref={filesCanvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} style={{ display: 'none' }} />
+                    <div className="border rounded bg-white overflow-hidden aspect-[3/2] w-full max-w-full">
+                        {filesPreview
+                            ? <img src={filesPreview} alt="Included files preview" className="w-full h-full object-contain" />
+                            : <div className="w-full h-full flex items-center justify-center">Generating…</div>}
+                    </div>
+                    <div className="pt-2">
+                        <ThumbnailStudioMetadata slug="included-files" />
+                        <ThumbnailUploader canvasRef={filesCanvasRef} bgColor="#ffffff" slug="included-files" />
+                    </div>
+                </div>
 
-            {/* Included Files */}
-            <div>
-                <h5 className="font-semibold mb-2">Included Files</h5>
-                <canvas ref={filesCanvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} style={{ display: 'none' }} />
-                <div className="border rounded bg-white overflow-hidden max-w-xl w-full aspect-[3/2]">
-                    {filesPreview
-                        ? <img src={filesPreview} alt="Included files preview" className="w-full h-full object-contain" />
-                        : <div className="w-full h-full flex items-center justify-center">Generating…</div>}
-                </div>
-                <div className="pt-2">
-                    <ThumbnailStudioMetadata slug="included-files" />
-                    <ThumbnailUploader canvasRef={filesCanvasRef} bgColor="#ffffff" slug="included-files" />
-                </div>
-            </div>
-
-            {/* Compatibility */}
-            <div>
-                <h5 className="font-semibold mb-2">Compatibility</h5>
-                <canvas ref={compatCanvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} style={{ display: 'none' }} />
-                <div className="border rounded bg-white overflow-hidden max-w-xl w-full aspect-[3/2]">
-                    {compatPreview
-                        ? <img src={compatPreview} alt="Compatibility preview" className="w-full h-full object-contain" />
-                        : <div className="w-full h-full flex items-center justify-center">Generating…</div>}
-                </div>
-                <div className="pt-2">
-                    <ThumbnailStudioMetadata slug="compatibility" />
-                    <ThumbnailUploader canvasRef={compatCanvasRef} bgColor="#ffffff" slug="compatibility" />
+                {/* Compatibility */}
+                <div>
+                    <h5 className="font-semibold mb-2">Compatibility</h5>
+                    <canvas ref={compatCanvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} style={{ display: 'none' }} />
+                    <div className="border rounded bg-white overflow-hidden aspect-[3/2] w-full max-w-full">
+                        {compatPreview
+                            ? <img src={compatPreview} alt="Compatibility preview" className="w-full h-full object-contain" />
+                            : <div className="w-full h-full flex items-center justify-center">Generating…</div>}
+                    </div>
+                    <div className="pt-2">
+                        <ThumbnailStudioMetadata slug="compatibility" />
+                        <ThumbnailUploader canvasRef={compatCanvasRef} bgColor="#ffffff" slug="compatibility" />
+                    </div>
                 </div>
             </div>
         </div>
     )
+
 }
 
 export default ThumbnailStudio_IncludedFilesAndCompatibility

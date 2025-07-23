@@ -190,31 +190,6 @@ export const listWebpSquareThumbnails = async (sku: string): Promise<string[]> =
 export async function publishWooProduct(product: any, imageIds: number[], zipMedia: any): Promise<any> {
     console.log('[publishWooProduct] ▶️ Start')
 
-    delete product.id
-    delete product.date_created
-    delete product.date_modified
-    delete product.total_sales
-    delete product.average_rating
-    delete product.rating_count
-    delete product.review_count
-    delete product.tags
-    delete product.id
-    delete product.date_created
-    delete product.date_modified
-    delete product.date_created_gmt
-    delete product.date_modified_gmt
-    delete product.date_on_sale_from
-    delete product.date_on_sale_from_gmt
-    delete product.date_on_sale_to
-    delete product.date_on_sale_to_gmt
-    delete product.average_rating
-    delete product.images?.[0]?.id
-    delete product.total_sales
-    delete product.average_rating
-    delete product.rating_count
-    delete product.review_count
-    delete product.related_ids
-
     const payload = {
         ...product,
         images: imageIds.map(id => ({ id })),
@@ -279,4 +254,28 @@ export async function fetchWordpressProductCategories(): Promise<{ id: number; n
         id: cat.id,
         name: cat.name,
     }))
+}
+
+export const deleteWooProductBySku = async (sku: string): Promise<boolean> => {
+    try {
+        // Fetch product by SKU to get its ID
+        const { data } = await axios.get(`${API_URL}/products`, {
+            auth: AUTH,
+            params: { sku },
+        })
+
+        const product = data?.[0]
+        if (!product?.id) return false
+
+        // Delete the product using its ID
+        await axios.delete(`${API_URL}/products/${product.id}`, {
+            auth: AUTH,
+            params: { force: true },
+        })
+
+        return true
+    } catch (err) {
+        console.error('[deleteWooProductBySku] ❌', err)
+        return false
+    }
 }

@@ -135,12 +135,12 @@ const ThumbnailStudioSixthMockupTablet = () => {
                     </div>
                     <div className="pt-2">
                         <ThumbnailStudioMetadata
-                            slug="example-laptop"
+                            slug="example-tablet"
                         />
                         <ThumbnailUploader
                             canvasRef={canvasRef}
                             bgColor="#ffffff"
-                            slug="example-laptop"
+                            slug="example-tablet"
                         />
 
                     </div>

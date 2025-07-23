@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState } from 'react'
+import { forwardRef, useEffect, useMemo, useState } from 'react'
 import { FormContainer } from '@/components/ui/Form'
 import Button from '@/components/ui/Button'
 import hooks from '@/components/ui/hooks'
@@ -43,8 +43,6 @@ type ProductForm = {
     onDelete?: OnDelete
     onFormSubmit: (formData: Product, setSubmitting: SetSubmitting) => void
 }
-
-const { useUniqueId } = hooks
 
 const validationSchema = Yup.object().shape({
     name: Yup.string().required('Product Name Required'),
@@ -146,7 +144,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
         onDelete,
     } = props
 
-    const initialProduct = initialData ?? Product.createEmpty()
+    const initialProduct = useMemo(() => initialData ?? Product.createEmpty(), [initialData])
 
     console.log("initial product", initialProduct)
     useEffect(() => {
@@ -216,7 +214,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
             newAllowedTabs.push('wordpress')
         }
 
-        if (values.publishedOnWebsite) {
+        if (values.wordpress?.rankMath?.permalink) {
             newAllowedTabs.push('export')
         }
 

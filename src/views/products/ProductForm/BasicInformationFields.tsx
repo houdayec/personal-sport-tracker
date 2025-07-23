@@ -146,6 +146,15 @@ const ProductInfoFields = (props: BasicInformationFields) => {
                     </Field>
                 </FormItem>
 
+                <FormItem label="Show on Website?">
+                    <Field name="wordpress.isFeatured" type="checkbox">
+                        {({ field }: FieldProps) => (
+                            <input type="checkbox" {...field} checked={field.value} />
+                        )}
+                    </Field>
+                </FormItem>
+
+
                 <FormItem label="Published on Website">
                     <Field name="publishedOnWebsite" type="checkbox">
                         {({ field }: FieldProps) => (

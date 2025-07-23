@@ -58,9 +58,10 @@ const ProductEdit = () => {
     }
 
     const handleDelete = async (setDialogOpen: OnDeleteCallback) => {
-        setDialogOpen(false)
         const success = await deleteProduct({ id: productData.sku })
+        setDialogOpen(false)
         if (success) {
+            navigate('/app/sales/product-list')
             popNotification('deleted')
         }
     }

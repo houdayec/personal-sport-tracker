@@ -145,7 +145,7 @@ export class Product {
                     ttfGenerated: false,
                     fontFamily: undefined,
                     fullName: undefined,
-                    version: undefined,
+                    version: "1.000",
                 },
             },
         })
@@ -224,7 +224,15 @@ export type ThumbnailMetadataBlock = {
 }
 export const REQUIRED_THUMBNAIL_SLUGS = ['main', 'characters-preview', 'included-files', 'sentence'] as const
 export type ThumbnailSlug = typeof REQUIRED_THUMBNAIL_SLUGS[number]
-
+export const DEFAULT_SLUG_ORDER = [
+    'main',
+    'sentence',
+    'characters-preview',
+    'included-files',
+    'compatibility',
+    'example-laptop',
+    'example-tablet',
+]
 export type ThumbnailsMetadata = {
     permalink: string
     main: ThumbnailMetadataBlock
@@ -314,6 +322,7 @@ export type WordPressData = {
     id?: number
     slug?: string
     title?: string
+    isFeatured?: boolean
     shortDescription?: string
     longDescription?: string
     snippetDescription?: string

@@ -5,6 +5,8 @@ import {
     apiDeleteSalesProducts,
 } from '@/services/SalesService'
 import { Product } from '@/@types/product'
+import { deleteFromFirebaseDB, deleteFromFirebaseStorage } from '@/services/StorageService'
+import { deleteWooProductBySku } from '@/services/WooService'
 
 export type SalesProductEditState = {
     loading: boolean
@@ -29,11 +31,18 @@ export const updateProduct = async (data: Product) => {
     return response
 }
 
-export const deleteProduct = async <T, U extends Record<string, unknown>>(
-    data: U,
-) => {
-    const response = await apiDeleteSalesProducts<T, U>(data)
-    return response.data
+export const deleteProduct = async ({ id }: { id: string }) => {
+    try {
+        await Promise.all([
+            deleteFromFirebaseDB(id),
+            deleteFromFirebaseStorage(id),
+            deleteWooProductBySku(id),
+        ])
+        return { success: true }
+    } catch (error) {
+        console.error('Failed to delete product:', error)
+        return { success: false, error }
+    }
 }
 
 const initialState: SalesProductEditState = {

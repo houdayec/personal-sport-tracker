@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react'
 import AdaptableCard from '@/components/shared/AdaptableCard'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
-import { HiCheckCircle, HiXCircle } from 'react-icons/hi'
+import { HiCheckCircle, HiTrash, HiXCircle } from 'react-icons/hi'
 import { useFormikContext } from 'formik'
 import _ from 'lodash'
-import { Product } from '@/@types/product'
+import { DEFAULT_SLUG_ORDER, Product } from '@/@types/product'
 import { getDownloadURL, ref } from 'firebase/storage'
 import { storage } from '@/firebase'
 import {
@@ -16,9 +16,56 @@ import {
     uploadImageToWordPress,
     publishWooProduct,
 } from '@/services/WooService'
-import { generateZipFromFirebase, uploadZipToFirebase, uploadZipToWordPress, assignZipToFileBird, exportThumbnailsToFileBird } from '@/services/StorageService'
+import {
+    DndContext,
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core'
+import {
+    arrayMove,
+    SortableContext,
+    useSortable,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+
+import { generateZipFromFirebase, uploadZipToFirebase, uploadZipToWordPress, assignZipToFileBird, exportThumbnailsToFileBird, deleteThumbnailFromStorage } from '@/services/StorageService'
 
 type UploadStatus = 'idle' | 'pending' | 'success' | 'error'
+
+const SortableThumbnail = ({ id, url, status }: { id: string; url: string; status: UploadStatus }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    }
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
+            className="relative w-20 h-20 border rounded overflow-hidden"
+        >
+            <img src={url} className="w-full h-full object-cover" alt={`Thumbnail for ${id}`} />
+            {status === 'pending' && (
+                <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+                    <Spinner size="s" />
+                </div>
+            )}
+            {status === 'success' && (
+                <HiCheckCircle className="absolute top-1 right-1 text-green-500 bg-white rounded-full" size={24} />
+            )}
+            {status === 'error' && (
+                <HiXCircle className="absolute top-1 right-1 text-red-500 bg-white rounded-full" size={24} />
+            )}
+        </div>
+    )
+}
 
 const ExportForm = () => {
     const { values, setFieldValue } = useFormikContext<Product>()
@@ -28,6 +75,7 @@ const ExportForm = () => {
     const [statusMap, setStatusMap] = useState<Record<string, UploadStatus>>({})
     const [clonedProduct, setClonedProduct] = useState<any>(null)
     const [step, setStep] = useState<string>('')
+    const sensors = useSensors(useSensor(PointerSensor))
 
     useEffect(() => {
         if (!values.sku) {
@@ -46,9 +94,34 @@ const ExportForm = () => {
 
                 const product = _.cloneDeep(base)
 
+                delete product.id
+                delete product.date_created
+                delete product.date_modified
+                delete product.total_sales
+                delete product.average_rating
+                delete product.rating_count
+                delete product.review_count
+                delete product.tags
+                delete product.id
+                delete product.date_created
+                delete product.date_modified
+                delete product.date_created_gmt
+                delete product.date_modified_gmt
+                delete product.date_on_sale_from
+                delete product.date_on_sale_from_gmt
+                delete product.date_on_sale_to
+                delete product.date_on_sale_to_gmt
+                delete product.average_rating
+                delete product.images?.[0]?.id
+                delete product.total_sales
+                delete product.average_rating
+                delete product.rating_count
+                delete product.review_count
+                delete product.related_ids
+
                 Object.assign(product, {
                     name: values.name,
-                    slug: values.wordpress?.rankMath?.slug,
+                    slug: values.wordpress?.rankMath?.permalink,
                     sku: values.sku,
                     status: 'publish',
                     short_description: values.wordpress?.excerpt,
@@ -65,6 +138,10 @@ const ExportForm = () => {
                     ],
                 })
 
+                if (values.wordpress?.isFeatured) {
+                    product.tags = [...(product.tags || []), 1277]
+                }
+
                 const paths = await listWebpSquareThumbnails(values.sku)
                 const urls = await Promise.all(
                     paths.map(async path => ({
@@ -72,7 +149,16 @@ const ExportForm = () => {
                         url: await getDownloadURL(ref(storage, path)),
                     }))
                 )
-                setThumbnails(urls)
+                setThumbnails(
+                    _.sortBy(urls, ({ path }) => {
+                        const fileName = path.split('/').pop() || ''
+                        const slug = fileName
+                            .replace(/\.[^/.]+$/, '')
+                            .replace(/^[^-]+-font-[^-]+-font-/, '')
+                            .replace(/-square$/, '')
+                        return DEFAULT_SLUG_ORDER.indexOf(slug)
+                    })
+                )
                 setClonedProduct(product)
             } catch (err) {
                 console.error('Error loading template or thumbnails:', err)
@@ -84,6 +170,22 @@ const ExportForm = () => {
             }
         })()
     }, [values.sku])
+
+    const handleDeleteThumbnail = async (path: string) => {
+        try {
+            await deleteThumbnailFromStorage(path)
+            setThumbnails(t => t.filter(item => item.path !== path))
+
+            const slug = path.split('/').pop()?.replace(/\.[^/.]+$/, '')?.replace(/^[^-]+-font-[^-]+-font-/, '')?.replace(/-square$/, '')
+            if (slug) {
+                setFieldValue(`thumbnails.${slug}`, undefined)
+            }
+
+            console.log(`[Delete] ✅ Deleted ${path}`)
+        } catch (err) {
+            console.error(`[Delete] ❌ Error deleting ${path}`, err)
+        }
+    }
 
     // Uploads thumbnails to WP and updates Formik & statusMap
     const uploadThumbnailsStep = async (): Promise<number[]> => {
@@ -176,7 +278,7 @@ const ExportForm = () => {
             )
 
             if (publishedProduct?.id) {
-                setFieldValue('wordpressId', publishedProduct.id)
+                setFieldValue('wordpress.id', publishedProduct.id)
                 setFieldValue('publishedOnWebsite', true)
             }
 
@@ -204,38 +306,46 @@ const ExportForm = () => {
             ) : (
                 <>
                     <div className="flex flex-wrap gap-3 mb-4">
-                        {thumbnails.map(({ path, url }) => {
-                            const st = statusMap[path] || 'idle'
-                            return (
-                                <div
-                                    key={path}
-                                    className="relative w-20 h-20 border rounded overflow-hidden"
-                                >
-                                    <img
-                                        src={url}
-                                        className="w-full h-full object-cover"
-                                        alt={`Thumbnail for ${path}`}
-                                    />
-                                    {st === 'pending' && (
-                                        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
-                                            <Spinner size="s" />
+                        <DndContext
+                            collisionDetection={closestCenter}
+                            sensors={sensors}
+                            onDragEnd={({ active, over }) => {
+                                if (active.id !== over?.id) {
+                                    const oldIndex = thumbnails.findIndex(t => t.path === active.id)
+                                    const newIndex = thumbnails.findIndex(t => t.path === over?.id)
+                                    const newOrder = arrayMove(thumbnails, oldIndex, newIndex)
+                                    setThumbnails(newOrder)
+                                }
+                            }}
+                        >
+                            <SortableContext
+                                items={thumbnails.map(t => t.path)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                                    {thumbnails.map(({ path, url }) => (
+                                        <div key={path} className="relative w-full aspect-square">
+                                            <div className="w-full h-full">
+                                                <SortableThumbnail
+                                                    id={path}
+                                                    url={url}
+                                                    status={statusMap[path] || 'idle'}
+                                                />
+                                            </div>
+                                            <Button
+                                                onClick={() => handleDeleteThumbnail(path)}
+                                                type="button"
+                                                className="absolute bottom-1 right-1 hover:bg-opacity-100"
+                                                size="xs"
+                                                disabled={working || thumbnails.length === 0}
+                                                icon={<HiTrash />}
+                                            />
                                         </div>
-                                    )}
-                                    {st === 'success' && (
-                                        <HiCheckCircle
-                                            className="absolute top-1 right-1 text-green-500 bg-white rounded-full"
-                                            size={24}
-                                        />
-                                    )}
-                                    {st === 'error' && (
-                                        <HiXCircle
-                                            className="absolute top-1 right-1 text-red-500 bg-white rounded-full"
-                                            size={24}
-                                        />
-                                    )}
+                                    ))}
                                 </div>
-                            )
-                        })}
+                            </SortableContext>
+                        </DndContext>
+
                     </div>
 
                     <p className="mb-2 text-sm text-gray-600">{step}</p>
@@ -245,7 +355,14 @@ const ExportForm = () => {
                             type='button'
                             disabled={working || thumbnails.length === 0}
                         >
-                            {working ? 'Working…' : 'Start Export'}
+                            {working ? (
+                                <div className="flex items-center justify-center gap-2 w-full">
+                                    <Spinner size={16} />
+                                    Uploading…
+                                </div>
+                            ) : (
+                                <>Upload</>
+                            )}
                         </Button>
                     </div>
                 </>
