@@ -1,18 +1,19 @@
 // AssetsFields.tsx
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import AdaptableCard from '@/components/shared/AdaptableCard'
 import { FormItem } from '@/components/ui/Form'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Spinner from '@/components/ui/Spinner'
 import Notification from '@/components/ui/Notification'
-import { toast } from '@/components/ui'
+import { toast, Upload } from '@/components/ui'
 import { storage } from '@/firebase'
 import { ref, getDownloadURL, uploadBytesResumable } from 'firebase/storage'
 import opentype from 'opentype.js'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
-import { Field, FormikErrors, FormikTouched, FieldProps, useFormikContext } from 'formik'
+import { Field, FormikErrors, FormikTouched, FieldProps, useFormikContext, FormikProps, FieldInputProps } from 'formik'
+import { FormModel } from '@/views/website/CustomerForm'
 
 type AssetsFormFieldsName = {
     name: string
@@ -52,6 +53,7 @@ const AssetsFields = (props: AssetsFormFields) => {
     const [trademarkSvgUrl, setTrademarkSvgUrl] = useState<string | null>(null)
     const [isFontLoading, setIsFontLoading] = useState(false)
     const [finalFontBuffer, setFinalFontBuffer] = useState<ArrayBuffer | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         const loadExistingFont = async () => {
@@ -62,23 +64,39 @@ const AssetsFields = (props: AssetsFormFields) => {
                 const fontRef = ref(storage, `products/${sku}/files/font.ttf`)
                 const url = await getDownloadURL(fontRef)
                 const resp = await fetch(url)
-                const arrayBuffer = await resp.arrayBuffer()
+                const blob = await resp.blob()
+                const arrayBuffer = await blob.arrayBuffer()
                 const parsed = opentype.parse(arrayBuffer)
                 setFont(parsed)
                 setGlyphCount(parsed.glyphs.length)
                 generatePreviewSVG(parsed)
-                const blob = await resp.blob()
                 setTtfFile(new File([blob], 'font.ttf', { type: blob.type }))
-            } catch {
-                console.info('No existing font found at ', storage, `products/${sku}/files/font.ttf`)
+            } catch (error) {
+                console.error('Failed to load font:', error)
             }
             setIsFontLoading(false)
         }
         loadExistingFont()
     }, [values.sku])
 
-    const handleTtfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
+    useEffect(() => {
+        if (fileInputRef.current && ttfFile) {
+            const dt = new DataTransfer()
+            dt.items.add(ttfFile)
+
+            fileInputRef.current.files = dt.files
+
+            // If your component depends on onChange
+            const event = new Event('change', { bubbles: true })
+            fileInputRef.current.dispatchEvent(event)
+        }
+    }, [ttfFile])
+
+    const handleTtfUpload = async (
+        files: File[],
+    ) => {
+        const file = files[0]
+        console.log(files, file)
         if (!file) return
         setTtfFile(file)
         const buf = await file.arrayBuffer()
@@ -98,12 +116,14 @@ const AssetsFields = (props: AssetsFormFields) => {
         font.names.postScriptName = { en: fullName.replace(/\s+/g, '') }
         font.names.version = { en: version || '1.0' }
         font.names.designer = { en: 'FontMaze' }
+        font.names.designerURL = { en: 'https://www.fontmaze.com' }
         font.names.manufacturer = { en: 'FontMaze' }
+        font.names.manufacturerURL = { en: 'https://www.fontmaze.com' }
         font.names.copyright = { en: 'All rights reserved to FontMaze' }
         font.names.description = { en: `${fullName} designed by FontMaze Studio` }
         font.names.license = { en: 'Personal Use Only.' }
         font.names.licenseURL = { en: 'https://www.fontmaze.com/licenses/font-license/' }
-        font.names.trademark = { en: 'FontMaze' }
+        font.names.trademark = { en: 'All rights reserved to FontMaze' }
             ; (font.names as any).sampleText = { en: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789' }
     }
 
@@ -411,24 +431,49 @@ const AssetsFields = (props: AssetsFormFields) => {
 
     const downloadZip = async () => {
         if (!glyphAssets.length) return
+
         const zip = new JSZip()
-        const svgF = zip.folder('SVG')!, pngF = zip.folder('PNG')!
+        const svgF = zip.folder('SVG')!
+        const pngF = zip.folder('PNG')!
+
         glyphAssets.forEach(({ char, svgBlob, pngBlob }) => {
             const safeChar = char in safeCharMap ? safeCharMap[char] : char
-            svgF.file(`${safeChar}.svg`, svgBlob); pngF.file(`${safeChar}.png`, pngBlob)
+            svgF.file(`${safeChar}.svg`, svgBlob)
+            pngF.file(`${safeChar}.png`, pngBlob)
         })
+
+        const fontName = values.fontData.generated.fullName || values.sku || 'glyphs'
+        const baseName = values.sku || 'font'
+
+        if (finalFontBuffer && fontName) {
+            const ttfBlob = new Blob([finalFontBuffer], { type: 'font/ttf' })
+            const otfBlob = new Blob([finalFontBuffer], { type: 'font/otf' })
+            const fontFolder = zip.folder('Font Files To Install')!
+
+            fontFolder.file(`${fontName}.ttf`, ttfBlob)
+            fontFolder.file(`${fontName}.otf`, otfBlob)
+        }
+
         const content = await zip.generateAsync({ type: 'blob' })
-        const name = values.fontData.generated.fullName || values.sku || 'glyphs'
-        saveAs(content, `${name}.zip`)
+        saveAs(content, `${baseName}_${fontName}.zip`)
     }
+
 
     return (
         <AdaptableCard divider className="mb-4">
             <h5 className="mb-2">📦 Generate Font Assets</h5>
             <FormItem label="Upload .TTF File">
-                <input type="file" accept=".ttf" onChange={handleTtfUpload} />
+                <Upload draggable accept=".ttf"
+                    ref={fileInputRef}
+                    onChange={(files) =>
+                        handleTtfUpload(files)
+                    }
+                />
                 {ttfFile ? (
-                    <p className="text-sm text-green-600 mt-1">✅ {ttfFile.name} loaded</p>
+                    <div className="mt-4">
+                        <p className="text-sm text-green-600 mt-1">✅ {ttfFile.name} loaded</p>
+                        <p className="text-sm">🔢 Glyphs: <strong>{glyphCount}</strong></p>
+                    </div>
                 ) : (
                     <p className="text-sm text-gray-400 mt-1">No font file selected</p>
                 )}
@@ -437,26 +482,30 @@ const AssetsFields = (props: AssetsFormFields) => {
                 <FormItem
                     label="Font Family Name"
                     invalid={(errors.fontData?.generated?.fontFamily && touched.fontData?.generated?.fontFamily) as boolean}
+                    errorMessage={errors.fontData?.generated?.fontFamily}
+
                 >
                     <Field name="fontData.generated.fontFamily" component={Input} />
                 </FormItem>
                 <FormItem label="Full Name"><Field name="fontData.generated.fullName" component={Input} /></FormItem>
-                <FormItem label="Version"><Field name="fontData.generated.version" component={Input} /></FormItem>
+                <FormItem label="Version"><Field name="fontData.generated.version" component={Input} default="1.000" /></FormItem>
             </div>
-            <p className="text-sm mt-4">🔢 Glyphs: <strong>{glyphCount}</strong></p>
             {previewSvg && <div className="mt-4 w-full"><h6 className="font-semibold mb-2">Preview</h6><div dangerouslySetInnerHTML={{ __html: previewSvg }} className="w-full" /></div>}
 
             {glyphAssets.length > 0 && (
-                <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-4">
-                    {glyphAssets.map(({ char, svgBlob }) => {
-                        const url = URL.createObjectURL(svgBlob)
-                        return (
-                            <div key={char} className="flex flex-col items-center">
-                                <img src={url} alt={char} className="w-12 h-12" />
-                                <span className="text-xs mt-1">{char}</span>
-                            </div>
-                        )
-                    })}
+                <div>
+                    <h6 className="font-semibold mb-2 mt-6">Generated SVG Files</h6>
+                    <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-4">
+                        {glyphAssets.map(({ char, svgBlob }) => {
+                            const url = URL.createObjectURL(svgBlob)
+                            return (
+                                <div key={char} className="flex flex-col items-center">
+                                    <img src={url} alt={char} className="w-12 h-12" />
+                                    <span className="text-xs mt-1">{char}</span>
+                                </div>
+                            )
+                        })}
+                    </div>
                 </div>
             )}
 
@@ -470,7 +519,7 @@ const AssetsFields = (props: AssetsFormFields) => {
             )}
             <div className="mt-6 flex gap-4">
 
-                <Button onClick={generateGlyphAssets} disabled={!font || isGenerating} type="button" variant="solid">
+                <Button onClick={generateGlyphAssets} disabled={!font || isGenerating || isUploading} type="button" variant="twoTone">
                     {isGenerating ? (
                         <span className="flex items-center gap-2">
                             <Spinner /> Generating…
@@ -478,15 +527,15 @@ const AssetsFields = (props: AssetsFormFields) => {
                     ) : '⚙️ Generate Assets'}
                 </Button>
 
-                <Button onClick={uploadGlyphAssets} disabled={!glyphAssets.length || isUploading} type="button">
+                <Button onClick={uploadGlyphAssets} disabled={!glyphAssets.length || isUploading} type="button" variant="twoTone">
                     {isUploading ? (
                         <span className="flex items-center gap-2">
                             <Spinner /> Uploading… {uploadCount}/{glyphAssets.length * 2}
                         </span>
-                    ) : '📤 Upload Assets'}
+                    ) : '📤 Upload Font & Assets'}
                 </Button>
 
-                <Button onClick={downloadZip} disabled={!glyphAssets.length} type="button">
+                <Button onClick={downloadZip} disabled={!glyphAssets.length || isUploading} type="button">
                     ⬇️ Download Assets
                 </Button>
 

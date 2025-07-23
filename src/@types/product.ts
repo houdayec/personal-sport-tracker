@@ -14,9 +14,9 @@ export class Product {
         publishedOnTpt?: boolean
         generated?: {
             ttfGenerated: boolean
-            fontFamily: string
-            fullName: string
-            version: string
+            fontFamily?: string
+            fullName?: string
+            version?: string
         }
     }
     computedData?: {
@@ -141,6 +141,12 @@ export class Product {
             status: 'draft',
             fontData: {
                 publishedOnTpt: false,
+                generated: {
+                    ttfGenerated: false,
+                    fontFamily: undefined,
+                    fullName: undefined,
+                    version: undefined,
+                },
             },
         })
     }
@@ -216,6 +222,8 @@ export type ThumbnailMetadataBlock = {
     caption: string
     description: string
 }
+export const REQUIRED_THUMBNAIL_SLUGS = ['main', 'characters-preview', 'included-files', 'sentence'] as const
+export type ThumbnailSlug = typeof REQUIRED_THUMBNAIL_SLUGS[number]
 
 export type ThumbnailsMetadata = {
     permalink: string
@@ -280,10 +288,6 @@ export type ThumbnailsMetadata = {
     example_tablet_showLowercase?: boolean
     example_tablet_showNumbers?: boolean
     example_tablet_showSpecials?: boolean
-
-    thumbnailsMetadata?: {
-
-    }
 }
 
 export type WebsiteMetadata = {

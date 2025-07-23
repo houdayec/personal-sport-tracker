@@ -13,7 +13,7 @@ import cloneDeep from 'lodash/cloneDeep'
 import { HiOutlineTrash } from 'react-icons/hi'
 import { AiOutlineSave } from 'react-icons/ai'
 import * as Yup from 'yup'
-import { Product } from '@/@types/product'
+import { Product, REQUIRED_THUMBNAIL_SLUGS } from '@/@types/product'
 import AssetsFields from './AssetsFields'
 import EmbroideryFontDataFields from './EmbroideryFontData'
 import FontDataFields from './FontData'
@@ -55,6 +55,34 @@ const validationSchema = Yup.object().shape({
     secondKeyword: Yup.string().required('Second Keyword Required'),
     fullPrice: Yup.string().required('Full Price Required'),
     salePrice: Yup.string().required('Sale Price Required'),
+    fontData: Yup.object({
+        generated: Yup.object().shape({
+            fontFamily: Yup.string()
+                .trim()
+                .min(1, 'Font Family is required')
+                .when('$activeTab', {
+                    is: (val: string) => val === 'assets',
+                    then: s => s.required('Font Family is required'),
+                    otherwise: s => s.notRequired(),
+                }),
+            fullName: Yup.string()
+                .trim()
+                .min(1, 'Full Name is required')
+                .when('$activeTab', {
+                    is: (val: string) => val === 'assets',
+                    then: s => s.required('Full Name is required'),
+                    otherwise: s => s.notRequired(),
+                }),
+            version: Yup.string()
+                .trim()
+                .min(1, 'Version is required')
+                .when('$activeTab', {
+                    is: (val: string) => val === 'assets',
+                    then: s => s.required('Version is required'),
+                    otherwise: s => s.notRequired(),
+                }),
+        }),
+    }),
 })
 
 const DeleteProductButton = ({ onDelete }: { onDelete: OnDelete }) => {
@@ -112,12 +140,25 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
 
     const {
         type,
-        initialData: initialProduct = Product.createEmpty(),
+        initialData,
         onFormSubmit,
         onDiscard,
         onDelete,
     } = props
+
+    const initialProduct = initialData ?? Product.createEmpty()
+
     console.log("initial product", initialProduct)
+    useEffect(() => {
+        const validTabs = updateAllowedTabsFromValues(initialProduct)
+        setAllowedTabs(validTabs)
+        // Optional auto-jump to next allowed tab
+        const currentIndex = tabOrder.indexOf(activeTab)
+        const nextTab = tabOrder.find((tab, i) => i > currentIndex && validTabs.includes(tab))
+        if (nextTab) setActiveTab(nextTab)
+        console.log('Allowed tabs updated:', validTabs)
+        console.log('Active tab set to:', nextTab || activeTab)
+    }, [initialProduct])
 
     const canSwitchTo = async (nextTab: string, values: Product): Promise<boolean> => {
         console.log('Checking if can switch to tab:', nextTab)
@@ -152,12 +193,46 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
         }
     }
 
+    const updateAllowedTabsFromValues = (values: Product): string[] => {
+        const newAllowedTabs = ['product']
+
+        if (values.name && values.sku) {
+            newAllowedTabs.push('assets')
+        }
+
+        const fontGen = values.fontData?.generated
+        if (fontGen?.fontFamily && fontGen?.fullName && fontGen?.version) {
+            newAllowedTabs.push('thumbnails')
+        }
+
+        // Check if all slugs have generated thumbnails
+        const allSlugsGenerated = REQUIRED_THUMBNAIL_SLUGS.every(slug => {
+            const entry = values.thumbnails?.[slug]
+            console.log(`Checking slug "${slug}":`, entry)
+            return entry?.generated === true
+        })
+        console.log('All slugs generated:', allSlugsGenerated)
+        if (allSlugsGenerated) {
+            newAllowedTabs.push('wordpress')
+        }
+
+        if (values.publishedOnWebsite) {
+            newAllowedTabs.push('export')
+        }
+
+        return newAllowedTabs
+    }
+
+
     return (
         <>
             <Formik
                 innerRef={ref}
                 validationSchema={validationSchema}
                 initialValues={initialProduct}
+                validateOnChange={false}
+                validateOnBlur={false}
+                validationContext={{ activeTab }}
                 onSubmit={(newProductValues: Product, { setSubmitting }) => {
                     const newProduct = cloneDeep(newProductValues)
 
@@ -166,14 +241,16 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     }
 
                     onFormSubmit?.(newProduct, setSubmitting)
+
+                    const validTabs = updateAllowedTabsFromValues(newProduct)
+                    setAllowedTabs(validTabs)
+
+                    // Optional auto-jump to next allowed tab
+                    //const currentIndex = tabOrder.indexOf(activeTab)
+                    //const nextTab = tabOrder.find((tab, i) => i > currentIndex && validTabs.includes(tab))
+                    //if (nextTab) setActiveTab(nextTab)
                 }}>
                 {({ values, touched, errors, isSubmitting }) => {
-                    useEffect(() => {
-                        const { name, sku } = values
-                        if (name && sku && !allowedTabs.includes('assets')) {
-                            setAllowedTabs((prev) => [...prev, 'assets'])
-                        }
-                    }, [values.name, values.sku])
 
                     return (
                         <Form>
@@ -185,11 +262,11 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                                             onChange={(nextTab) => handleTabChange(nextTab, values)}
                                         >
                                             <TabList>
-                                                <TabNav value="product">🗂 Product Info</TabNav>
+                                                <TabNav value="product">🗂 Details</TabNav>
                                                 <TabNav value="assets" disabled={!allowedTabs.includes('assets')}>📦 Assets</TabNav>
                                                 <TabNav value="thumbnails" disabled={!allowedTabs.includes('thumbnails')}>🖼 Thumbnails</TabNav>
                                                 <TabNav value="wordpress" disabled={!allowedTabs.includes('wordpress')}>📝 WordPress Post</TabNav>
-                                                <TabNav value="export" disabled={!allowedTabs.includes('export')}>📤 Export & Upload</TabNav>
+                                                <TabNav value="export" disabled={!allowedTabs.includes('export')}>📤 Export</TabNav>
                                             </TabList>
 
                                             <div className="p-4">

@@ -70,12 +70,12 @@ const ProductEdit = () => {
             <Notification
                 title={`Successfuly ${keyword}`}
                 type="success"
-                duration={2500}
+                duration={2000}
             >
                 Product successfuly {keyword}
             </Notification>,
             {
-                placement: 'bottom-start',
+                placement: 'top-end',
             },
         )
         //navigate('/app/sales/product-list')

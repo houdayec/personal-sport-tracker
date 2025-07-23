@@ -6,10 +6,11 @@ import Button from '@/components/ui/Button'
 import { HiOutlineClipboardCopy } from 'react-icons/hi'
 import { useEffect, useState } from 'react'
 import ThumbnailPreviewStudio from './ThumbnailStudio_Main'
-import ThumbnailStudioSecondSentence from './ThumbnailStudio_Second'
+import ThumbnailStudio_Sentence from './ThumbnailStudio_Second'
 import ThumbnailStudioThirdCharacters from './ThumbnailStudio_Third'
 import ThumbnailStudioFifthMockupLaptop from './ThumbnailStudio_Fifth'
 import ThumbnailStudioSixthMockupTablet from './ThumbnailStudio_Sixth'
+import ThumbnailStudio_IncludedFilesAndCompatibility from './ThumbnailStudio_IncludedFiles'
 
 type FormFieldsName = {
     name: string
@@ -74,8 +75,9 @@ const ThumbnailForm = (props: ThumbnailFormFields) => {
             <p className="mb-6">Generate all thumbnails images & metadata</p>
 
             <ThumbnailPreviewStudio />
-            <ThumbnailStudioSecondSentence />
+            <ThumbnailStudio_Sentence />
             <ThumbnailStudioThirdCharacters />
+            <ThumbnailStudio_IncludedFilesAndCompatibility />
             <ThumbnailStudioFifthMockupLaptop />
             <ThumbnailStudioSixthMockupTablet />
         </AdaptableCard>

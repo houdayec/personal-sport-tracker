@@ -29,7 +29,7 @@ const cropSquareFromCanvas = (canvas: HTMLCanvasElement): HTMLCanvasElement => {
 }
 
 const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
-    const { values } = useFormikContext<Product>()
+    const { values, setFieldValue } = useFormikContext<Product>()
     const [isUploading, setIsUploading] = useState(false)
     const [thumbnails, setThumbnails] = useState<Blob[]>([])
     const [previewData, setPreviewData] = useState<{
@@ -50,65 +50,6 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
     const filename = `${main}-font-${second}-font-${slug}`
 
     // Generate square & landscape image versions
-    const generateThumbnails2 = async () => {
-        if (!canvasRef.current) return
-        const originalCanvas = canvasRef.current
-        const squareHeight = originalCanvas.height
-        const landscapeWidth = Math.floor((3 / 2) * squareHeight)
-
-        const landscapeCanvas = document.createElement('canvas')
-        landscapeCanvas.width = landscapeWidth
-        landscapeCanvas.height = squareHeight
-
-        const lctx = landscapeCanvas.getContext('2d')!
-        lctx.drawImage(
-            originalCanvas,
-            (originalCanvas.width - landscapeWidth) / 2, 0, landscapeWidth, squareHeight, // source crop
-            0, 0, landscapeWidth, squareHeight // destination
-        )
-        const squareCanvas = cropSquareFromCanvas(landscapeCanvas)
-
-        const generate = async (canvas: HTMLCanvasElement) => ({
-            png: await canvasToBlob(canvas, 'image/png'),
-            jpg: await canvasToBlob(canvas, 'image/jpeg', 0.8),
-            webp: await canvasToBlob(canvas, 'image/webp', 0.7),
-        })
-
-        const landscapeBlobs = await generate(landscapeCanvas)
-        const squareBlobs = await generate(squareCanvas)
-
-        const images: {
-            type: 'square' | 'landscape'
-            format: 'png' | 'jpg' | 'webp'
-            blob: Blob
-        }[] = [
-                { type: 'square', format: 'png', blob: squareBlobs.png },
-                { type: 'square', format: 'jpg', blob: squareBlobs.jpg },
-                { type: 'square', format: 'webp', blob: squareBlobs.webp },
-                { type: 'landscape', format: 'png', blob: landscapeBlobs.png },
-                { type: 'landscape', format: 'jpg', blob: landscapeBlobs.jpg },
-                { type: 'landscape', format: 'webp', blob: landscapeBlobs.webp },
-            ]
-
-
-        setThumbnails(images.map(i => i.blob))
-        setPreviewData({
-            format: 'webp',
-            images: images.map(i => ({
-                type: i.type,
-                format: i.format,
-                url: URL.createObjectURL(i.blob),
-                size: i.blob.size,
-            })),
-        })
-
-        toast.push(
-            <Notification title="Thumbnails Ready" type="success" duration={2500}>
-                {images.length} versions generated
-            </Notification>,
-            { placement: 'top-center' }
-        )
-    }
     const generateThumbnails = async () => {
         if (!canvasRef.current) return
 
@@ -187,6 +128,8 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
             uploadBytes(ref(storage, `${basePath}/3_2/${filename}-landscape.webp`), landscapeWebp),
         ])
 
+        setFieldValue(`thumbnails.${slug}.generated`, true)
+        console.log('Thumbnails uploaded:', sku, filename)
         toast.push(
             <Notification title="Thumbnails Uploaded" type="success" duration={2500}>
                 {filename} in JPG & WEBP formats
@@ -200,7 +143,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
         <div className="w-full">
             <div className="space-y-2">
                 <Button onClick={generateThumbnails} className="w-full" type='button'>
-                    ⚙️ Generate Thumbnails
+                    ⚙️ Generate
                 </Button>
                 <Button
                     onClick={handleUpload}
@@ -210,11 +153,12 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
                     className="w-full"
                 >
                     {isUploading ? (
-                        <div className="flex items-center gap-2">
-                            <Spinner size={16} /> Uploading…
+                        <div className="flex items-center justify-center gap-2 w-full">
+                            <Spinner size={16} />
+                            Uploading…
                         </div>
                     ) : (
-                        <>📤 Upload Thumbnails</>
+                        <>📤 Upload</>
                     )}
                 </Button>
                 {previewData && (

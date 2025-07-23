@@ -6,7 +6,7 @@ import { storage } from '@/firebase'
 import { ref, getDownloadURL } from 'firebase/storage'
 import ThumbnailUploader from './ThumbnailUploader'
 import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
-import { ThumbnailsMetadata } from '@/@types/product'
+import { Product, ThumbnailsMetadata } from '@/@types/product'
 
 const CANVAS_SIZE = 2000
 const PADDING = 100
@@ -17,14 +17,14 @@ const PATTERNS = [
 ]
 
 const ThumbnailPreviewStudio = () => {
-    const { values, setFieldValue } = useFormikContext<{ sku: string; thumbnailsMetadata: ThumbnailsMetadata }>()
+    const { values, setFieldValue } = useFormikContext<Product>()
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [fontLoaded, setFontLoaded] = useState(false)
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [patternImages, setPatternImages] = useState<Record<string, HTMLImageElement>>({})
     const [watermarkImg, setWatermarkImg] = useState<HTMLImageElement | null>(null)
 
-    const meta = values.thumbnailsMetadata || {}
+    const meta = values.thumbnailsMetadata ?? {} as ThumbnailsMetadata
     const {
         main_titleText = 'Font Name', main_bgColor = '#ffffff',
         main_patternType = 'none', main_patternColor = '#000000', main_patternOpacity = 0.2,
@@ -191,6 +191,13 @@ const ThumbnailPreviewStudio = () => {
         main_titleScale, main_charScale, main_topOffset, main_showUppercase, main_showLowercase, main_showNumbers, main_showSpecials, main_charset,
         patternImages, main_watermarkColor, main_watermarkOpacity])
 
+    useEffect(() => {
+        if (!values.thumbnailsMetadata?.main_titleText) {
+            const fallback = values.name || 'Font Name'
+            setFieldValue('thumbnailsMetadata.main_titleText', fallback)
+        }
+    }, []) // run once on mount
+
 
     return (
         <div className="mt-8">
@@ -307,14 +314,16 @@ const ThumbnailPreviewStudio = () => {
                                 {['Uppercase', 'Lowercase', 'Numbers', 'Specials'].map((opt, key) => (
                                     <label key={key} className="flex items-center space-x-2">
                                         <Field
-                                            name={`thumbnailsMetadata.show${opt}` as any}
+                                            name={`thumbnailsMetadata.main_show${opt}` as keyof Product}
                                             type="checkbox"
-                                            render={({ field }: FieldProps) => <input
-                                                {...field}
-                                                type="checkbox"
-                                                checked={field.value}
-                                                onChange={e => setFieldValue(field.name, e.target.checked)}
-                                            />}
+                                            render={({ field }: FieldProps) => (
+                                                <input
+                                                    {...field}
+                                                    type="checkbox"
+                                                    checked={!!field.value}
+                                                    onChange={e => setFieldValue(field.name, e.target.checked)}
+                                                />
+                                            )}
                                         />
                                         <span>{opt}</span>
                                     </label>

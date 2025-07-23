@@ -32,7 +32,7 @@ const ThumbnailStudioFifthMockupLaptop = () => {
 
     const metadata = (values.thumbnailsMetadata || {}) as ThumbnailsMetadata
     const fontColor = metadata.example_laptop_charColor || '#000000'
-    const showTextBox = metadata.example_laptop_showTextAreaBox !== false
+    const showTextBox = metadata.example_laptop_showTextAreaBox === true
 
     // Compute character lines
     const paragraph = `Life is a journey best enjoyed with passion, laughter, and the freedom to create. Take time to breathe, explore, and embrace each moment fully. Work hard, rest well, and cherish little things.`;

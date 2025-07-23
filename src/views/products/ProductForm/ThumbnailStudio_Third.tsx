@@ -24,7 +24,7 @@ const ThumbnailStudioThirdCharacters = () => {
 
     const metadata = (values.thumbnailsMetadata || {}) as ThumbnailsMetadata
     const fontColor = metadata.characters_preview_charColor || '#000000'
-    const showTextBox = metadata.characters_preview_showTextAreaBox !== false
+    const showTextBox = metadata.characters_preview_showTextAreaBox === true
 
     const main_showUppercase = metadata.characters_preview_showUppercase ?? true
     const showLowercase = metadata.characters_preview_showLowercase ?? true

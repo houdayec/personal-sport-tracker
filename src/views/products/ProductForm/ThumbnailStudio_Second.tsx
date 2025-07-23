@@ -17,7 +17,7 @@ const TEXT_BOX = {
     height: 960,
 }
 
-const ThumbnailStudioSecondSentence = () => {
+const ThumbnailStudio_Sentence = () => {
     const { values, setFieldValue } = useFormikContext<Product>()
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
@@ -25,7 +25,7 @@ const ThumbnailStudioSecondSentence = () => {
 
     const metadata = (values.thumbnailsMetadata || {}) as ThumbnailsMetadata
     const fontColor = metadata.sentence_charColor || '#000000'
-    const showTextBox = metadata.sentence_showTextAreaBox !== false
+    const showTextBox = metadata.sentence_showTextAreaBox === true
 
     useEffect(() => {
         const img = new Image()
@@ -140,4 +140,4 @@ const ThumbnailStudioSecondSentence = () => {
     )
 }
 
-export default ThumbnailStudioSecondSentence
+export default ThumbnailStudio_Sentence

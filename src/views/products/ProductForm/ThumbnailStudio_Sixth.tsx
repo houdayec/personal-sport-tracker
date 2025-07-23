@@ -31,7 +31,7 @@ const ThumbnailStudioSixthMockupTablet = () => {
 
     const metadata = (values.thumbnailsMetadata || {}) as ThumbnailsMetadata
     const fontColor = metadata.example_tablet_charColor || '#000000'
-    const showTextBox = metadata.example_tablet_showTextAreaBox !== false
+    const showTextBox = metadata.example_tablet_showTextAreaBox === true
 
     // Compute character lines
     const paragraph = `Life is a journey best enjoyed with passion, laughter, and the freedom to create. Take time to breathe, explore, and embrace each moment fully. Work hard, rest well, and cherish little things.`;
@@ -134,12 +134,12 @@ const ThumbnailStudioSixthMockupTablet = () => {
                         }
                     </div>
                     <div className="pt-2">
+                        <ThumbnailStudioMetadata
+                            slug="example-laptop"
+                        />
                         <ThumbnailUploader
                             canvasRef={canvasRef}
                             bgColor="#ffffff"
-                            slug="example-laptop"
-                        />
-                        <ThumbnailStudioMetadata
                             slug="example-laptop"
                         />
 
