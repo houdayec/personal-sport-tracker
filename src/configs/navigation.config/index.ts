@@ -19,7 +19,7 @@ const navigationConfig: NavigationTree[] = [
         subMenu: [],
     },
     // Stats Section
-    {
+    /*{
         key: 'stats',
         path: '',
         title: 'Stats',
@@ -175,6 +175,7 @@ const navigationConfig: NavigationTree[] = [
             }
         ],
     },
+    */
     // Products Section
     {
         key: 'products',
@@ -197,6 +198,7 @@ const navigationConfig: NavigationTree[] = [
             // },
         ],
     },
+    /*
     // Tools Section
     {
         key: 'tools',
@@ -239,6 +241,7 @@ const navigationConfig: NavigationTree[] = [
             },
         ],
     },
+    */
     // {
     //     key: 'account',
     //     path: '/account',

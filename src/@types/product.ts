@@ -14,6 +14,7 @@ export class Product {
         publishedOnTpt?: boolean
         generated?: {
             ttfGenerated: boolean
+            uploaded: boolean
             fontFamily?: string
             fullName?: string
             version?: string
@@ -169,7 +170,7 @@ export class Product {
     }
 
     getImageThumbnail(): string {
-        return "";//this.etsy.images[0]?.replace('fullxfull', '160x160') || ''
+        return this.thumbnails?.main?.firebaseUrl || ""
     }
 
     getNameWithCategory(): string {

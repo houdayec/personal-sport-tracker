@@ -189,11 +189,10 @@ export const listWebpSquareThumbnails = async (sku: string): Promise<string[]> =
  */
 export async function publishWooProduct(product: any, imageIds: number[], zipMedia: any): Promise<any> {
     console.log('[publishWooProduct] ▶️ Start')
-
+    console.log('categoryIds', product.categoryIds)
     const payload = {
         ...product,
         images: imageIds.map(id => ({ id })),
-        categories: (product.categoryIds || []).map((id: number) => ({ id })),
         meta_data: [
             ...(product.meta_data || []),
             { key: 'zip_media_id', value: zipMedia.id },

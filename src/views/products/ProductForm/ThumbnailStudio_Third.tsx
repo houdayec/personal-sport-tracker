@@ -155,7 +155,7 @@ const ThumbnailStudioThirdCharacters = () => {
                                 <input
                                     {...field}
                                     type="checkbox"
-                                    checked={field.value ?? true}
+                                    checked={field.value ?? false}
                                     onChange={e => setFieldValue(field.name, e.target.checked)}
                                 />
                             )}

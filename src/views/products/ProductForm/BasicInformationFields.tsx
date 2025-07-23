@@ -93,7 +93,7 @@ const ProductInfoFields = (props: BasicInformationFields) => {
                     label="WordPress Categories"
                     invalid={(errors.wordpressCategories && touched.wordpressCategories) as boolean}
                 >
-                    <Field name="categoriesIds">
+                    <Field name="wordpress.categoriesIds">
                         {({ field, form }: FieldProps) => (
                             <Select
                                 isMulti

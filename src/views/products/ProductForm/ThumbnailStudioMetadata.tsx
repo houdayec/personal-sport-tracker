@@ -22,8 +22,6 @@ const ThumbnailStudioMetadata = ({ slug }: Props) => {
         ? values.secondKeyword.trim().toLowerCase()
         : 'creative use'
 
-    console.log(`[MetaGen:${slug}] Keywords – Main: "${mainKeyword}", Second: "${secondKeyword}"`)
-
     // Generate metadata based on keywords
     const handleGenerate = () => {
         const fontName = mainKeyword.charAt(0).toUpperCase() + mainKeyword.slice(1)

@@ -4,9 +4,10 @@ import Spinner from '@/components/ui/Spinner'
 import Radio from '@/components/ui/Radio'
 import { Product } from '@/@types/product'
 import { toast, Notification } from '@/components/ui'
-import { storage } from '@/firebase'
-import { ref, uploadBytes } from 'firebase/storage'
+import { db, storage } from '@/firebase'
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import { useState, RefObject } from 'react'
+import { doc, updateDoc } from 'firebase/firestore'
 
 type Props = {
     canvasRef: RefObject<HTMLCanvasElement | null>
@@ -127,6 +128,14 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
             uploadBytes(ref(storage, `${basePath}/3_2/${filename}-landscape.jpg`), landscapeJpg),
             uploadBytes(ref(storage, `${basePath}/3_2/${filename}-landscape.webp`), landscapeWebp),
         ])
+
+        const webpRef = ref(storage, `${basePath}/square/${filename}-square.webp`)
+
+        const firebaseUrl = await getDownloadURL(webpRef)
+
+        await updateDoc(doc(db, 'products', sku), {
+            [`thumbnails.${slug}.firebaseUrl`]: firebaseUrl,
+        })
 
         setFieldValue(`thumbnails.${slug}.generated`, true)
         console.log('Thumbnails uploaded:', sku, filename)

@@ -199,7 +199,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
         }
 
         const fontGen = values.fontData?.generated
-        if (fontGen?.fontFamily && fontGen?.fullName && fontGen?.version) {
+        if (fontGen?.fontFamily && fontGen?.fullName && fontGen?.version && fontGen?.uploaded) {
             newAllowedTabs.push('thumbnails')
         }
 

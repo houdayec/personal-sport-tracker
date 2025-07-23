@@ -40,7 +40,7 @@ interface GlyphAsset {
 }
 
 const AssetsFields = (props: AssetsFormFields) => {
-    const { values } = useFormikContext<any>()
+    const { values, setFieldValue } = useFormikContext<any>()
     const { touched, errors } = props
     const [ttfFile, setTtfFile] = useState<File | null>(null)
     const [font, setFont] = useState<opentype.Font | null>(null)
@@ -416,6 +416,8 @@ const AssetsFields = (props: AssetsFormFields) => {
             count++; setUploadCount(count)
             await upload(`products/${sku}/files/Final Product/Font Files To Install/${finalName}.otf`, otfBlob)
             count++; setUploadCount(count)
+
+            setFieldValue('fontData.generated.uploaded', true)
         }
 
         toast.push(

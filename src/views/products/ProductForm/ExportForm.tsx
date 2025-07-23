@@ -76,6 +76,7 @@ const ExportForm = () => {
     const [clonedProduct, setClonedProduct] = useState<any>(null)
     const [step, setStep] = useState<string>('')
     const sensors = useSensors(useSensor(PointerSensor))
+    const [wordpressUrls, setWordPressUrls] = useState<{ live: string, edit: string } | null>(null)
 
     useEffect(() => {
         if (!values.sku) {
@@ -138,9 +139,15 @@ const ExportForm = () => {
                     ],
                 })
 
-                if (values.wordpress?.isFeatured) {
-                    product.tags = [...(product.tags || []), 1277]
+                if (values.wordpress?.categoriesIds?.length) {
+                    console.log(`✅ Adding categories ${values.wordpress.categoriesIds.join(', ')} to product`)
+                    Object.assign(product, {
+                        categories: [
+                            ...values.wordpress.categoriesIds.map((id: number) => ({ id })),
+                        ],
+                    });
                 }
+
 
                 const paths = await listWebpSquareThumbnails(values.sku)
                 const urls = await Promise.all(
@@ -282,6 +289,12 @@ const ExportForm = () => {
                 setFieldValue('publishedOnWebsite', true)
             }
 
+            setWordPressUrls({
+                live: publishedProduct.permalink,
+                edit: `https://fontmaze.com/wp-admin/post.php?post=${publishedProduct.id}&action=edit`,
+            })
+
+
             setStep('All done!')
         } catch (err) {
             console.error('[handleUploadAndPublish] ❌', err)
@@ -365,6 +378,27 @@ const ExportForm = () => {
                             )}
                         </Button>
                     </div>
+
+                    {wordpressUrls && (
+                        <div className="flex gap-3 mt-4">
+                            <Button
+                                type="button"
+                                variant="twoTone"
+                                className="w-full"
+                                onClick={() => window.open(wordpressUrls.live, '_blank')}
+                            >
+                                🔗 View on Website
+                            </Button>
+                            <Button
+                                type="button"
+                                className="w-full"
+                                onClick={() => window.open(wordpressUrls.edit, '_blank')}
+                            >
+                                ✏️ Edit in WordPress
+                            </Button>
+                        </div>
+                    )}
+
                 </>
             )}
         </AdaptableCard>
