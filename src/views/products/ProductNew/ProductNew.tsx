@@ -34,10 +34,10 @@ const ProductNew = () => {
                     Product successfuly added
                 </Notification>,
                 {
-                    placement: 'top-center',
+                    placement: 'bottom-start',
                 },
             )
-            navigate('/products')
+            //navigate('/products')
         } else {
             toast.push(
                 <Notification

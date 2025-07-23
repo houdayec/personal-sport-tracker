@@ -67,7 +67,7 @@ export const initialTableData: TableQueries = {
 
 export const initialFilterData: ProductFilterQueries = {
     name: '',
-    category: ['football_font'],
+    category: ['font', 'football_font'],
     etsyPublished: undefined,
     websitePublished: undefined,
 }

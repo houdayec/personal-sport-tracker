@@ -137,11 +137,11 @@ const ThumbnailStudioThirdCharacters = () => {
                         }
                     </div>
                     <div className="pt-2">
-                        <ThumbnailStudioMetadata slug="characters_preview" />
+                        <ThumbnailStudioMetadata slug="characters-preview" />
                         <ThumbnailUploader
                             canvasRef={canvasRef}
                             bgColor="#ffffff"
-                            slug="characters_preview"
+                            slug="characters-preview"
                         />
                     </div>
                 </div>

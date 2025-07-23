@@ -4,6 +4,12 @@ import { getDownloadURL, ref, listAll } from 'firebase/storage'
 import { storage } from '@/firebase'
 import WordpressApiService from './WordpressService'
 
+const API_URL = import.meta.env.VITE_WOOCOMMERCE_BASE_URL
+const AUTH = {
+    username: import.meta.env.VITE_WOOCOMMERCE_CONSUMER_KEY,
+    password: import.meta.env.VITE_WOOCOMMERCE_CONSUMER_SECRET,
+}
+
 export const generateWordPressHtml = (
     category: string,
     mainKeyword: string,
@@ -70,7 +76,6 @@ export const generateWordPressHtml = (
 
 export const fetchWooProductById = async (id: number) => {
 
-
     try {
         //const proxyUrl = `https://dashboard-api.fontmaze.workers.dev?url=${encodeURIComponent(`https://fontmaze.com/wp-json/wc/v3/products/${id}`)}`
 
@@ -91,54 +96,13 @@ export const fetchWooProductById = async (id: number) => {
     }
 }
 
-// Uploads an image from Firebase Storage to WordPress Media Library
-export async function uploadImageToWordPress2(firebasePath: string) {
-    console.log('[Upload] Starting upload for:', firebasePath)
-
-    const storageRef = ref(storage, firebasePath)
-    const downloadUrl = await getDownloadURL(storageRef)
-    console.log('[Upload] Download URL:', downloadUrl)
-
-    const blob = await (await fetch(downloadUrl)).blob()
-    console.log('[Upload] Blob fetched, size:', blob.size)
-
-    const fileName = firebasePath.split('/').pop() || 'image.webp'
-    console.log('[Upload] File name resolved:', fileName)
-
-    const formData = new FormData()
-    formData.append('file', blob, fileName)
-    console.log('[Upload] FormData prepared')
-
-    const proxyUrl = `https://dashboard-api.fontmaze.workers.dev?url=${encodeURIComponent('https://fontmaze.com/wp-json/wp/v2/media')}`
-
-    const response = await WordpressApiService.fetchData<{ id: number; source_url: string; alt_text: string }>({
-        url: proxyUrl,
-        method: 'post',
-        headers: {
-            'Content-Disposition': `attachment; filename="${fileName}"`,
-        },
-        data: formData,
-    })
-
-    console.log('[Upload] Upload successful:', response.data)
-
-    return {
-        id: response.data.id,
-        src: response.data.source_url,
-        name: fileName,
-        alt: '', // optionally use alt based on product name/category
-    }
-}
-
-// IMPORTANT: Store these securely, e.g., in environment variables,
-// NOT directly in your frontend code for production.
-const WP_USERNAME = 'font-station.com'; // Replace with your actual username
-const WP_APP_PASSWORD = 'dA6g IUhx cZKY 3RVY AxfR yDop'; // Replace with your actual application password
-
 // Base64 encode the credentials once
-const encodedCredentials = btoa(`${WP_USERNAME}:${WP_APP_PASSWORD}`);
+const encodedCredentials = btoa(`${import.meta.env.VITE_WP_USERNAME}:${import.meta.env.VITE_WP_APP_PASSWORD}`);
 
-export async function uploadImageToWordPress(firebasePath: string) {
+export async function uploadImageToWordPress(
+    firebasePath: string,
+    meta: { alt: string; title: string; caption: string; description: string },
+) {
     console.log('[Upload v2] Starting upload for:', firebasePath);
 
     // 1. fetch the blob from Firebase
@@ -150,6 +114,14 @@ export async function uploadImageToWordPress(firebasePath: string) {
     const fileName = firebasePath.split('/').pop() || 'upload';
     const formData = new FormData();
     formData.append('file', blob, fileName);
+
+    // add your metadata fields here:
+    formData.append('alt_text', meta.alt)
+    formData.append('title', meta.title)
+    formData.append('caption', meta.caption)
+    formData.append('description', meta.description)
+
+    console.log('[Upload v2] FormData prepared:', meta);
 
     // 3. POST to WP media
     try {
@@ -163,7 +135,7 @@ export async function uploadImageToWordPress(firebasePath: string) {
             formData,
             {
                 headers: {
-                    'Content-Disposition': `attachment; filename="${fileName}"`,
+                    //'Content-Disposition': `attachment; filename="${fileName}"`,
                     'Authorization': `Basic ${encodedCredentials}`, // <-- THIS IS THE KEY LINE
                     'Content-Type': 'multipart/form-data', // Axios usually sets this correctly for FormData, but good to be explicit
                 },
@@ -190,6 +162,7 @@ export async function uploadImageToWordPress(firebasePath: string) {
         throw error; // Re-throw to propagate the error
     }
 }
+
 // Lists all .webp images under the square thumbnails path for a product
 export const listWebpSquareThumbnails = async (sku: string): Promise<string[]> => {
     console.log('[List Images] Listing webp thumbnails for SKU:', sku)
@@ -204,4 +177,106 @@ export const listWebpSquareThumbnails = async (sku: string): Promise<string[]> =
     console.log('[List Images] Found webp files:', webpPaths)
 
     return webpPaths
+}
+
+/*
+ * Publishes a new WooCommerce product (or updates existing),
+ * attaching uploaded images and the ZIP file.
+ */
+/**
+ * Publishes or updates a WooCommerce product based on SKU.
+ * Attaches thumbnail image IDs and ZIP media ID.
+ */
+export async function publishWooProduct(product: any, imageIds: number[], zipMedia: any): Promise<any> {
+    console.log('[publishWooProduct] ▶️ Start')
+
+    delete product.id
+    delete product.date_created
+    delete product.date_modified
+    delete product.total_sales
+    delete product.average_rating
+    delete product.rating_count
+    delete product.review_count
+    delete product.tags
+    delete product.id
+    delete product.date_created
+    delete product.date_modified
+    delete product.date_created_gmt
+    delete product.date_modified_gmt
+    delete product.date_on_sale_from
+    delete product.date_on_sale_from_gmt
+    delete product.date_on_sale_to
+    delete product.date_on_sale_to_gmt
+    delete product.average_rating
+    delete product.images?.[0]?.id
+    delete product.total_sales
+    delete product.average_rating
+    delete product.rating_count
+    delete product.review_count
+    delete product.related_ids
+
+    const payload = {
+        ...product,
+        images: imageIds.map(id => ({ id })),
+        categories: (product.categoryIds || []).map((id: number) => ({ id })),
+        meta_data: [
+            ...(product.meta_data || []),
+            { key: 'zip_media_id', value: zipMedia.id },
+        ],
+        downloadable: true,
+        virtual: true,
+        downloads: [
+            {
+                name: `${product.sku} ${product.name}`,
+                file: zipMedia.source_url,
+            },
+        ],
+    }
+
+    console.log(`[publishWooProduct] 🔍 Checking for existing SKU "${product.sku}"`)
+    const existing = await axios.get(`${API_URL}/products`, {
+        params: {
+            sku: product.sku,
+            per_page: 1,
+            consumer_key: AUTH.username,
+            consumer_secret: AUTH.password,
+        },
+    })
+
+    const match = Array.isArray(existing.data) && existing.data.length > 0 && existing.data[0].sku === product.sku
+
+    if (match) {
+        const id = existing.data[0].id
+        console.log(`[publishWooProduct] ✏️ Updating existing product ID ${id}`)
+
+        const res = await axios.put(`${API_URL}/products/${id}`, payload, {
+            auth: AUTH,
+        })
+        console.log('[publishWooProduct] ✅ Updated', res.data.id)
+        return res.data
+    } else {
+        console.log('[publishWooProduct] 🆕 Creating new product')
+
+        const res = await axios.post(`${API_URL}/products`, payload, {
+            auth: AUTH,
+        })
+        console.log('[publishWooProduct] ✅ Created', res.data.id)
+        return res.data
+    }
+}
+
+// Fetch product categories from WooCommerce
+export async function fetchWordpressProductCategories(): Promise<{ id: number; name: string }[]> {
+
+    const response = await axios.get(`${API_URL}/products/categories`, {
+        auth: AUTH,
+        params: {
+            per_page: 100,
+        },
+    })
+
+    return response.data.map((cat: any) => ({
+        id: cat.id,
+        name: cat.name,
+    }))
 }

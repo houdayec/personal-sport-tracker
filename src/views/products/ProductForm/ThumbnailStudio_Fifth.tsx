@@ -157,7 +157,7 @@ const ThumbnailStudioFifthMockupLaptop = () => {
                         <ThumbnailUploader
                             canvasRef={canvasRef}
                             bgColor="#ffffff"
-                            slug="example_laptop"
+                            slug="example-laptop"
                         />
                     </div>
                 </div>

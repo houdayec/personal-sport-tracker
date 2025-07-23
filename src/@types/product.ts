@@ -3,13 +3,13 @@ export class Product {
     name!: string
     category!: string              // Category (e.g. 'football_font')
     etsyId?: number | null
-    wordpressId?: number | null
     publishedOnWebsite!: boolean
     wordpressReviewUpdatedAt?: number | null
     status!: 'draft' | 'published' | 'archived' | 'removed' | 'undefined'
     mainKeyword!: string
     secondKeyword!: string
-    price!: number
+    fullPrice!: number
+    salePrice!: number
     fontData?: {
         publishedOnTpt?: boolean
         generated?: {
@@ -24,6 +24,7 @@ export class Product {
         revenue: number
     }
 
+    thumbnails?: any
     wordpress?: WordPressData
     thumbnailsMetadata?: ThumbnailsMetadata
     websiteMetadata?: WebsiteMetadata
@@ -68,7 +69,7 @@ export class Product {
         newProduct.sku = data.sku || ''
         newProduct.name = data.name || ''
         newProduct.category = data.category || ''
-        newProduct.wordpressId = data.wordpressId ?? null
+        newProduct.wordpress = { ...newProduct.wordpress, id: data.wordpress?.id ?? null }
         newProduct.publishedOnWebsite = data.publishedOnWebsite ?? false
         newProduct.wordpressReviewUpdatedAt = data.wordpressReviewUpdatedAt ?? null
         newProduct.status = data.status || 'draft'
@@ -135,7 +136,6 @@ export class Product {
             sku: '',
             name: '',
             category: '',
-            wordpressId: null,
             publishedOnWebsite: false,
             wordpressReviewUpdatedAt: null,
             status: 'draft',
@@ -186,6 +186,21 @@ export class Product {
     }
 }
 
+export const categoryOptions = [
+    { label: 'Font', value: 'font' },
+    { label: 'Football Font', value: 'football_font' },
+    { label: 'Font Bundle', value: 'font_bundle' },
+    { label: 'Football Font Bundle', value: 'football_font_bundle' },
+    { label: 'Image Font', value: 'vector_font' },
+]
+
+export const statusOptions = [
+    { label: 'Draft', value: 'draft' },
+    { label: 'Published', value: 'published' },
+    { label: 'Archived', value: 'archived' },
+    { label: 'Undefined', value: 'undefined' },
+]
+
 export const PRODUCT_CATEGORIES = [
     { label: 'Font', value: 'font' },
     { label: 'Football Font', value: 'football_font' },
@@ -210,6 +225,7 @@ export type ThumbnailsMetadata = {
     comments: string
     mainKeyword: string
     secondKeyword: string
+    slugs: { "main": string, "characters-preview": string, "included-files": string, "sentence": string }
 
     main_titleText?: string
     main_bgColor?: string
@@ -236,6 +252,11 @@ export type ThumbnailsMetadata = {
     shadowOffsetY?: number
     shadowOpacity?: number
 
+    main_metaAlt?: string
+    main_metaTitle?: string
+    main_metaCaption?: string
+    main_metaDescription?: string
+
     sentence_charColor?: string
     sentence_showTextAreaBox?: boolean
 
@@ -259,6 +280,10 @@ export type ThumbnailsMetadata = {
     example_tablet_showLowercase?: boolean
     example_tablet_showNumbers?: boolean
     example_tablet_showSpecials?: boolean
+
+    thumbnailsMetadata?: {
+
+    }
 }
 
 export type WebsiteMetadata = {
@@ -271,6 +296,16 @@ export type WebsiteMetadata = {
     snippetDescription: string
 }
 
+export type WpMediaData = {
+    id: number;
+    name: string;
+    source_url: string;
+    alt_text: string;
+    caption?: string;
+    title?: string;
+    description?: string;
+}
+
 export type WordPressData = {
     id?: number
     slug?: string
@@ -279,6 +314,7 @@ export type WordPressData = {
     longDescription?: string
     snippetDescription?: string
     categories?: string[]
+    categoriesIds?: number[]
     tags?: string[]
     images?: string[]
     status?: 'draft' | 'pending' | 'publish'
@@ -291,5 +327,19 @@ export type WordPressData = {
         slug?: string
         description?: string
         focusKeyword?: string
+    }
+}
+
+export const getPricingByCategory = (category: string) => {
+    switch (category) {
+        case 'font':
+        case 'football_font':
+        case 'vector_font':
+            return { fullPrice: 4.99, salePrice: 2.49 }
+        case 'font_bundle':
+        case 'football_font_bundle':
+            return { fullPrice: 9.99, salePrice: 4.99 }
+        default:
+            return { fullPrice: 0, salePrice: 0 }
     }
 }

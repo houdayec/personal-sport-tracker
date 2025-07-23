@@ -41,14 +41,14 @@ const ThumbnailStudioMetadata = ({ slug }: Props) => {
                 desc = `Discover the full character set of the ${fontName} font in this visual preview. Designed by FontMaze, this font blends aesthetic precision with expressive style. Ideal for crafting, branding, sublimation, and graphic design, it suits any project that needs a touch of originality.`
                 break
 
-            case 'characters_preview':
+            case 'characters-preview':
                 alt = `Image showing all characters available in the ${fontName} font created by FontMaze.`
                 title = `${fontName} Font Characters - ${theme} Typography Preview`
                 caption = `Available characters in the ${fontName} font made by FontMaze.`
                 desc = `Explore the complete character set of the ${fontName} font in this thumbnail preview. With stylish letters and additional elements, this font is perfect for creating sophisticated designs, making it an excellent choice for graphic design, branding, sublimation and other creative projects.`
                 break
 
-            case 'included_files':
+            case 'included-files':
                 alt = `Different Formats and Sizes of ${fontName} Font`
                 title = `${fontName} Font Formats and Sizes - OTF, TTF, SVG, PNG, PDF, Various Sizes`
                 caption = `Explore the versatility of the ${fontName} font with this image showcasing different formats (OTF, TTF, SVG, PNG, PDF) and various PNG sizes.`
@@ -70,10 +70,10 @@ const ThumbnailStudioMetadata = ({ slug }: Props) => {
                 break
         }
 
-        setFieldValue(`thumbnailsMetadata.${slug}_metaAlt`, alt)
-        setFieldValue(`thumbnailsMetadata.${slug}_metaTitle`, title)
-        setFieldValue(`thumbnailsMetadata.${slug}_metaCaption`, caption)
-        setFieldValue(`thumbnailsMetadata.${slug}_metaDescription`, desc)
+        setFieldValue(`thumbnails.${slug}.metadata.alt`, alt)
+        setFieldValue(`thumbnails.${slug}.metadata.title`, title)
+        setFieldValue(`thumbnails.${slug}.metadata.caption`, caption)
+        setFieldValue(`thumbnails.${slug}.metadata.description`, desc)
     }
 
 
@@ -91,16 +91,16 @@ const ThumbnailStudioMetadata = ({ slug }: Props) => {
             {showMeta && (
                 <div className="space-y-3">
                     <FormItem label="Alt Text">
-                        <Field name={`thumbnailsMetadata.${slug}_metaAlt`} component={Input} />
+                        <Field name={`thumbnails.${slug}.metadata.alt`} component={Input} />
                     </FormItem>
                     <FormItem label="Title">
-                        <Field name={`thumbnailsMetadata.${slug}_metaTitle`} component={Input} />
+                        <Field name={`thumbnails.${slug}.metadata.title`} component={Input} />
                     </FormItem>
                     <FormItem label="Caption">
-                        <Field name={`thumbnailsMetadata.${slug}_metaCaption`} component={Input} />
+                        <Field name={`thumbnails.${slug}.metadata.caption`} component={Input} />
                     </FormItem>
                     <FormItem label="Description">
-                        <Field name={`thumbnailsMetadata.${slug}_metaDescription`} component={Input} />
+                        <Field name={`thumbnails.${slug}.metadata.description`} component={Input} />
                     </FormItem>
                 </div>
             )}

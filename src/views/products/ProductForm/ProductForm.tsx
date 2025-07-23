@@ -1,4 +1,4 @@
-import { forwardRef, useState } from 'react'
+import { forwardRef, useEffect, useState } from 'react'
 import { FormContainer } from '@/components/ui/Form'
 import Button from '@/components/ui/Button'
 import hooks from '@/components/ui/hooks'
@@ -24,39 +24,11 @@ import TabNav from '@/components/ui/Tabs/TabNav'
 import ThumbnailMetadataForm from './ThumbnailMetadataForm'
 import { useFormikContext } from 'formik';
 import ThumbnailForm from './ThumbnailForm'
-import WordPressFields from './WordpressFields'
 import WordpressForm from './WordpressForm'
 import ExportForm from './ExportForm'
 
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 type FormikRef = FormikProps<any>
-
-type InitialData = {
-    id?: string
-    name?: string
-    productCode?: string
-    img?: string
-    imgList?: {
-        id: string
-        name: string
-        img: string
-    }[]
-    category?: string
-    price?: number
-    stock?: number
-    status?: number
-    costPerItem?: number
-    bulkDiscountPrice?: number
-    taxRate?: number
-    tags?: string[]
-    brand?: string
-    vendor?: string
-    description?: string
-}
-
-export type FormModel = Omit<InitialData, 'tags'> & {
-    tags: { label: string; value: string }[] | string[]
-}
 
 export type SetSubmitting = (isSubmitting: boolean) => void
 
@@ -78,10 +50,11 @@ const validationSchema = Yup.object().shape({
     name: Yup.string().required('Product Name Required'),
     sku: Yup.string().required('SKU Required'),
     category: Yup.string().required('Category Required'),
+    //categoriesIds: Yup.string().required('Wordpress Category Required'),
     mainKeyword: Yup.string().required('Main Keyword Required'),
     secondKeyword: Yup.string().required('Second Keyword Required'),
-    price: Yup.string().required('Price Required'),
-
+    fullPrice: Yup.string().required('Full Price Required'),
+    salePrice: Yup.string().required('Sale Price Required'),
 })
 
 const DeleteProductButton = ({ onDelete }: { onDelete: OnDelete }) => {
@@ -132,6 +105,11 @@ const DeleteProductButton = ({ onDelete }: { onDelete: OnDelete }) => {
 }
 
 const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
+
+    const tabOrder = ['product', 'assets', 'thumbnails', 'wordpress', 'export']
+    const [activeTab, setActiveTab] = useState('product')
+    const [allowedTabs, setAllowedTabs] = useState(['product']) // first tab always allowed
+
     const {
         type,
         initialData: initialProduct = Product.createEmpty(),
@@ -140,7 +118,39 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
         onDelete,
     } = props
     console.log("initial product", initialProduct)
-    const category = initialProduct.category
+
+    const canSwitchTo = async (nextTab: string, values: Product): Promise<boolean> => {
+        console.log('Checking if can switch to tab:', nextTab)
+        if (nextTab === 'assets') {
+            const { name, sku } = values
+            if (!name || !sku) {
+                console.log('Blocked: name or sku missing')
+                return false
+            }
+        }
+
+        return true
+    }
+
+    const handleTabChange = async (nextTab: string, values: Product) => {
+        console.log('Switching to tab:', nextTab)
+
+        const currentIndex = tabOrder.indexOf(activeTab)
+        const nextIndex = tabOrder.indexOf(nextTab)
+
+        if (nextIndex <= currentIndex) {
+            setActiveTab(nextTab)
+            return
+        }
+
+        const valid = await canSwitchTo(nextTab, values)
+        if (valid) {
+            setAllowedTabs(prev => [...new Set([...prev, nextTab])])
+            setActiveTab(nextTab)
+        } else {
+            console.log('Blocked: validation failed.')
+        }
+    }
 
     return (
         <>
@@ -158,20 +168,28 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                     onFormSubmit?.(newProduct, setSubmitting)
                 }}>
                 {({ values, touched, errors, isSubmitting }) => {
-                    const category = values?.category
+                    useEffect(() => {
+                        const { name, sku } = values
+                        if (name && sku && !allowedTabs.includes('assets')) {
+                            setAllowedTabs((prev) => [...prev, 'assets'])
+                        }
+                    }, [values.name, values.sku])
 
                     return (
                         <Form>
                             <FormContainer>
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                                     <div className="lg:col-span-3">
-                                        <Tabs defaultValue="product">
+                                        <Tabs
+                                            value={activeTab}
+                                            onChange={(nextTab) => handleTabChange(nextTab, values)}
+                                        >
                                             <TabList>
                                                 <TabNav value="product">🗂 Product Info</TabNav>
-                                                <TabNav value="assets">📦 Assets</TabNav>
-                                                <TabNav value="thumbnails">🖼 Thumbnails</TabNav>
-                                                <TabNav value="wordpress">📝 WordPress Post</TabNav>
-                                                <TabNav value="export">📤 Export & Upload</TabNav>
+                                                <TabNav value="assets" disabled={!allowedTabs.includes('assets')}>📦 Assets</TabNav>
+                                                <TabNav value="thumbnails" disabled={!allowedTabs.includes('thumbnails')}>🖼 Thumbnails</TabNav>
+                                                <TabNav value="wordpress" disabled={!allowedTabs.includes('wordpress')}>📝 WordPress Post</TabNav>
+                                                <TabNav value="export" disabled={!allowedTabs.includes('export')}>📤 Export & Upload</TabNav>
                                             </TabList>
 
                                             <div className="p-4">

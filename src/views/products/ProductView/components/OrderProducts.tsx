@@ -78,7 +78,7 @@ const columns = [
         header: 'Price',
         cell: (props) => {
             const row = props.row.original
-            return <PriceAmount amount={row.price} />
+            return <PriceAmount amount={row.fullPrice} />
         },
     }),
     columnHelper.accessor('quantity', {
@@ -88,7 +88,7 @@ const columns = [
         header: 'Total',
         cell: (props) => {
             const row = props.row.original
-            return <PriceAmount amount={row.price} />
+            return <PriceAmount amount={row.fullPrice} />
         },
     }),
 ]

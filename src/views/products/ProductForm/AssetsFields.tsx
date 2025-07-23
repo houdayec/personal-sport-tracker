@@ -14,15 +14,22 @@ import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import { Field, FormikErrors, FormikTouched, FieldProps, useFormikContext } from 'formik'
 
-type FormFieldsName = {
+type AssetsFormFieldsName = {
     name: string
     sku: string
     category: string
+    fontData: {
+        generated: {
+            fontFamily: string
+            fullName: string
+            version: string
+        }
+    }
 }
 
-type ThumbnailFormFields = {
-    touched: FormikTouched<FormFieldsName>
-    errors: FormikErrors<FormFieldsName>
+type AssetsFormFields = {
+    touched: FormikTouched<AssetsFormFieldsName>
+    errors: FormikErrors<AssetsFormFieldsName>
 }
 
 interface GlyphAsset {
@@ -31,8 +38,9 @@ interface GlyphAsset {
     pngBlob: Blob
 }
 
-const AssetsFields = (props: ThumbnailFormFields) => {
+const AssetsFields = (props: AssetsFormFields) => {
     const { values } = useFormikContext<any>()
+    const { touched, errors } = props
     const [ttfFile, setTtfFile] = useState<File | null>(null)
     const [font, setFont] = useState<opentype.Font | null>(null)
     const [glyphCount, setGlyphCount] = useState(0)
@@ -269,6 +277,42 @@ const AssetsFields = (props: ThumbnailFormFields) => {
         task.on('state_changed', snap => console.log(path, (snap.bytesTransferred / snap.totalBytes * 100).toFixed(0) + '%'), err => rej(err), () => res())
     })
 
+    // Maps special characters to safe readable names
+    const safeCharMap: Record<string, string> = {
+        '!': '_exclamation',
+        '@': '_at',
+        '#': '_hash',
+        '$': '_dollar',
+        '%': '_percent',
+        '^': '_caret',
+        '&': '_ampersand',
+        '*': '_asterisk',
+        '(': '_parenLeft',
+        ')': '_parenRight',
+        '-': '_dash',
+        '_': '_underscore',
+        '=': '_equals',
+        '+': '_plus',
+        '[': '_bracketLeft',
+        ']': '_bracketRight',
+        '{': '_braceLeft',
+        '}': '_braceRight',
+        ';': '_semicolon',
+        ':': '_colon',
+        "'": '_quote',
+        '"': '_doubleQuote',
+        ',': '_comma',
+        '.': '_dot',
+        '<': '_lessThan',
+        '>': '_greaterThan',
+        '/': '_slash',
+        '?': '_question',
+        '\\': '_backslash',
+        '|': '_pipe',
+        '`': '_backtick',
+        '~': '_tilde'
+    }
+
     // Generate SVG and PNG glyph assets using the working logic from previous version
     const generateGlyphAssets = async () => {
         if (!font) return
@@ -331,9 +375,10 @@ const AssetsFields = (props: ThumbnailFormFields) => {
         if (hasFontFiles) total += 4
 
         for (const { char, svgBlob, pngBlob } of glyphAssets) {
-            await upload(`products/${sku}/files/Final Product/SVG/${char}.svg`, svgBlob)
+            const safeChar = char in safeCharMap ? safeCharMap[char] : char
+            await upload(`products/${sku}/files/Final Product/SVG/${safeChar}.svg`, svgBlob)
             count++; setUploadCount(count)
-            await upload(`products/${sku}/files/Final Product/PNG/${char}.png`, pngBlob)
+            await upload(`products/${sku}/files/Final Product/PNG/${safeChar}.png`, pngBlob)
             count++; setUploadCount(count)
         }
 
@@ -368,7 +413,10 @@ const AssetsFields = (props: ThumbnailFormFields) => {
         if (!glyphAssets.length) return
         const zip = new JSZip()
         const svgF = zip.folder('SVG')!, pngF = zip.folder('PNG')!
-        glyphAssets.forEach(({ char, svgBlob, pngBlob }) => { svgF.file(`${char}.svg`, svgBlob); pngF.file(`${char}.png`, pngBlob) })
+        glyphAssets.forEach(({ char, svgBlob, pngBlob }) => {
+            const safeChar = char in safeCharMap ? safeCharMap[char] : char
+            svgF.file(`${safeChar}.svg`, svgBlob); pngF.file(`${safeChar}.png`, pngBlob)
+        })
         const content = await zip.generateAsync({ type: 'blob' })
         const name = values.fontData.generated.fullName || values.sku || 'glyphs'
         saveAs(content, `${name}.zip`)
@@ -386,7 +434,12 @@ const AssetsFields = (props: ThumbnailFormFields) => {
                 )}
             </FormItem>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <FormItem label="Font Family Name"><Field name="fontData.generated.fontFamily" component={Input} /></FormItem>
+                <FormItem
+                    label="Font Family Name"
+                    invalid={(errors.fontData?.generated?.fontFamily && touched.fontData?.generated?.fontFamily) as boolean}
+                >
+                    <Field name="fontData.generated.fontFamily" component={Input} />
+                </FormItem>
                 <FormItem label="Full Name"><Field name="fontData.generated.fullName" component={Input} /></FormItem>
                 <FormItem label="Version"><Field name="fontData.generated.version" component={Input} /></FormItem>
             </div>

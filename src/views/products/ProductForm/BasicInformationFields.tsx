@@ -4,42 +4,44 @@ import Input from '@/components/ui/Input'
 import { FormItem } from '@/components/ui/Form'
 import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik'
 import { Select } from '@/components/ui'
+import { useEffect, useState } from 'react'
+import { fetchWordpressProductCategories } from '@/services/WooService'
+import { categoryOptions, getPricingByCategory, statusOptions } from '@/@types/product'
 
 type FormFieldsName = {
     name: string
     sku: string
     category: string
+    wordpressCategories: number[]
     mainKeyword: string
     secondKeyword: string
-    price: string
+    fullPrice: number
+    salePrice: number
 }
 
 type BasicInformationFields = {
     touched: FormikTouched<FormFieldsName>
     errors: FormikErrors<FormFieldsName>
 }
-const categoryOptions = [
-    { label: 'Font', value: 'font' },
-    { label: 'Football Font', value: 'football_font' },
-    { label: 'Font Bundle', value: 'font_bundle' },
-    { label: 'Football Font Bundle', value: 'football_font_bundle' },
-    { label: 'Image Font', value: 'vector_font' },
-]
-
-const statusOptions = [
-    { label: 'Draft', value: 'draft' },
-    { label: 'Published', value: 'published' },
-    { label: 'Archived', value: 'archived' },
-    { label: 'Undefined', value: 'undefined' },
-]
 
 const ProductInfoFields = (props: BasicInformationFields) => {
     const { touched, errors } = props
+    const [wordpressCategoryOptions, setWordpressCategoryOptions] = useState<{ value: number; label: string }[]>([])
+    const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        setLoading(true)
+        fetchWordpressProductCategories()
+            .then((cats) => {
+                setWordpressCategoryOptions(cats.map((c) => ({ value: c.id, label: c.name })))
+            })
+            .finally(() => setLoading(false))
+    }, [])
 
     return (
         <AdaptableCard divider className="mb-4">
-            <h5>Basic Information</h5>
-            <p className="mb-6">Section to config basic product information</p>
+            <h5>Product Info</h5>
+            <p className="mb-6">Product basic information</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormItem
                     label="SKU"
@@ -50,7 +52,7 @@ const ProductInfoFields = (props: BasicInformationFields) => {
                         type="text"
                         autoComplete="off"
                         name="sku"
-                        placeholder="SKU"
+                        placeholder="FMZXXX"
                         component={Input}
                     />
                 </FormItem>
@@ -77,18 +79,33 @@ const ProductInfoFields = (props: BasicInformationFields) => {
                             <Select
                                 options={categoryOptions}
                                 value={categoryOptions.find(option => option.value === field.value)}
-                                onChange={(option) => form.setFieldValue(field.name, option?.value)}
+                                onChange={(option) => {
+                                    form.setFieldValue(field.name, option?.value)
+                                    const prices = getPricingByCategory(option?.value || '')
+                                    form.setFieldValue('fullPrice', prices.fullPrice)
+                                    form.setFieldValue('salePrice', prices.salePrice)
+                                }}
                             />
                         )}
                     </Field>
                 </FormItem>
-                <FormItem label="Status">
-                    <Field name="status">
+                <FormItem
+                    label="WordPress Categories"
+                    invalid={(errors.wordpressCategories && touched.wordpressCategories) as boolean}
+                >
+                    <Field name="categoriesIds">
                         {({ field, form }: FieldProps) => (
                             <Select
-                                options={statusOptions}
-                                value={statusOptions.find(option => option.value === field.value)}
-                                onChange={(option) => form.setFieldValue(field.name, option?.value)}
+                                isMulti
+                                isLoading={loading}
+                                options={wordpressCategoryOptions}
+                                value={wordpressCategoryOptions.filter(option => field.value?.includes(option.value))}
+                                onChange={(selected) =>
+                                    form.setFieldValue(
+                                        field.name,
+                                        selected ? selected.map((s) => s.value) : []
+                                    )
+                                }
                             />
                         )}
                     </Field>
@@ -100,17 +117,33 @@ const ProductInfoFields = (props: BasicInformationFields) => {
                     <Field type="text" name="secondKeyword" placeholder="Second keyword" component={Input} />
                 </FormItem>
 
+                <FormItem label="Full Price (USD)" invalid={(errors.fullPrice && touched.fullPrice) as boolean}>
+                    <Field type="number" name="fullPrice" placeholder="4.99" component={Input} />
+                </FormItem>
+
+                <FormItem label="Sale Price (USD)" invalid={(errors.salePrice && touched.salePrice) as boolean}>
+                    <Field type="number" name="salePrice" placeholder="2.49" component={Input} />
+                </FormItem>
+
                 <FormItem label="WordPress ID">
                     <Field
                         type="number"
-                        name="wordpressId"
+                        name="wordpress.id"
                         placeholder="WordPress ID"
                         component={Input}
                     />
                 </FormItem>
 
-                <FormItem label="Price (USD)" invalid={(errors.price && touched.price) as boolean}>
-                    <Field type="number" name="price" placeholder="9.99" component={Input} />
+                <FormItem label="Status">
+                    <Field name="status">
+                        {({ field, form }: FieldProps) => (
+                            <Select
+                                options={statusOptions}
+                                value={statusOptions.find(option => option.value === field.value)}
+                                onChange={(option) => form.setFieldValue(field.name, option?.value)}
+                            />
+                        )}
+                    </Field>
                 </FormItem>
 
                 <FormItem label="Published on Website">
@@ -121,6 +154,7 @@ const ProductInfoFields = (props: BasicInformationFields) => {
                     </Field>
                 </FormItem>
 
+                {/* 
                 <FormItem label="WordPress Reviews - Last Update">
                     <Field
                         type="number"
@@ -129,6 +163,8 @@ const ProductInfoFields = (props: BasicInformationFields) => {
                         component={Input}
                     />
                 </FormItem>
+                */}
+
                 {/* 
             <FormItem
                 label="Description"

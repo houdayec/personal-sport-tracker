@@ -41,13 +41,13 @@ const ProductEdit = () => {
         values: Product,
         setSubmitting: SetSubmitting,
     ) => {
+        console.log("ProductEdit: handleFormSubmit", values)
         setSubmitting(true)
         const success = await updateProduct(values)
         setSubmitting(false)
         if (success) {
             popNotification('updated')
-            navigate(-1)
-
+            //navigate(-1)
         }
     }
 
@@ -75,10 +75,10 @@ const ProductEdit = () => {
                 Product successfuly {keyword}
             </Notification>,
             {
-                placement: 'top-center',
+                placement: 'bottom-start',
             },
         )
-        navigate('/app/sales/product-list')
+        //navigate('/app/sales/product-list')
     }
 
     useEffect(() => {
