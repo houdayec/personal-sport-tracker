@@ -263,6 +263,14 @@ export type ThumbnailsMetadata = {
     main_charset?: string
     main_watermarkOpacity?: number
     main_watermarkColor?: string
+    main_gradientEnabled?: boolean
+    main_gradientColor1?: string
+    main_gradientColor2?: string
+    main_gradientType?: 'center' | 'diagonal'
+    main_patternScale?: number
+    main_patternDiagonal?: boolean
+    main_patternIcon?: string
+
     shadowColor?: string
     shadowBlur?: number
     shadowOffsetX?: number
