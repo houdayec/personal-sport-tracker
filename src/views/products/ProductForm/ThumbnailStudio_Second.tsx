@@ -5,6 +5,7 @@ import { FormItem } from '@/components/ui/Form'
 import ThumbnailUploader from './ThumbnailUploader'
 import { Product, ThumbnailsMetadata } from '@/@types/product'
 import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
+import { Card } from '@/components/ui'
 
 const IMAGE_SRC = '/img/others/thumbnail-preview.png'
 const CANVAS_WIDTH = 3000
@@ -118,7 +119,8 @@ const ThumbnailStudio_Sentence = () => {
                         />
                     </div>
                 </div>
-                <div className="space-y-4 w-full max-w-md">
+                <Card className="space-y-4 w-full max-w-md">
+                    <h5 className="font-semibold mb-2">Settings</h5>
                     <FormItem label="Font Color">
                         <Field name="thumbnailsMetadata.sentence_charColor" type="color" component={Input} />
                     </FormItem>
@@ -134,7 +136,7 @@ const ThumbnailStudio_Sentence = () => {
                             )}
                         </Field>
                     </FormItem>
-                </div>
+                </Card>
             </div>
         </div>
     )

@@ -56,6 +56,21 @@ const AssetsFields = (props: AssetsFormFields) => {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
+        const productName = values.name?.trim()
+        const familyField = values.fontData?.generated?.fontFamily
+        const fullNameField = values.fontData?.generated?.fullName
+
+        if (productName) {
+            if (!familyField) {
+                setFieldValue('fontData.generated.fontFamily', productName)
+            }
+            if (!fullNameField) {
+                setFieldValue('fontData.generated.fullName', productName)
+            }
+        }
+    }, [values.name, values.fontData?.generated?.fontFamily, values.fontData?.generated?.fullName, setFieldValue])
+
+    useEffect(() => {
         const loadExistingFont = async () => {
             const sku = values.sku
             if (!sku) return

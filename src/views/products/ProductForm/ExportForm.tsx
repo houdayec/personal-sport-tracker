@@ -119,6 +119,8 @@ const ExportForm = () => {
                 delete product.rating_count
                 delete product.review_count
                 delete product.related_ids
+                delete product.images
+                delete product.featured_media
 
                 Object.assign(product, {
                     name: values.name,
@@ -148,6 +150,13 @@ const ExportForm = () => {
                     });
                 }
 
+                if (values.wordpress?.isFeatured) {
+                    console.log(`✅ Adding tag 1277 to product`)
+                    Object.assign(product, {
+                        tags: [{ id: 1277 }],
+                    });
+                }
+
 
                 const paths = await listWebpSquareThumbnails(values.sku)
                 const urls = await Promise.all(
@@ -159,11 +168,8 @@ const ExportForm = () => {
                 setThumbnails(
                     _.sortBy(urls, ({ path }) => {
                         const fileName = path.split('/').pop() || ''
-                        const slug = fileName
-                            .replace(/\.[^/.]+$/, '')
-                            .replace(/^[^-]+-font-[^-]+-font-/, '')
-                            .replace(/-square$/, '')
-                        return DEFAULT_SLUG_ORDER.indexOf(slug)
+                        const slugIndex = DEFAULT_SLUG_ORDER.findIndex(slug => fileName.includes(slug))
+                        return slugIndex === -1 ? DEFAULT_SLUG_ORDER.length : slugIndex
                     })
                 )
                 setClonedProduct(product)

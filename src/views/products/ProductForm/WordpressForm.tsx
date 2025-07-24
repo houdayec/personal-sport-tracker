@@ -11,17 +11,26 @@ const WordpressForm = () => {
     const { values, setFieldValue } = useFormikContext<Product>()
     const { category = '', mainKeyword = 'FontMaze', secondKeyword = 'The Eras Tour' } = values
 
-    const [showPreviewExcerpt, setShowPreviewExcerpt] = useState(false)
-    const [showPreviewContent, setShowPreviewContent] = useState(false)
+    const [showPreviewExcerpt, setShowPreviewExcerpt] = useState(true)
+    const [showPreviewContent, setShowPreviewContent] = useState(true)
 
     useEffect(() => {
-        const { excerpt, content, slug, rankMath } = generateWordPressHtml(category, mainKeyword, secondKeyword)
+        const shouldGenerate =
+            !values.wordpress?.excerpt ||
+            !values.wordpress?.content ||
+            !values.wordpress?.slug ||
+            !values.wordpress?.rankMath
 
-        setFieldValue('wordpress.excerpt', excerpt)
-        setFieldValue('wordpress.content', content)
-        setFieldValue('wordpress.slug', slug)
-        setFieldValue('wordpress.rankMath', rankMath)  // ← this line is likely missing
-    }, [category, mainKeyword, secondKeyword, setFieldValue])
+        if (!shouldGenerate) return
+
+        const { excerpt, content, slug, rankMath } = generateWordPressHtml(values, category, mainKeyword, secondKeyword)
+
+        if (!values.wordpress?.excerpt) setFieldValue('wordpress.excerpt', excerpt)
+        if (!values.wordpress?.content) setFieldValue('wordpress.content', content)
+        if (!values.wordpress?.slug) setFieldValue('wordpress.slug', slug)
+        if (!values.wordpress?.rankMath) setFieldValue('wordpress.rankMath', rankMath)
+    }, [category, mainKeyword, secondKeyword, values.wordpress, setFieldValue])
+
     return (
         <AdaptableCard divider className="mb-4">
             <h5 className="mb-2 text-lg font-semibold">📝 WordPress HTML Description</h5>

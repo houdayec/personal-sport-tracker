@@ -11,6 +11,7 @@ import ThumbnailStudioThirdCharacters from './ThumbnailStudio_Third'
 import ThumbnailStudioFifthMockupLaptop from './ThumbnailStudio_Fifth'
 import ThumbnailStudioSixthMockupTablet from './ThumbnailStudio_Sixth'
 import ThumbnailStudio_IncludedFilesAndCompatibility from './ThumbnailStudio_IncludedFiles'
+import { Product } from '@/@types/product'
 
 type FormFieldsName = {
     name: string
@@ -68,12 +69,24 @@ const ThumbnailForm = (props: ThumbnailFormFields) => {
     const copy = (value: string, label: string) => {
         navigator.clipboard.writeText(value)
     }
+    const { values, setFieldValue } = useFormikContext<Product>()
 
     return (
         <AdaptableCard divider className="mb-4">
             <h2 className="mt-0">🖼️ Thumbnail Generation</h2>
             <p className="mb-6">Generate all thumbnails images & metadata</p>
-
+            <Button
+                type="button"
+                variant="twoTone"
+                className="text-blue-600"
+                onClick={() => {
+                    const encodedPath = encodeURIComponent(`products/${values.sku}/files/thumbnails/square`)
+                    const url = `https://console.firebase.google.com/u/0/project/fmz-dashboard/storage/fmz-dashboard.firebasestorage.app/files/~2F${encodedPath}`
+                    window.open(url, '_blank')
+                }}
+            >
+                🔎 View Thumbnails on Firebase
+            </Button>
             <ThumbnailPreviewStudio />
             <ThumbnailStudio_Sentence />
             <ThumbnailStudioThirdCharacters />

@@ -9,7 +9,7 @@ import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
 import { Product, ThumbnailsMetadata } from '@/@types/product'
 import { HexColorPicker } from "react-colorful";
 import { drawGradient, getCharacterLines, hexToRgba, ICON_PALETTE } from '@/utils/thumbnailUtils'
-import { Card } from '@/components/ui'
+import { Button, Card, Upload } from '@/components/ui'
 import IconPickerDialog from './IconPickerDialog'
 import { renderToStaticMarkup } from 'react-dom/server'
 
@@ -286,8 +286,9 @@ const ThumbnailPreviewStudio = () => {
     }, []) // run once on mount
 
     // Reads an uploaded SVG file, turns it into an Image, and stores it under `patternImages.custom`
-    const handleCustomPatternUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
+    const handleCustomPatternUpload = (files: File[], fileList: File[]) => {
+
+        const file = files[0]
         if (!file) return
 
         const img = new Image()
@@ -350,8 +351,8 @@ const ThumbnailPreviewStudio = () => {
 
                                         {/* dropdown positioned container */}
                                         {p.name === 'custom' && main_patternType === 'custom' && (
-                                            <div className="absolute left-0 top-full mt-2 z-10 bg-white border rounded shadow p-2">
-                                                <input
+                                            <div className="absolute left-0 top-full mt-2 z-10">
+                                                <Upload
                                                     type="file"
                                                     accept=".svg"
                                                     onChange={handleCustomPatternUpload}
@@ -362,16 +363,16 @@ const ThumbnailPreviewStudio = () => {
 
                                         {p.name === 'library' && main_patternType === 'library' && (
                                             <div className="absolute left-0 top-full mt-2 z-10">
-                                                <button
+                                                <Button
                                                     type="button"
                                                     onClick={() => {
                                                         setFieldValue('thumbnailsMetadata.main_patternType', p.name)
                                                         setIconDialogOpen(true)
                                                     }}
-                                                    className="text-xs bg-blue-500 text-white px-3 py-1 rounded"
+                                                    className="text-xs bg-blue-500 px-3 py-1 rounded"
                                                 >
                                                     Open Library
-                                                </button>
+                                                </Button>
                                             </div>
                                         )}
                                     </div>

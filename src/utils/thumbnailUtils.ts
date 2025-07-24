@@ -210,3 +210,6 @@ export const ICON_PALETTE: IconEntry[] = [
     { name: 'Anchor', Comp: Anchor },
     { name: 'Shield', Comp: Shield },
 ]
+
+export const slugify = (str: string) =>
+    str.toLowerCase().trim().replace(/[\s_]+/g, '-').replace(/[^\w\-]+/g, '')

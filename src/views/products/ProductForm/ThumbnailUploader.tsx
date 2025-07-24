@@ -8,6 +8,7 @@ import { db, storage } from '@/firebase'
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import { useState, RefObject } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
+import { slugify } from '@/utils/thumbnailUtils'
 
 type Props = {
     canvasRef: RefObject<HTMLCanvasElement | null>
@@ -48,7 +49,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
     const sku = values.sku
     const main = values.mainKeyword?.toLowerCase?.() || 'main'
     const second = values.secondKeyword?.toLowerCase?.() || 'second'
-    const filename = `${main}-font-${second}-font-${slug}`
+    const filename = `${slugify(main)}-font-${slugify(second)}-font-${slug}`
 
     // Generate square & landscape image versions
     const generateThumbnails = async () => {

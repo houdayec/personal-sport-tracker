@@ -3,6 +3,8 @@ import axios from 'axios'
 import { getDownloadURL, ref, listAll } from 'firebase/storage'
 import { storage } from '@/firebase'
 import WordpressApiService from './WordpressService'
+import { Product } from '@/@types/product'
+import { slugify } from '@/utils/thumbnailUtils'
 
 const API_URL = import.meta.env.VITE_WOOCOMMERCE_BASE_URL
 const AUTH = {
@@ -11,21 +13,22 @@ const AUTH = {
 }
 
 export const generateWordPressHtml = (
+    product: Product,
     category: string,
     mainKeyword: string,
     secondKeyword: string
 ) => {
-    const cleanKeyword = mainKeyword.replace(/\s+/g, ' ').trim()
-    const cleanTheme = secondKeyword.replace(/\s+/g, ' ').trim()
-    const keywordSlug = cleanKeyword.toLowerCase().replace(/\s+/g, '-')
+    const cleanMainKeyword = mainKeyword.replace(/\s+/g, ' ').trim()
+    const cleanSecondKeyword = secondKeyword.replace(/\s+/g, ' ').trim()
+    const keywordSlug = slugify(product.name)
     const fullSlug = `${keywordSlug}-font`
 
-    const focusKeyword = `${cleanKeyword} font`
+    const focusKeyword = `${cleanMainKeyword} font`
 
     const rankMath = {
-        title: `${cleanKeyword} Font - Instant Download`,
+        title: `${cleanMainKeyword} Font - Instant Download`,
         permalink: fullSlug,
-        description: `Take a look at our ${cleanKeyword} font, inspired by the ${cleanTheme} font. This font is compatible with Cricut, Canva, Microsoft Word, Silhouette and more.`,
+        description: `Take a look at our ${cleanMainKeyword} font, inspired by the ${cleanSecondKeyword} font. This font is compatible with Cricut, Canva, Microsoft Word, Silhouette and more.`,
         focusKeyword,
     }
 
@@ -33,24 +36,29 @@ export const generateWordPressHtml = (
         case 'font':
             return {
                 excerpt: `
-<p>Our ${cleanKeyword} font, inspired by ${cleanTheme}, is ideal for your creations! This font is provided in multiple formats, ensuring compatibility with a wide range of software such as Cricut, Canva, Microsoft Word, Silhouette and more.</p>
+<p>Our ${cleanMainKeyword} font, inspired by ${cleanSecondKeyword}, is ideal for your creations! This font is provided in multiple formats, ensuring compatibility with a wide range of software such as Cricut, Canva, Microsoft Word, Silhouette and more.</p>
 <p><strong>Included files:</strong></p>
 <ul>
 <li><strong>OTF</strong> &amp; <strong>TTF</strong> installable formats: install the font on your device and type directly in your favorite software</li>
 <li><strong>PNG</strong>, <strong>SVG</strong>, <strong>PDF</strong>, <strong>AI</strong> and <strong>EPS</strong> image formats: infinite resolution, you can enlarge and reduce images at will and create words as you like</li>
 <li>All font characters are also available as individual files, making them very easy to use.</li>
 <li><a href="#common-questions">FontLite®</a> user license</li>
-<li><b>+ FREE</b> Step-By-Step guides for installing and using our ${cleanKeyword} font</li>
+<li><b>+ FREE</b> Step-By-Step guides for installing and using our ${cleanMainKeyword} font</li>
 </ul>
-<p><a href="#tab-description">Learn more about ${cleanKeyword} font</a></p>
+<p><a href="#tab-description">Learn more about ${cleanMainKeyword} font</a></p>
                 `.trim(),
                 content: `
-<h2 class="wp-block-heading">Our ${cleanKeyword} typeface, inspired from ${cleanTheme} font</h2>
-<p>Unlock Your Creativity with our ${cleanKeyword} Font: A versatile font that you can use in any of your projects!</p>
+<h2 class="wp-block-heading">Our ${cleanMainKeyword} typeface, inspired from ${cleanSecondKeyword} font</h2>
+<p>Make your next project unique our ${cleanMainKeyword} Font: A versatile font that you can use in any of your projects!</p>
 <p>When you choose FontMaze, you are guaranteed a high-quality font and a premium customer support. If you ever have a question, we will be there to help!</p>
-<p>Grab your computer, tablet or other device and start creating right now with our ${cleanTheme} font letters! Our ${cleanKeyword} typography is inspired from ${cleanTheme}, making it ideal for various digital creations (logo, word...), sublimation, cake toppers, stickers, event decorations, and more.</p>
-<p>[wpcode id="833"]</p>
-                `.trim(),
+<p>Grab your computer, tablet or other device and start creating right now with our ${cleanSecondKeyword} letters! Our ${cleanMainKeyword} typography is inspired from ${cleanSecondKeyword}, making it ideal for various digital creations (logo, slideshows, social networks posts, etc.), sublimation, cake toppers, stickers, event decorations, and more.</p>
+<hr>
+<h2 class="wp-block-heading">More information</h2>
+<ul>
+    <li>FontMaze <a href="https://www.fontmaze.com/fonts">fonts</a> are ideal for printers, designers, creators, handmade items, DIY projects and special events such as birthdays, weddings, gifts...</li>
+    <li>Our lettering is compatible with mugs, wall art, prints, newspapers, blankets, hoodies, t-shirts, pillows, stickers, wall decor, clothing, cake decorations, cups, birthday invitations and much more!</li>
+    <li>Our alphabet works with <a href="https://design.cricut.com/">Cricut Design Space</a>, <a href="https://www.silhouetteamerica.com/software/ss/download">Silhouette Studio</a>, <a href="https://www.adobe.com/products/illustrator/free-trial-download.html">Adobe Illustrator</a>, <a href="https://www.canva.com/">Canva</a>, <a href="https://www.adobe.com/products/photoshop/free-trial-download.html">Adobe Photoshop</a> and any other design software.</li>
+</ul>`.trim(),
                 slug: fullSlug,
                 rankMath,
             }
@@ -58,18 +66,18 @@ export const generateWordPressHtml = (
         case 'football_font':
             return {
                 excerpt: `
-<p>The ${cleanKeyword} football font, themed around ${cleanTheme}, brings sports energy to your projects. Compatible with design software like Cricut and Silhouette.</p>
+<p>The ${cleanMainKeyword} football font, themed around ${cleanSecondKeyword}, brings sports energy to your projects. Compatible with design software like Cricut and Silhouette.</p>
                 `.trim(),
                 content: `
 <h2>Football Font</h2>
-<p>Create bold, athletic visuals with ${cleanKeyword}, inspired by ${cleanTheme}. Ideal for sportswear, banners, and fan gear.</p>
+<p>Create bold, athletic visuals with ${cleanMainKeyword}, inspired by ${cleanSecondKeyword}. Ideal for sportswear, banners, and fan gear.</p>
                 `.trim()
             }
 
         default:
             return {
-                excerpt: `<p>${cleanKeyword} product inspired by ${cleanTheme}</p>`,
-                content: `<h2>${cleanKeyword}</h2><p>Creative asset inspired by ${cleanTheme}</p>`
+                excerpt: `<p>${cleanMainKeyword} product inspired by ${cleanSecondKeyword}</p>`,
+                content: `<h2>${cleanMainKeyword}</h2><p>Creative asset inspired by ${cleanSecondKeyword}</p>`
             }
     }
 }
@@ -193,6 +201,7 @@ export async function publishWooProduct(product: any, imageIds: number[], zipMed
     const payload = {
         ...product,
         images: imageIds.map(id => ({ id })),
+        featured_media: imageIds[0],
         meta_data: [
             ...(product.meta_data || []),
             { key: 'zip_media_id', value: zipMedia.id },

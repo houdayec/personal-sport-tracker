@@ -5,6 +5,7 @@ import { FormItem } from '@/components/ui/Form'
 import ThumbnailUploader from './ThumbnailUploader'
 import { Product, ThumbnailsMetadata } from '@/@types/product'
 import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
+import { Card } from '@/components/ui'
 
 const PADDING = 100
 const CANVAS_WIDTH = 3000
@@ -161,7 +162,8 @@ const ThumbnailStudioFifthMockupLaptop = () => {
                         />
                     </div>
                 </div>
-                <div className="space-y-4 w-full max-w-md">
+                <Card className="space-y-4 w-full max-w-md">
+                    <h5 className="font-semibold mb-2">Settings</h5>
                     <FormItem label="Font Color">
                         <Field name="thumbnailsMetadata.example_laptop_charColor" type="color" component={Input} />
                     </FormItem>
@@ -177,7 +179,7 @@ const ThumbnailStudioFifthMockupLaptop = () => {
                             )}
                         </Field>
                     </FormItem>
-                </div>
+                </Card>
             </div>
         </div>
     )
