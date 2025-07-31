@@ -14,6 +14,11 @@ import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import { Field, FormikErrors, FormikTouched, FieldProps, useFormikContext, FormikProps, FieldInputProps } from 'formik'
 import { FormModel } from '@/views/website/CustomerForm'
+import fs from 'fs'
+import blobStream from 'blob-stream'
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
+import fontkit from 'fontkit'
+
 
 type AssetsFormFieldsName = {
     name: string
@@ -107,19 +112,176 @@ const AssetsFields = (props: AssetsFormFields) => {
         }
     }, [ttfFile])
 
-    const handleTtfUpload = async (
-        files: File[],
-    ) => {
+    interface Glyph {
+        char: string
+        name: string
+    }
+
+
+    // Generates a font glyph proof PDF using embedded font or fallback SVG paths
+    async function generateFontProofPdfFromFont(fontBuffer: ArrayBuffer, fontName: string): Promise<Blob> {
+        const font = opentype.parse(fontBuffer)
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:\'",.<>?/`~' +
+            'ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿŒœŠšŸƒ€'
+
+        const doc = await PDFDocument.create()
+        let page = doc.addPage([600, 800])
+        let y = 750
+        const perRow = 6
+        const cellWidth = 90
+        const cellHeight = 80
+        let x = 50
+
+        for (let i = 0; i < chars.length; i++) {
+            const char = chars[i]
+            const glyph = font.charToGlyph(char)
+
+            if (!glyph || !glyph.path || glyph.path.commands.length === 0) continue
+
+            const path = glyph.getPath(0, 0, 60).toPathData(3)
+            const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 1000 1000">
+  <path d="${path}" fill="black"/>
+</svg>`.trim()
+
+            const svgImage = await doc.embedSvg(svg)
+            page.drawImage(svgImage, { x, y: y - 60, width: cellWidth, height: cellHeight })
+
+            x += cellWidth + 10
+            if ((i + 1) % perRow === 0) {
+                x = 50
+                y -= cellHeight + 20
+                if (y < 100) {
+                    page = doc.addPage([600, 800])
+                    y = 750
+                }
+            }
+        }
+
+        const pdfBytes = await doc.save()
+        return new Blob([pdfBytes], { type: 'application/pdf' })
+    }
+
+    function generateFontProofPng(font: opentype.Font, chars: string[]): Promise<Blob> {
+        return new Promise(async (resolve) => {
+            const perRow = 10
+            const cellSize = 100
+            const padding = 20
+            const titleHeight = 130
+            const footerHeight = 40
+            const rows = Math.ceil(chars.length / perRow)
+            const width = perRow * cellSize + padding * 2
+            const height = titleHeight + rows * cellSize + footerHeight
+
+            const canvas = document.createElement('canvas')
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')!
+
+            // Background
+            ctx.fillStyle = '#fff'
+            ctx.fillRect(0, 0, width, height)
+
+            // Draw watermark without stretching, keep square ratio and fill height
+            const watermark = new Image()
+            watermark.src = '/img/others/fontmaze-watermark.png'
+            await new Promise(res => watermark.onload = res)
+
+            const watermarkHeight = height
+            const watermarkWidth = watermark.height > 0
+                ? watermarkHeight * (watermark.width / watermark.height)
+                : watermarkHeight // fallback
+
+            ctx.globalAlpha = 0.02
+            ctx.drawImage(
+                watermark,
+                (width - watermarkWidth) / 2, // center horizontally
+                0,
+                watermarkWidth,
+                watermarkHeight
+            )
+            ctx.globalAlpha = 1
+
+            // Title: 2 rows, centered
+            ctx.fillStyle = '#000'
+            ctx.textAlign = 'center'
+
+            const titlePath = font.getPath(values.name, 0, 0, 60)
+            const bbox = titlePath.getBoundingBox()
+
+            // Center the path
+            const scale = 1
+            const xOffset = (width - (bbox.x2 - bbox.x1)) / 2 - bbox.x1
+            const yOffset = 70
+
+            ctx.fillStyle = '#000'
+            ctx.save()
+            ctx.translate(xOffset, yOffset)
+            titlePath.draw(ctx)
+            ctx.restore()
+
+            // “by FontMaze” lower to add vertical gap
+            ctx.font = '24px sans-serif'
+            ctx.fillText('by FontMaze', width / 2, 110) // was 70
+
+            // Glyphs
+            let x = padding
+            let y = titleHeight
+
+            for (let i = 0; i < chars.length; i++) {
+                const char = chars[i]
+                const glyph = font.charToGlyph(char)
+                if (!glyph || !glyph.path || glyph.path.commands.length === 0) continue
+
+                const path = glyph.getPath(x + 20, y + 60, 60)
+                path.draw(ctx)
+
+                ctx.font = '10px sans-serif'
+                ctx.fillText(char, x + 35, y + 85)
+
+                x += cellSize
+                if ((i + 1) % perRow === 0) {
+                    x = padding
+                    y += cellSize
+                }
+            }
+
+            // Footer
+            ctx.font = 'italic 12px sans-serif'
+            ctx.textAlign = 'right'
+            ctx.fillText('© FontMaze Studio – All rights reserved', width - padding, height - 10)
+
+            canvas.toBlob(blob => resolve(blob!), 'image/png')
+        })
+    }
+
+    const handleTtfUpload = async (files: File[]) => {
         const file = files[0]
-        console.log(files, file)
+        console.log('[Font Upload] Received:', file)
         if (!file) return
-        setTtfFile(file)
+
         const buf = await file.arrayBuffer()
         const parsed = opentype.parse(buf)
+
+        // If .otf, convert to .ttf and use the generated blob instead
+        const isOtf = file.name.toLowerCase().endsWith('.otf')
+        let finalFile = file
+
+        if (isOtf) {
+            console.log('[Font Upload] Converting .otf to .ttf…')
+            const ttfBuf = parsed.toArrayBuffer()
+            const blob = new Blob([ttfBuf], { type: 'font/ttf' })
+            const newName = file.name.replace(/\.otf$/i, '.ttf')
+            finalFile = new File([blob], newName, { type: 'font/ttf' })
+            console.log('[Font Upload] Converted to:', finalFile)
+        }
+
+        setTtfFile(finalFile)
         setFont(parsed)
         setGlyphCount(parsed.glyphs.length)
         generatePreviewSVG(parsed)
     }
+
 
     const applyMetadata = () => {
         if (!font) return
@@ -220,7 +382,6 @@ const AssetsFields = (props: AssetsFormFields) => {
 
         setPreviewSvg(svg)
     }
-
 
     // Center glyph in fixed canvas for PNG
     // Create centered PNG blob of glyph in a square canvas
@@ -422,6 +583,40 @@ const AssetsFields = (props: AssetsFormFields) => {
             const ttfBlob = new Blob([finalFontBuffer], { type: 'font/ttf' })
             const otfBlob = new Blob([finalFontBuffer], { type: 'font/otf' })
 
+            const glyphs = font
+                ? Array.from({ length: font.glyphs.length }, (_, i) => font.glyphs.get(i))
+                : []
+
+            const glyphsWithChar: Glyph[] = glyphAssets.map(g => ({
+                name: font?.charToGlyph(g.char).name || g.char,
+                char: g.char,
+                unicode: g.char.charCodeAt(0)
+            }))
+
+
+            //const pdfBlob = await generateGlyphProofPdf(glyphs, values.fontData.generated.fullName)
+            /*const pdfBlob = await generateFontProofPdfFromFont(finalFontBuffer!, values.fontData.generated.fullName)
+
+            const link = document.createElement('a')
+            link.href = URL.createObjectURL(pdfBlob)
+            link.download = `${finalName}_proof.pdf`
+            link.click()*/
+
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:\'",.<>?/`~' +
+                'ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿŒœŠšŸƒ€'
+            const blob = await generateFontProofPng(font!, chars.split(''))
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = 'font-proof.png'
+            link.click()
+            URL.revokeObjectURL(url)
+
+            await upload(`products/${sku}/files/font_map.png`, blob)
+            await upload(`products/${sku}/files/Final Product/Font Preview.png`, blob)
+
+            count++; setUploadCount(count)
+
             await upload(`products/${sku}/files/font.ttf`, ttfBlob)
             count++; setUploadCount(count)
             await upload(`products/${sku}/files/font.otf`, otfBlob)
@@ -479,8 +674,8 @@ const AssetsFields = (props: AssetsFormFields) => {
     return (
         <AdaptableCard divider className="mb-4">
             <h5 className="mb-2">📦 Generate Font Assets</h5>
-            <FormItem label="Upload .TTF File">
-                <Upload draggable accept=".ttf"
+            <FormItem label="Upload .TTF or .OTF File (OTF will be converted to TTF)">
+                <Upload draggable accept=".ttf .otf"
                     ref={fileInputRef}
                     onChange={(files) =>
                         handleTtfUpload(files)

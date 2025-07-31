@@ -343,6 +343,7 @@ export type WordPressData = {
     lastSyncedAt?: number
     excerpt?: string
     content?: string
+    trademarkName?: string
     rankMath?: {
         title?: string
         permalink?: string

@@ -15,6 +15,7 @@ type FormFieldsName = {
     wordpressCategories: number[]
     mainKeyword: string
     secondKeyword: string
+    trademarkName: string
     fullPrice: number
     salePrice: number
 }
@@ -115,6 +116,9 @@ const ProductInfoFields = (props: BasicInformationFields) => {
                 </FormItem>
                 <FormItem label="Second Keyword" invalid={(errors.secondKeyword && touched.secondKeyword) as boolean}>
                     <Field type="text" name="secondKeyword" placeholder="Second keyword" component={Input} />
+                </FormItem>
+                <FormItem label="Trademark Name" invalid={(errors.secondKeyword && touched.secondKeyword) as boolean}>
+                    <Field type="text" name="wordpress.trademarkName" placeholder="Trademark (Lego, Disney...)" component={Input} />
                 </FormItem>
 
                 <FormItem label="Full Price (USD)" invalid={(errors.fullPrice && touched.fullPrice) as boolean}>

@@ -157,7 +157,6 @@ const ExportForm = () => {
                     });
                 }
 
-
                 const paths = await listWebpSquareThumbnails(values.sku)
                 const urls = await Promise.all(
                     paths.map(async path => ({

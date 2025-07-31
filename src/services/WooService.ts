@@ -36,29 +36,38 @@ export const generateWordPressHtml = (
         case 'font':
             return {
                 excerpt: `
-<p>Our ${cleanMainKeyword} font, inspired by ${cleanSecondKeyword}, is ideal for your creations! This font is provided in multiple formats, ensuring compatibility with a wide range of software such as Cricut, Canva, Microsoft Word, Silhouette and more.</p>
-<p><strong>Included files:</strong></p>
+<p><strong>Our ${cleanMainKeyword} font</strong>, inspired by ${cleanSecondKeyword}, is ideal for your creative projects! It comes in multiple formats, compatible with Cricut, Canva, Microsoft Word, Silhouette, and more.</p>
+
+<h2>What’s Included:</h2>
 <ul>
-<li><strong>OTF</strong> &amp; <strong>TTF</strong> installable formats: install the font on your device and type directly in your favorite software</li>
-<li><strong>PNG</strong>, <strong>SVG</strong>, <strong>PDF</strong>, <strong>AI</strong> and <strong>EPS</strong> image formats: infinite resolution, you can enlarge and reduce images at will and create words as you like</li>
-<li>All font characters are also available as individual files, making them very easy to use.</li>
-<li><a href="#common-questions">FontLite®</a> user license</li>
-<li><b>+ FREE</b> Step-By-Step guides for installing and using our ${cleanMainKeyword} font</li>
+  <li><strong>OTF</strong> &amp; <strong>TTF</strong> installable formats — type directly in your favorite software.</li>
+  <li><strong>PNG</strong>, <strong>SVG</strong>, <strong>PDF</strong>, <strong>AI</strong>, and <strong>EPS</strong> formats — infinite resolution for print, cut, and digital use.</li>
+  <li>All font characters are also available as individual files for easy drag-and-drop usage.</li>
+  <li><strong>License:</strong> Includes personal use. <a href="https://www.fontmaze.com/licenses/font-license/">Click here</a> for commercial options.</li>
+  <li><b>+ FREE</b> Step-by-step guides to install and use your ${cleanMainKeyword} font.</li>
 </ul>
-<p><a href="#tab-description">Learn more about ${cleanMainKeyword} font</a></p>
-                `.trim(),
+
+<p><a href="#tab-description">Learn more about the ${cleanMainKeyword} font</a></p>
+`.trim(),
                 content: `
-<h2 class="wp-block-heading">Our ${cleanMainKeyword} typeface, inspired from ${cleanSecondKeyword} font</h2>
-<p>Make your next project unique our ${cleanMainKeyword} Font: A versatile font that you can use in any of your projects!</p>
-<p>When you choose FontMaze, you are guaranteed a high-quality font and a premium customer support. If you ever have a question, we will be there to help!</p>
-<p>Grab your computer, tablet or other device and start creating right now with our ${cleanSecondKeyword} letters! Our ${cleanMainKeyword} typography is inspired from ${cleanSecondKeyword}, making it ideal for various digital creations (logo, slideshows, social networks posts, etc.), sublimation, cake toppers, stickers, event decorations, and more.</p>
+<h2 class="wp-block-heading">Our ${cleanMainKeyword} Typeface, inspired by the ${cleanSecondKeyword} Font</h2>
+<p>Make your next project stand out with our ${cleanMainKeyword} font — a flexible and stylish typeface made for creators.</p>
+<p>Handcrafted in our studio with care and attention to detail, the ${cleanMainKeyword} font brings a unique, personal touch to your designs.</p>
 <hr>
-<h2 class="wp-block-heading">More information</h2>
-<ul>
-    <li>FontMaze <a href="https://www.fontmaze.com/fonts">fonts</a> are ideal for printers, designers, creators, handmade items, DIY projects and special events such as birthdays, weddings, gifts...</li>
-    <li>Our lettering is compatible with mugs, wall art, prints, newspapers, blankets, hoodies, t-shirts, pillows, stickers, wall decor, clothing, cake decorations, cups, birthday invitations and much more!</li>
-    <li>Our alphabet works with <a href="https://design.cricut.com/">Cricut Design Space</a>, <a href="https://www.silhouetteamerica.com/software/ss/download">Silhouette Studio</a>, <a href="https://www.adobe.com/products/illustrator/free-trial-download.html">Adobe Illustrator</a>, <a href="https://www.canva.com/">Canva</a>, <a href="https://www.adobe.com/products/photoshop/free-trial-download.html">Adobe Photoshop</a> and any other design software.</li>
-</ul>`.trim(),
+<h2>Why Choose FontMaze?</h2>
+<p>At FontMaze, <strong>every font is crafted with care in our studio</strong> — no auto-generation, no shortcuts. We combine design expertise with attention to detail to ensure premium quality across all our products.</p>
+<p>Our fonts are easy to install and work seamlessly with popular tools like Cricut, Canva, Silhouette, and more. Whether you're a beginner or a seasoned creator, you’ll get started in minutes.</p>
+<p>Need help? <a href="https://www.fontmaze.com/contact/">Reach out to us here</a> — we offer fast, friendly support from real people who care about your success.</p>
+<p>Start designing instantly with the ${cleanMainKeyword} font — perfect for social media graphics, printable crafts, digital downloads, and creative projects of all kinds.</p>
+
+[wpcode id="834"]
+[wpcode id="833"]
+<hr>
+<p><strong>Disclaimer:</strong><br>
+The <strong>${cleanMainKeyword} font</strong> was fully designed from scratch by FontMaze. It is not affiliated with or endorsed by <strong>${product.wordpress?.trademarkName}</strong>. No copyright infringement is intended.<br>
+If you believe there is an issue, please <a href="https://www.fontmaze.com/contact/">contact us</a>.
+</p>
+`.trim(),
                 slug: fullSlug,
                 rankMath,
             }
