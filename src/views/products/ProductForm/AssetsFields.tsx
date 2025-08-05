@@ -617,6 +617,11 @@ const AssetsFields = (props: AssetsFormFields) => {
 
             count++; setUploadCount(count)
 
+            // Upload the help PDF guide to Final Product folder
+            const helpPdf = await fetch('/data/files/How to Get Help.pdf').then(r => r.blob())
+            await upload(`products/${sku}/files/Final Product/How to Get Help.pdf`, helpPdf)
+            count++; setUploadCount(count)
+
             await upload(`products/${sku}/files/font.ttf`, ttfBlob)
             count++; setUploadCount(count)
             await upload(`products/${sku}/files/font.otf`, otfBlob)
