@@ -28,10 +28,10 @@ export type ThemeConfig = {
  * we recommend to use the configuration that generated from demo.
  */
 export const themeConfig: ThemeConfig = {
-    themeColor: 'blue',
+    themeColor: 'orange',
     direction: THEME_ENUM.DIR_LTR,
     mode: THEME_ENUM.MODE_LIGHT,
-    primaryColorLevel: 800,
+    primaryColorLevel: 600,
     cardBordered: true,
     panelExpand: false,
     controlSize: 'md',

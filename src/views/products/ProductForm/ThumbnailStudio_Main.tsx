@@ -381,7 +381,7 @@ const ThumbnailPreviewStudio = () => {
                                                         setFieldValue('thumbnailsMetadata.main_patternType', p.name)
                                                         setIconDialogOpen(true)
                                                     }}
-                                                    className="text-xs bg-blue-500 px-3 py-1 rounded"
+                                                    className="text-xs bg-orange-500 px-3 py-1 rounded"
                                                 >
                                                     Open Library
                                                 </Button>
