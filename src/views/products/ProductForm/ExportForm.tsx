@@ -86,7 +86,7 @@ const initialExportSteps: ExportStep[] = [
 
 
 const ExportForm = () => {
-    const { values, setFieldValue } = useFormikContext<Product>()
+    const { values, setFieldValue, submitForm } = useFormikContext<Product>()
     const [loading, setLoading] = useState(false)
     const [working, setWorking] = useState(false) // Indicates if overall export process is active
     const [thumbnails, setThumbnails] = useState<{ path: string; url: string }[]>([])
@@ -367,6 +367,7 @@ const ExportForm = () => {
 
             // Step 4: Finalizing
             updateExportStep('complete', 'success', 'All done!');
+            submitForm();
         } catch (err) {
             console.error('[handleUploadAndPublish] ❌', err)
             setExportSteps(prevSteps =>
