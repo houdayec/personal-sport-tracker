@@ -74,7 +74,19 @@ const ThumbnailStudioFifthMockupLaptop = () => {
             ctx.textBaseline = 'middle'
             ctx.fillStyle = fontColor
 
-            const lines = ["Life is better", "with creativity."]
+            const casing = metadata.example_laptop_casing || 'default'
+
+            const rawLines = ["Life is better", "with creativity."]
+            const lines = rawLines.map(line => {
+                switch (casing) {
+                    case 'lower': return line.toLowerCase()
+                    case 'title':
+                        return line.split(' ')
+                            .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                            .join(' ')
+                    default: return line
+                }
+            })
 
             const tTop = 1 / 3
             const tBottom = 2 / 3
@@ -166,6 +178,13 @@ const ThumbnailStudioFifthMockupLaptop = () => {
                     <h5 className="font-semibold mb-2">Settings</h5>
                     <FormItem label="Font Color">
                         <Field name="thumbnailsMetadata.example_laptop_charColor" type="color" component={Input} />
+                    </FormItem>
+                    <FormItem label="Casing Style">
+                        <Field name="thumbnailsMetadata.example_laptop_casing" as="select" className="w-full border rounded px-3 py-2">
+                            <option value="default">Life is better</option>
+                            <option value="lower">life is better</option>
+                            <option value="title">Life Is Better</option>
+                        </Field>
                     </FormItem>
                     <FormItem label="Show Text Area Box">
                         <Field name="thumbnailsMetadata.example_laptop_showTextAreaBox">

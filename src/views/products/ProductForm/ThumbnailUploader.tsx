@@ -45,7 +45,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
     } | null>(null)
     const [selectedFormat, setSelectedFormat] = useState<'png' | 'jpg' | 'webp'>('webp')
     const [selectedAspect, setSelectedAspect] = useState<'square' | 'landscape'>('square')
-    const [uploadSuccess, setUploadSuccess] = useState(false)
+    const [uploadSuccess, setUploadSuccess] = useState(false) // State to track upload success
 
     const sku = values.sku
     const main = values.mainKeyword?.toLowerCase?.() || 'main'
@@ -55,6 +55,9 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
     // Generate square & landscape image versions
     const generateThumbnails = async () => {
         if (!canvasRef.current) return
+
+        // Reset upload success state when new thumbnails are generated
+        setUploadSuccess(false)
 
         const originalCanvas = canvasRef.current
         const squareSize = originalCanvas.height
@@ -117,6 +120,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
     const handleUpload = async () => {
         if (!thumbnails.length || !sku) return
         setIsUploading(true)
+        setUploadSuccess(false) // Reset success state at the start of upload
         const basePath = `products/${sku}/files/thumbnails`
 
         const [
@@ -124,31 +128,42 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
             , landscapeJpg, landscapeWebp
         ] = thumbnails
 
-        await Promise.all([
-            uploadBytes(ref(storage, `${basePath}/square/${filename}-square.jpg`), squareJpg),
-            uploadBytes(ref(storage, `${basePath}/square/${filename}-square.webp`), squareWebp),
-            uploadBytes(ref(storage, `${basePath}/3_2/${filename}-landscape.jpg`), landscapeJpg),
-            uploadBytes(ref(storage, `${basePath}/3_2/${filename}-landscape.webp`), landscapeWebp),
-        ])
+        try {
+            await Promise.all([
+                uploadBytes(ref(storage, `${basePath}/square/${filename}-square.jpg`), squareJpg),
+                uploadBytes(ref(storage, `${basePath}/square/${filename}-square.webp`), squareWebp),
+                uploadBytes(ref(storage, `${basePath}/3_2/${filename}-landscape.jpg`), landscapeJpg),
+                uploadBytes(ref(storage, `${basePath}/3_2/${filename}-landscape.webp`), landscapeWebp),
+            ])
 
-        const webpRef = ref(storage, `${basePath}/square/${filename}-square.webp`)
+            const webpRef = ref(storage, `${basePath}/square/${filename}-square.webp`)
+            const firebaseUrl = await getDownloadURL(webpRef)
 
-        const firebaseUrl = await getDownloadURL(webpRef)
+            await updateDoc(doc(db, 'products', sku), {
+                [`thumbnails.${slug}.firebaseUrl`]: firebaseUrl,
+            })
 
-        await updateDoc(doc(db, 'products', sku), {
-            [`thumbnails.${slug}.firebaseUrl`]: firebaseUrl,
-        })
-
-        setFieldValue(`thumbnails.${slug}.generated`, true)
-        console.log('Thumbnails uploaded:', sku, filename)
-        toast.push(
-            <Notification title="Thumbnails Uploaded" type="success" duration={2500}>
-                {filename} in JPG & WEBP formats
-            </Notification>,
-            { placement: 'top-center' }
-        )
-        setIsUploading(false)
-        setUploadSuccess(true)
+            setFieldValue(`thumbnails.${slug}.generated`, true)
+            console.log('Thumbnails uploaded:', sku, filename)
+            toast.push(
+                <Notification title="Thumbnails Uploaded" type="success" duration={2500}>
+                    {filename} in JPG & WEBP formats
+                </Notification>,
+                { placement: 'top-center' }
+            )
+            setUploadSuccess(true) // Set success state to true on successful upload
+        } catch (error) {
+            console.error('Error uploading thumbnails:', error)
+            toast.push(
+                <Notification title="Upload Failed" type="danger" duration={2500}>
+                    Failed to upload thumbnails.
+                </Notification>,
+                { placement: 'top-center' }
+            )
+            setUploadSuccess(false) // Ensure success is false on error
+        } finally {
+            setIsUploading(false)
+        }
     }
 
     return (
@@ -160,9 +175,12 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
                 <Button
                     onClick={handleUpload}
                     type="button"
-                    variant="twoTone"
-                    disabled={isUploading || !thumbnails.length}
-                    className={`w-full ${uploadSuccess ? 'bg-green-500 text-white hover:bg-green-600' : ''}`}
+                    // Conditionally set variant based on uploadSuccess
+                    variant={uploadSuccess ? "solid" : "twoTone"}
+                    // Disable if uploading, no thumbnails, or already successfully uploaded
+                    disabled={isUploading || !thumbnails.length || uploadSuccess}
+                    // Apply custom background color only when uploadSuccess is true
+                    className={`w-full ${uploadSuccess ? 'bg-emerald-500 text-white hover:bg-emerald-600' : ''}`}
                 >
                     {isUploading ? (
                         <div className="flex items-center justify-center gap-2 w-full">

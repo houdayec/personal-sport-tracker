@@ -49,7 +49,7 @@ const SortableThumbnail = ({ id, url, status }: { id: string; url: string; statu
             style={style}
             {...attributes}
             {...listeners}
-            className="relative w-20 h-20 border rounded overflow-hidden"
+            className="relative w-full h-full border rounded overflow-hidden"
         >
             <img src={url} className="w-full h-full object-cover" alt={`Thumbnail for ${id}`} />
             {status === 'pending' && (
@@ -73,6 +73,7 @@ const ExportForm = () => {
     const [working, setWorking] = useState(false)
     const [thumbnails, setThumbnails] = useState<{ path: string; url: string }[]>([])
     const [statusMap, setStatusMap] = useState<Record<string, UploadStatus>>({})
+    const [deletingStatus, setDeletingStatus] = useState<Record<string, boolean>>({}) // New state for delete spinner
     const [clonedProduct, setClonedProduct] = useState<any>(null)
     const [step, setStep] = useState<string>('')
     const sensors = useSensors(useSensor(PointerSensor))
@@ -184,6 +185,7 @@ const ExportForm = () => {
     }, [values.sku])
 
     const handleDeleteThumbnail = async (path: string) => {
+        setDeletingStatus(prev => ({ ...prev, [path]: true })) // Set deleting status to true
         try {
             await deleteThumbnailFromStorage(path)
             setThumbnails(t => t.filter(item => item.path !== path))
@@ -196,6 +198,8 @@ const ExportForm = () => {
             console.log(`[Delete] ✅ Deleted ${path}`)
         } catch (err) {
             console.error(`[Delete] ❌ Error deleting ${path}`, err)
+        } finally {
+            setDeletingStatus(prev => ({ ...prev, [path]: false })) // Set deleting status to false
         }
     }
 
@@ -340,30 +344,40 @@ const ExportForm = () => {
                                 items={thumbnails.map(t => t.path)}
                                 strategy={verticalListSortingStrategy}
                             >
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                                    {thumbnails.map(({ path, url }) => (
-                                        <div key={path} className="relative w-full aspect-square">
-                                            <div className="w-full h-full">
-                                                <SortableThumbnail
-                                                    id={path}
-                                                    url={url}
-                                                    status={statusMap[path] || 'idle'}
-                                                />
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6 w-full">
+                                    {thumbnails.map(({ path, url }) => {
+                                        const fileName = path.split('/').pop() || ''
+                                        const slug = fileName
+                                            .replace(/\.[^/.]+$/, '')
+                                            .replace(/^[^-]+-font-[^-]+-font-/, '')
+                                            .replace(/-square$/, '')
+
+                                        const isDeleting = deletingStatus[path] // Check deleting status for this thumbnail
+
+                                        return (
+                                            <div key={path} className="flex flex-col items-center">
+                                                <div className="relative w-full aspect-square max-w-[200px] rounded-lg overflow-hidden shadow-md border border-gray-200">
+                                                    <SortableThumbnail
+                                                        id={path}
+                                                        url={url}
+                                                        status={statusMap[path] || 'idle'}
+                                                    />
+                                                    <Button
+                                                        onClick={() => handleDeleteThumbnail(path)}
+                                                        type="button"
+                                                        className="absolute top-1 right-1 z-10 bg-red-500/80 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors duration-200"
+                                                        size="xs"
+                                                        disabled={working || thumbnails.length === 0 || isDeleting} // Disable if currently deleting
+                                                        icon={isDeleting ? <Spinner size={16} /> : <HiTrash />} // Show spinner if deleting
+                                                    />
+                                                </div>
+                                                <div className="mt-2 text-sm text-center text-gray-700 font-medium">{slug}</div>
                                             </div>
-                                            <Button
-                                                onClick={() => handleDeleteThumbnail(path)}
-                                                type="button"
-                                                className="absolute bottom-1 right-1 hover:bg-opacity-100"
-                                                size="xs"
-                                                disabled={working || thumbnails.length === 0}
-                                                icon={<HiTrash />}
-                                            />
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             </SortableContext>
                         </DndContext>
-
                     </div>
 
                     <p className="mb-2 text-sm text-gray-600">{step}</p>
@@ -403,7 +417,6 @@ const ExportForm = () => {
                             </Button>
                         </div>
                     )}
-
                 </>
             )}
         </AdaptableCard>

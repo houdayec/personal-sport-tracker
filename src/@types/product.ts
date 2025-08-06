@@ -299,6 +299,7 @@ export type ThumbnailsMetadata = {
     example_laptop_showLowercase?: boolean
     example_laptop_showNumbers?: boolean
     example_laptop_showSpecials?: boolean
+    example_laptop_casing?: 'default' | 'lower' | 'title'
 
     example_tablet_charColor?: string
     example_tablet_showTextAreaBox?: boolean
