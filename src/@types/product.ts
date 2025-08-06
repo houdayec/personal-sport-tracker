@@ -284,6 +284,7 @@ export type ThumbnailsMetadata = {
 
     sentence_charColor?: string
     sentence_showTextAreaBox?: boolean
+    sentence_case: 'title',
 
     characters_preview_charColor?: string
     characters_preview_showTextAreaBox?: boolean

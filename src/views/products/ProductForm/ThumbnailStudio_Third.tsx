@@ -106,11 +106,21 @@ const ThumbnailStudioThirdCharacters = () => {
             ctx.font = `${testFontSize}px ProductFont, sans-serif`
             ctx.fillStyle = fontColor
 
-            const lineHeight = testFontSize * 1.2
-            const totalHeight = lines.length * lineHeight
+            const lineHeight = testFontSize * 1.5  // Increased spacing
+            ctx.font = `${testFontSize}px ProductFont, sans-serif`
+
+            // Filter lines to remove unsupported characters
+            const supportedLines = lines.map(line => {
+                return line
+                    .split(' ')
+                    .filter(char => ctx.measureText(char).width > 0)
+                    .join(' ')
+            }).filter(Boolean)
+
+            const totalHeight = supportedLines.length * lineHeight
             const startY = paddedBox.y + (paddedBox.height - totalHeight) / 2 + lineHeight / 2
 
-            lines.forEach((line, i) => {
+            supportedLines.forEach((line, i) => {
                 const y = startY + i * lineHeight
                 ctx.fillText(line, paddedBox.x + paddedBox.width / 2, y)
             })

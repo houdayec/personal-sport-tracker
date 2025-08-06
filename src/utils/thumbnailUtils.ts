@@ -42,7 +42,12 @@ export function hexToRgba(hex: string, opacity: number): string {
 }
 
 export function getCharacterLines(meta: ThumbnailsMetadata): string[] {
-    const letterPairs = ['Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj', 'Kk Ll Mm Nn Oo Pp Qq Rr', 'Ss Tt Uu Vv Ww Xx Yy Zz']
+    const letterPairs = [
+        'Aa Bb Cc Dd Ee Ff Gg',
+        'Hh Ii Jj Kk Ll Mm Nn',
+        'Oo Pp Qq Rr Ss Tt Uu',
+        'Vv Ww Xx Yy Zz'
+    ]
     const uppercaseLines = ['A B C D E F G H I J', 'K L M N O P Q R', 'S T U V W X Y Z']
     const lowercaseLines = uppercaseLines.map(l => l.toLowerCase())
     const numberLine = '0 1 2 3 4 5 6 7 8 9'

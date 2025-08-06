@@ -208,7 +208,19 @@ const ThumbnailPreviewStudio = () => {
         ctx.textBaseline = 'top'
         ctx.font = `${titleFont}px ProductFont, sans-serif`
         ctx.fillStyle = main_titleColor
-        ctx.fillText(main_titleText, CANVAS_SIZE / 2, yTitle)
+        const titleLines = main_titleText.split('\n')
+        const titleSpacing = 10 // spacing between lines
+        const totalTitleHeight = titleLines.length * titleFont + (titleLines.length - 1) * titleSpacing
+
+        titleLines.forEach((line, i) => {
+            const y = yTitle + i * (titleFont + titleSpacing)
+            ctx.fillText(line, CANVAS_SIZE / 2, y)
+            if (main_titleStrokeWidth) {
+                ctx.lineWidth = main_titleStrokeWidth
+                ctx.strokeStyle = main_titleStrokeColor
+                ctx.strokeText(line, CANVAS_SIZE / 2, y)
+            }
+        })
 
         if (main_titleStrokeWidth) {
             ctx.lineWidth = main_titleStrokeWidth
@@ -218,7 +230,7 @@ const ThumbnailPreviewStudio = () => {
         ctx.restore()
 
         // Characters
-        const topChars = yTitle + titleFont + PADDING
+        const topChars = yTitle + totalTitleHeight + PADDING
         const bottomH = CANVAS_SIZE - topChars - PADDING
         const count = lines.length
         const spacing = 80
@@ -476,7 +488,9 @@ const ThumbnailPreviewStudio = () => {
                     <Card>
                         <h5 className="font-semibold mb-2">Title</h5>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <InputWrapper label="Text"><Field name="thumbnailsMetadata.main_titleText" component={Input} /></InputWrapper>
+                            <InputWrapper label="Title (multiline)">
+                                <Field name="thumbnailsMetadata.main_titleText" as="textarea" rows={2} className="input" />
+                            </InputWrapper>
                             <InputWrapper label="Scale"><Field name="thumbnailsMetadata.main_titleScale">{({ field }: FieldProps) => <input {...field} type="range" min={0.1} max={2} step={0.1} className="w-full" />}</Field></InputWrapper>
                             <InputWrapper label="Top Offset"><Field name="thumbnailsMetadata.main_topOffset">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={200} step={10} className="w-full" />}</Field></InputWrapper>
                             <InputWrapper label="Color"><Field name="thumbnailsMetadata.main_titleColor" type="color" component={Input} /></InputWrapper>

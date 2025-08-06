@@ -1,4 +1,4 @@
-# FontMaze Dashboard
+# FontMaze Studio
 
 Start: npm start
 

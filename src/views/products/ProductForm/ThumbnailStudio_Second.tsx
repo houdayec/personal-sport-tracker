@@ -55,13 +55,22 @@ const ThumbnailStudio_Sentence = () => {
             height: TEXT_BOX.height - 2 * padding,
         }
 
+        const casing = (metadata.sentence_case || 'title') as 'title' | 'lower' | 'upper'
+
         const lines = [
             'The Quick Brown',
             'Fox Jumps Over',
             'The Lazy Dog',
-        ].map(line =>
-            line.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-        )
+        ].map(line => {
+            switch (casing) {
+                case 'lower': return line.toLowerCase()
+                case 'upper': return line.toUpperCase()
+                default:
+                    return line.split(' ')
+                        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                        .join(' ')
+            }
+        })
 
         let testFontSize = 10
         ctx.textAlign = 'center'
@@ -123,6 +132,13 @@ const ThumbnailStudio_Sentence = () => {
                     <h5 className="font-semibold mb-2">Settings</h5>
                     <FormItem label="Font Color">
                         <Field name="thumbnailsMetadata.sentence_charColor" type="color" component={Input} />
+                    </FormItem>
+                    <FormItem label="Sentence Casing">
+                        <Field as="select" name="thumbnailsMetadata.sentence_case" className="input w-full">
+                            <option value="title">The Quick Brown</option>
+                            <option value="lower">the quick brown</option>
+                            <option value="upper">THE QUICK BROWN</option>
+                        </Field>
                     </FormItem>
                     <FormItem label="Show Text Area Box">
                         <Field name="thumbnailsMetadata.sentence_showTextAreaBox">
