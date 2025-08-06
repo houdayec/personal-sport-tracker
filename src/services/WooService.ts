@@ -28,7 +28,7 @@ export const generateWordPressHtml = (
     const rankMath = {
         title: `${cleanMainKeyword} Font - Instant Download`,
         permalink: fullSlug,
-        description: `Take a look at our ${cleanMainKeyword} font, inspired by the ${cleanSecondKeyword} font. This font is compatible with Cricut, Canva, Microsoft Word, Silhouette and more.`,
+        description: `Take a look at our ${cleanMainKeyword} font, a ${cleanSecondKeyword} Style Typeface. This font is compatible with Cricut, Canva, Microsoft Word, Silhouette and more.`,
         focusKeyword,
     }
 
@@ -36,12 +36,12 @@ export const generateWordPressHtml = (
         case 'font':
             return {
                 excerpt: `
-<p><strong>Our ${cleanMainKeyword} font</strong>, inspired by ${cleanSecondKeyword}, is ideal for your creative projects! It comes in multiple formats, compatible with Cricut, Canva, Microsoft Word, Silhouette, and more.</p>
+<p><strong>Our ${cleanMainKeyword} font</strong>, a ${cleanSecondKeyword} style typography, is ideal for your creative projects! It comes in multiple formats, compatible with Cricut, Canva, Microsoft Word, Silhouette, and more.</p>
 
 <h2>What’s Included:</h2>
 <ul>
-  <li><strong>OTF</strong> &amp; <strong>TTF</strong> installable formats — type directly in your favorite software.</li>
-  <li><strong>PNG</strong>, <strong>SVG</strong>, <strong>PDF</strong>, <strong>AI</strong>, and <strong>EPS</strong> formats — infinite resolution for print, cut, and digital use.</li>
+  <li><strong>OTF</strong> &amp; <strong>TTF</strong> installable formats - type directly in your favorite software.</li>
+  <li><strong>PNG</strong>, <strong>SVG</strong>, <strong>PDF</strong>, <strong>AI</strong>, and <strong>EPS</strong> formats - infinite resolution for print, cut, and digital use.</li>
   <li>All font characters are also available as individual files for easy drag-and-drop usage.</li>
   <li><strong>License:</strong> Includes personal use. <a href="https://www.fontmaze.com/licenses/font-license/">Click here</a> for commercial options.</li>
   <li><b>+ FREE</b> Step-by-step guides to install and use your ${cleanMainKeyword} font.</li>
@@ -50,15 +50,15 @@ export const generateWordPressHtml = (
 <p><a href="#tab-description">Learn more about the ${cleanMainKeyword} font</a></p>
 `.trim(),
                 content: `
-<h2 class="wp-block-heading">Our ${cleanMainKeyword} Typeface, inspired by the ${cleanSecondKeyword} Font</h2>
-<p>Make your next project stand out with our ${cleanMainKeyword} font — a flexible and stylish typeface made for creators.</p>
+<h2 class="wp-block-heading">Our ${cleanMainKeyword} Font, a ${cleanSecondKeyword} Style Typeface</h2>
+<p>Make your next project stand out with our ${cleanMainKeyword} font - a flexible and stylish typeface made for creators.</p>
 <p>Handcrafted in our studio with care and attention to detail, the ${cleanMainKeyword} font brings a unique, personal touch to your designs.</p>
 <hr>
 <h2>Why Choose FontMaze?</h2>
-<p>At FontMaze, <strong>every font is crafted with care in our studio</strong> — no auto-generation, no shortcuts. We combine design expertise with attention to detail to ensure premium quality across all our products.</p>
+<p>At FontMaze, <strong>every font is crafted with care in our studio</strong> - no auto-generation, no shortcuts. We combine design expertise with attention to detail to ensure premium quality across all our products.</p>
 <p>Our fonts are easy to install and work seamlessly with popular tools like Cricut, Canva, Silhouette, and more. Whether you're a beginner or a seasoned creator, you’ll get started in minutes.</p>
-<p>Need help? <a href="https://www.fontmaze.com/contact/">Reach out to us here</a> — we offer fast, friendly support from real people who care about your success.</p>
-<p>Start designing instantly with the ${cleanMainKeyword} font — perfect for social media graphics, printable crafts, digital downloads, and creative projects of all kinds.</p>
+<p>Need help? <a href="https://www.fontmaze.com/contact/">Reach out to us here</a> - we offer fast, friendly support from real people who care about your success.</p>
+<p>Start designing instantly with the ${cleanMainKeyword} font - perfect for social media graphics, printable crafts, digital downloads, and creative projects of all kinds.</p>
 
 [wpcode id="834"]
 [wpcode id="833"]

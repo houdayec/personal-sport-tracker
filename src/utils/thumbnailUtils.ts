@@ -220,5 +220,6 @@ export const slugify = (str: string) =>
     str
         .toLowerCase()
         .trim()
-        .replace(/[^\w\s-]+/g, '')    // 1️⃣ remove non-word characters except space and dash
-        .replace(/[\s_]+/g, '-')      // 2️⃣ then replace spaces/underscores with a single dash
+        .replace(/[^\w\s-]+/g, '')     // 1️⃣ Remove non-word characters, keep spaces and dashes
+        .replace(/[\s_]+/g, '-')       // 2️⃣ Convert spaces/underscores to dashes
+        .replace(/-+/g, '-')           // 3️⃣ Collapse multiple dashes into one
