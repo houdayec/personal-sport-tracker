@@ -106,6 +106,10 @@ export async function uploadZipToFirebase(
     const zipRef = storageRef(storage, path)
     await uploadBytes(zipRef, zipBlob)
     const url = await getDownloadURL(zipRef)
+
+    const path2 = `products/${sku}/files/Final Product.zip`
+    const zipRef2 = storageRef(storage, path2)
+    await uploadBytes(zipRef2, zipBlob)
     console.log(`[uploadZipToFirebase] uploaded at ${url}`)
     return url
 }

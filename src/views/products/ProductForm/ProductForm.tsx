@@ -260,8 +260,8 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                                             onChange={(nextTab) => handleTabChange(nextTab, values)}
                                         >
                                             <TabList>
-                                                <TabNav value="product">🗂 Details</TabNav>
-                                                <TabNav value="assets" disabled={!allowedTabs.includes('assets')}>📦 Assets</TabNav>
+                                                <TabNav value="product">🗂 Product Details</TabNav>
+                                                <TabNav value="assets" disabled={!allowedTabs.includes('assets')}>📦 Font Info & Files</TabNav>
                                                 <TabNav value="thumbnails" disabled={!allowedTabs.includes('thumbnails')}>🖼 Thumbnails</TabNav>
                                                 <TabNav value="wordpress" disabled={!allowedTabs.includes('wordpress')}>📝 WordPress Post</TabNav>
                                                 <TabNav value="export" disabled={!allowedTabs.includes('export')}>📤 Export</TabNav>

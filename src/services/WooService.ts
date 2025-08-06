@@ -38,7 +38,7 @@ export const generateWordPressHtml = (
                 excerpt: `
 <p><strong>Our ${cleanMainKeyword} font</strong>, a ${cleanSecondKeyword} style typography, is ideal for your creative projects! It comes in multiple formats, compatible with Cricut, Canva, Microsoft Word, Silhouette, and more.</p>
 
-<h2>What’s Included:</h2>
+<h3>What’s Included:</h3>
 <ul>
   <li><strong>OTF</strong> &amp; <strong>TTF</strong> installable formats - type directly in your favorite software.</li>
   <li><strong>PNG</strong>, <strong>SVG</strong>, <strong>PDF</strong>, <strong>AI</strong>, and <strong>EPS</strong> formats - infinite resolution for print, cut, and digital use.</li>
