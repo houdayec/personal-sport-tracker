@@ -9,7 +9,7 @@ import {
 import Card from '@/components/ui/Card'
 import IconText from '@/components/shared/IconText'
 import { Product } from '@/@types/product'
-import { SiEtsy, SiWordpress } from 'react-icons/si'
+import { SiWordpress } from 'react-icons/si' // Removed SiEtsy
 
 type Props = {
     product: Product
@@ -20,12 +20,8 @@ const ProductDetailsCard = ({ product }: Props) => {
         sku,
         status,
         category,
-        etsy,
-        publishedOnEtsy,
         publishedOnWebsite,
         computedData,
-        wordpressId,
-        etsyId,
     } = product
 
     return (
@@ -53,36 +49,43 @@ const ProductDetailsCard = ({ product }: Props) => {
                     </span>
                 </IconText>
 
-                <IconText icon={publishedOnEtsy ? <HiOutlineCheckCircle className="text-green-500" /> : <HiOutlineXCircle className="text-red-500" />}>
-                    <span>Published on Etsy</span>
-                </IconText>
-
                 <IconText icon={publishedOnWebsite ? <HiOutlineCheckCircle className="text-green-500" /> : <HiOutlineXCircle className="text-red-500" />}>
                     <span>Published on Website</span>
                 </IconText>
 
-                <IconText icon={<SiEtsy className="text-xl opacity-70" />}>
-                    <span className="font-semibold">
-                        Etsy ID: {etsyId || '—'} <br />
-                    </span>
-                </IconText>
-
+                {/* Display WordPress ID */}
                 <IconText icon={<SiWordpress className="text-xl opacity-70" />}>
                     <span className="font-semibold">
-                        WP ID: {wordpressId || '—'}
+                        WP ID: {product.wordpress?.id || '—'}
                     </span>
                 </IconText>
 
-                {etsy?.link && (
+                {/* New: Link to View on Website */}
+                {product.wordpress?.view_url && (
                     <div className="mt-2 md:col-span-2">
                         <a
-                            href={etsy.link}
+                            href={product.wordpress.view_url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-blue-600 underline text-sm"
                         >
                             <HiOutlineExternalLink />
-                            View on Etsy
+                            View on Website
+                        </a>
+                    </div>
+                )}
+
+                {/* New: Link to Edit in WordPress */}
+                {product.wordpress?.edit_url && (
+                    <div className="mt-2 md:col-span-2">
+                        <a
+                            href={product.wordpress.edit_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-blue-600 underline text-sm"
+                        >
+                            <HiOutlineExternalLink />
+                            Edit in WordPress
                         </a>
                     </div>
                 )}

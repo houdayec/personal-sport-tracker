@@ -345,6 +345,8 @@ export type WordPressData = {
     lastSyncedAt?: number
     excerpt?: string
     content?: string
+    view_url?: string
+    edit_url?: string
     trademarkName?: string
     rankMath?: {
         title?: string

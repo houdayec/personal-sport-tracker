@@ -358,6 +358,8 @@ const ExportForm = () => {
             if (publishedProduct?.id) {
                 setFieldValue('wordpress.id', publishedProduct.id)
                 setFieldValue('publishedOnWebsite', true)
+                setFieldValue('wordpress.view_url', publishedProduct.permalink)
+                setFieldValue('wordpress.edit_url', `https://fontmaze.com/wp-admin/post.php?post=${publishedProduct.id}&action=edit`)
             }
 
             setWordPressUrls({

@@ -23,7 +23,7 @@ const WordPressInfoCard = ({ data }: { data: Product["wordpress"] }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormItem label="Title">
-                    <Input readOnly size="sm" value={data.name || ''} />
+                    <Input readOnly size="sm" value={data.title || ''} />
                 </FormItem>
                 <FormItem label="Slug">
                     <Input readOnly size="sm" value={data.slug || ''} />
@@ -35,15 +35,15 @@ const WordPressInfoCard = ({ data }: { data: Product["wordpress"] }) => {
                     <Input readOnly size="sm" value={data.status || ''} />
                 </FormItem>
 
-                {data.link && (
+                {data.view_url && (
                     <FormItem label="Website Link">
                         <a
-                            href={data.link}
+                            href={data.view_url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 underline text-sm"
                         >
-                            {data.link}
+                            {data.view_url}
                         </a>
                     </FormItem>
                 )}

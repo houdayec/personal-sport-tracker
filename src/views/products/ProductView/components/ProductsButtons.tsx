@@ -20,13 +20,6 @@ const ProductButtons = ({ sku }: { sku: string }) => {
                 </Button>
                 <Button
                     variant="twoTone"
-                    icon={<SiEtsy />}
-                    onClick={() => navigate(`/products/${sku}/generate-etsy-metadata`)}
-                >
-                    Etsy Page
-                </Button>
-                <Button
-                    variant="twoTone"
                     icon={<SiWordpress />}
                     onClick={() => navigate(`/products/${sku}/generate-website-listing`)}
                 >
