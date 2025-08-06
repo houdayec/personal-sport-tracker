@@ -217,4 +217,8 @@ export const ICON_PALETTE: IconEntry[] = [
 ]
 
 export const slugify = (str: string) =>
-    str.toLowerCase().trim().replace(/[\s_]+/g, '-').replace(/[^\w\-]+/g, '')
+    str
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]+/g, '')    // 1️⃣ remove non-word characters except space and dash
+        .replace(/[\s_]+/g, '-')      // 2️⃣ then replace spaces/underscores with a single dash

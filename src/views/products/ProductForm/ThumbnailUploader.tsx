@@ -45,6 +45,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
     } | null>(null)
     const [selectedFormat, setSelectedFormat] = useState<'png' | 'jpg' | 'webp'>('webp')
     const [selectedAspect, setSelectedAspect] = useState<'square' | 'landscape'>('square')
+    const [uploadSuccess, setUploadSuccess] = useState(false)
 
     const sku = values.sku
     const main = values.mainKeyword?.toLowerCase?.() || 'main'
@@ -147,6 +148,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
             { placement: 'top-center' }
         )
         setIsUploading(false)
+        setUploadSuccess(true)
     }
 
     return (
@@ -160,7 +162,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
                     type="button"
                     variant="twoTone"
                     disabled={isUploading || !thumbnails.length}
-                    className="w-full"
+                    className={`w-full ${uploadSuccess ? 'bg-green-500 text-white hover:bg-green-600' : ''}`}
                 >
                     {isUploading ? (
                         <div className="flex items-center justify-center gap-2 w-full">
