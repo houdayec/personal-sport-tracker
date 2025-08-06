@@ -35,7 +35,7 @@ const Side = ({ children, content, ...rest }: SideProps) => {
                     </div>
                     */}
                     <p className="text-lg text-white opacity-80">
-                        Success doesn’t come from what you do occasionally, it comes from what you do consistently.
+                        The only way to do great work is to love what you do. If you haven't found it yet, keep looking. Don't settle.
                     </p>
                 </div>
                 <span className="text-white">
