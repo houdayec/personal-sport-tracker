@@ -605,12 +605,12 @@ const AssetsFields = (props: AssetsFormFields) => {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:\'",.<>?/`~' +
                 'ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿŒœŠšŸƒ€'
             const blob = await generateFontProofPng(font!, chars.split(''))
-            const url = URL.createObjectURL(blob)
+            /*const url = URL.createObjectURL(blob)
             const link = document.createElement('a')
             link.href = url
             link.download = 'font-proof.png'
             link.click()
-            URL.revokeObjectURL(url)
+            URL.revokeObjectURL(url)*/
 
             await upload(`products/${sku}/files/font_map.png`, blob)
             await upload(`products/${sku}/files/Final Product/Font Preview.png`, blob)
