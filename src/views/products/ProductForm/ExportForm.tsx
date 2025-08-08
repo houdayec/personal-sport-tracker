@@ -144,7 +144,7 @@ const ExportForm = () => {
                 delete product.featured_media
 
                 Object.assign(product, {
-                    name: values.name, // Keep original line
+                    name: values.getNameWithCategory(),
                     slug: values.wordpress?.rankMath?.permalink,
                     sku: values.sku,
                     status: 'publish',
@@ -359,12 +359,12 @@ const ExportForm = () => {
                 setFieldValue('wordpress.id', publishedProduct.id)
                 setFieldValue('publishedOnWebsite', true)
                 setFieldValue('wordpress.view_url', publishedProduct.permalink)
-                setFieldValue('wordpress.edit_url', `https://fontmaze.com/wp-admin/post.php?post=${publishedProduct.id}&action=edit`)
+                setFieldValue('wordpress.edit_url', `https://www.fontmaze.com/wp-admin/post.php?post=${publishedProduct.id}&action=edit&classic-editor`)
             }
 
             setWordPressUrls({
                 live: publishedProduct.permalink,
-                edit: `https://fontmaze.com/wp-admin/post.php?post=${publishedProduct.id}&action=edit`,
+                edit: `https://www.fontmaze.com/wp-admin/post.php?post=${publishedProduct.id}&action=edit&classic-editor`,
             })
 
             // Step 4: Finalizing

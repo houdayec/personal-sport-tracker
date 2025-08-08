@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useFormikContext, Field, FieldProps } from 'formik'
 import Input from '@/components/ui/Input'
 import { FormItem } from '@/components/ui/Form'
@@ -6,6 +6,7 @@ import ThumbnailUploader from './ThumbnailUploader'
 import { Product, ThumbnailsMetadata } from '@/@types/product'
 import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
 import { Card } from '@/components/ui'
+import { Loader2 } from 'lucide-react'
 
 const IMAGE_SRC = '/img/others/thumbnail-preview.png'
 const CANVAS_WIDTH = 3000
@@ -18,25 +19,40 @@ const TEXT_BOX = {
     height: 960,
 }
 
-const ThumbnailStudio_Sentence = () => {
+const ThumbnailStudio_Sentence = ({
+    isFontReady,
+    productFontFamily,
+}: {
+    isFontReady: boolean
+    productFontFamily: string
+}) => {
     const { values, setFieldValue } = useFormikContext<Product>()
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+    // The fontLoaded state has been removed, as the component now relies on the isFontReady prop.
 
     const metadata = (values.thumbnailsMetadata || {}) as ThumbnailsMetadata
     const fontColor = metadata.sentence_charColor || '#000000'
     const showTextBox = metadata.sentence_showTextAreaBox === true
-    const yOffset = metadata.sentence_yOffset || 0 // New yOffset value
+    const yOffset = metadata.sentence_yOffset || 0
 
+    // Load background image
     useEffect(() => {
         const img = new Image()
         img.src = IMAGE_SRC
         img.onload = () => setBgImage(img)
     }, [])
 
-    useEffect(() => {
-        if (!bgImage) return
+    // The font loading check is now handled by the parent component.
+    // This component now relies on the 'isFontReady' prop.
+
+    const draw = useCallback(() => {
+        // Now using the 'isFontReady' prop instead of the removed fontLoaded state
+        if (!bgImage || !isFontReady) {
+            return;
+        }
+
         const canvas = canvasRef.current
         if (!canvas) return
         const ctx = canvas.getContext('2d')!
@@ -78,7 +94,7 @@ const ThumbnailStudio_Sentence = () => {
         ctx.textBaseline = 'middle'
 
         while (true) {
-            ctx.font = `${testFontSize}px ProductFont, sans-serif`
+            ctx.font = `${testFontSize}px "${productFontFamily}", sans-serif`
             const heights = testFontSize * 1.2 * lines.length
             const widths = lines.map(line => ctx.measureText(line).width)
             const maxWidth = Math.max(...widths)
@@ -87,12 +103,11 @@ const ThumbnailStudio_Sentence = () => {
         }
         testFontSize -= 1
 
-        ctx.font = `${testFontSize}px ProductFont, sans-serif`
+        ctx.font = `${testFontSize}px "${productFontFamily}"`
         ctx.fillStyle = fontColor
 
         const lineHeight = testFontSize * 1.2
         const totalHeight = lines.length * lineHeight
-        // Apply yOffset to the startY calculation
         const startY = paddedBox.y + (paddedBox.height - totalHeight) / 2 + lineHeight / 2 + yOffset
 
         lines.forEach((line, i) => {
@@ -101,7 +116,12 @@ const ThumbnailStudio_Sentence = () => {
         })
 
         setPreviewUrl(canvas.toDataURL('image/png'))
-    }, [bgImage, metadata, yOffset])
+    }, [bgImage, metadata, yOffset, isFontReady, productFontFamily]) // Added isFontReady to the dependency array
+
+    useEffect(() => {
+        const id = requestAnimationFrame(draw)
+        return () => cancelAnimationFrame(id)
+    }, [draw])
 
     return (
         <div className="mt-8">
@@ -116,10 +136,16 @@ const ThumbnailStudio_Sentence = () => {
                 <div className="w-full md:max-w-md flex-shrink-0">
 
                     <div className="border rounded bg-white overflow-hidden max-w-xl w-full aspect-[3/2]">
-                        {previewUrl
-                            ? <img src={previewUrl} alt="Sentence preview" className="w-full h-full object-contain" />
-                            : <div className="w-full h-full flex items-center justify-center">Generating…</div>
-                        }
+                        {/* Conditional rendering now uses isFontReady */}
+                        {!isFontReady || !bgImage ? (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <Loader2 className="h-10 w-10 animate-spin text-gray-500" />
+                            </div>
+                        ) : previewUrl ? (
+                            <img src={previewUrl} alt="Sentence preview" className="w-full h-full object-contain" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center">Loading…</div>
+                        )}
                     </div>
                     <div className="pt-2">
                         <ThumbnailStudioMetadata slug="sentence" />
@@ -176,4 +202,4 @@ const ThumbnailStudio_Sentence = () => {
     )
 }
 
-export default ThumbnailStudio_Sentence
+export default ThumbnailStudio_Sentence;

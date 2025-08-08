@@ -311,6 +311,9 @@ export type ThumbnailsMetadata = {
     example_tablet_showSpecials?: boolean
     example_tablet_xOffset?: number
     example_tablet_yOffset?: number
+    example_tablet_autoFontSize?: boolean
+    example_tablet_manualFontSize?: number
+
 }
 
 export type WebsiteMetadata = {

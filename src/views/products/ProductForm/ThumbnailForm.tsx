@@ -12,6 +12,9 @@ import ThumbnailStudioFifthMockupLaptop from './ThumbnailStudio_Fifth'
 import ThumbnailStudioSixthMockupTablet from './ThumbnailStudio_Sixth'
 import ThumbnailStudio_IncludedFilesAndCompatibility from './ThumbnailStudio_IncludedFiles'
 import { Product } from '@/@types/product'
+import { Spinner } from '@/components/ui'
+import { getDownloadURL, ref } from 'firebase/storage'
+import { storage } from '@/firebase'
 
 type FormFieldsName = {
     name: string
@@ -33,7 +36,13 @@ const ThumbnailBlockForm = ({
     prefix: string
 }) => {
     const copy = (value: string, label: string) => {
-        navigator.clipboard.writeText(value)
+        // Use document.execCommand('copy') as navigator.clipboard might fail in an iframe
+        const el = document.createElement('textarea');
+        el.value = value;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
     }
 
     return (
@@ -63,13 +72,42 @@ const ThumbnailBlockForm = ({
     )
 }
 
-
-
 const ThumbnailForm = (props: ThumbnailFormFields) => {
-    const copy = (value: string, label: string) => {
-        navigator.clipboard.writeText(value)
-    }
-    const { values, setFieldValue } = useFormikContext<Product>()
+    const { values } = useFormikContext<Product>()
+    const [isFontReady, setIsFontReady] = useState(false)
+    const productFontFamily = values.sku ? `ProductFont-${values.sku}` : 'ProductFontFallback';
+    const [isLoading, setIsLoading] = useState(false)
+
+    // Centralized font loading logic - now a single, reliable useEffect
+    useEffect(() => {
+        // No SKU means no custom font, so we're ready to render
+        if (!values.sku) {
+            setIsLoading(false);
+            setIsFontReady(true);
+            return;
+        }
+
+        setIsLoading(true);
+        setIsFontReady(false); // Reset state to ensure components show loader if font needs to be reloaded
+
+        getDownloadURL(ref(storage, `products/${values.sku}/files/font.ttf`))
+            .then(url => {
+                const fontFace = new FontFace(productFontFamily, `url(${url})`)
+                // Wait for the font to load before updating state
+                return fontFace.load().then(() => {
+                    document.fonts.add(fontFace)
+                    setIsFontReady(true)
+                })
+            })
+            .catch((error) => {
+                console.error(`❌ Failed to load font for sku: ${values.sku}`, error)
+                // Set to ready even on failure so the components can render with fallback font
+                setIsFontReady(true)
+            })
+            .finally(() => {
+                setIsLoading(false)
+            })
+    }, [values.sku, productFontFamily]) // Depend on sku and font family to trigger re-load if product changes
 
     return (
         <AdaptableCard divider className="mb-4">
@@ -87,12 +125,21 @@ const ThumbnailForm = (props: ThumbnailFormFields) => {
             >
                 🔎 View Thumbnails on Firebase
             </Button>
-            <ThumbnailPreviewStudio />
-            <ThumbnailStudio_Sentence />
-            <ThumbnailStudioThirdCharacters />
-            <ThumbnailStudio_IncludedFilesAndCompatibility />
-            <ThumbnailStudioFifthMockupLaptop />
-            <ThumbnailStudioSixthMockupTablet />
+            {!isFontReady ? (
+                <div className="flex items-center justify-center gap-2 py-12 text-gray-600">
+                    <Spinner size="md" />
+                    <span>Loading font...</span>
+                </div>
+            ) : (
+                <>
+                    <ThumbnailPreviewStudio isFontReady={isFontReady} productFontFamily={productFontFamily} />
+                    <ThumbnailStudio_Sentence isFontReady={isFontReady} productFontFamily={productFontFamily} />
+                    <ThumbnailStudioThirdCharacters isFontReady={isFontReady} productFontFamily={productFontFamily} />
+                    <ThumbnailStudio_IncludedFilesAndCompatibility />
+                    <ThumbnailStudioFifthMockupLaptop isFontReady={isFontReady} productFontFamily={productFontFamily} />
+                    <ThumbnailStudioSixthMockupTablet isFontReady={isFontReady} productFontFamily={productFontFamily} />
+                </>
+            )}
         </AdaptableCard>
     )
 }
