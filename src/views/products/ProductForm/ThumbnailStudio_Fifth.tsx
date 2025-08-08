@@ -80,6 +80,7 @@ const ThumbnailStudioFifthMockupLaptop = () => {
             const lines = rawLines.map(line => {
                 switch (casing) {
                     case 'lower': return line.toLowerCase()
+                    case 'upper': return line.toUpperCase()
                     case 'title':
                         return line.split(' ')
                             .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
@@ -184,6 +185,7 @@ const ThumbnailStudioFifthMockupLaptop = () => {
                             <option value="default">Life is better</option>
                             <option value="lower">life is better</option>
                             <option value="title">Life Is Better</option>
+                            <option value="upper">LIFE IS BETTER</option>
                         </Field>
                     </FormItem>
                     <FormItem label="Show Text Area Box">

@@ -26,6 +26,7 @@ const ThumbnailStudioThirdCharacters = () => {
     const metadata = (values.thumbnailsMetadata || {}) as ThumbnailsMetadata
     const fontColor = metadata.characters_preview_charColor || '#000000'
     const showTextBox = metadata.characters_preview_showTextAreaBox === true
+    const yOffset = metadata.characters_preview_yOffset || 0
 
     const main_showUppercase = metadata.characters_preview_showUppercase ?? true
     const showLowercase = metadata.characters_preview_showLowercase ?? true
@@ -55,8 +56,6 @@ const ThumbnailStudioThirdCharacters = () => {
         '! @ # $ % ^',
         '& * ( ) - _ = +'
     ]
-
-
 
     let lines: string[] = []
     if (main_showUppercase && showLowercase) lines = [...letterPairs]
@@ -118,7 +117,7 @@ const ThumbnailStudioThirdCharacters = () => {
             }).filter(Boolean)
 
             const totalHeight = supportedLines.length * lineHeight
-            const startY = paddedBox.y + (paddedBox.height - totalHeight) / 2 + lineHeight / 2
+            const startY = paddedBox.y + (paddedBox.height - totalHeight) / 2 + lineHeight / 2 + yOffset // Apply yOffset here
 
             supportedLines.forEach((line, i) => {
                 const y = startY + i * lineHeight
@@ -127,7 +126,7 @@ const ThumbnailStudioThirdCharacters = () => {
 
             setPreviewUrl(canvas.toDataURL('image/png'))
         }
-    }, [metadata])
+    }, [metadata, yOffset])
 
 
     return (
@@ -191,6 +190,22 @@ const ThumbnailStudioThirdCharacters = () => {
                                 </label>
                             ))}
                         </div>
+                    </FormItem>
+                    <FormItem label="Vertical Position" className="mb-4">
+                        <Field name="thumbnailsMetadata.characters_preview_yOffset">
+                            {({ field }: FieldProps) => (
+                                <input
+                                    {...field}
+                                    type="range"
+                                    min={-200}
+                                    max={200}
+                                    step={1}
+                                    className="w-full"
+                                    value={field.value || 0}
+                                    onChange={e => setFieldValue(field.name, parseInt(e.target.value))}
+                                />
+                            )}
+                        </Field>
                     </FormItem>
                 </Card>
             </div>

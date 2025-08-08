@@ -285,6 +285,7 @@ export type ThumbnailsMetadata = {
     sentence_charColor?: string
     sentence_showTextAreaBox?: boolean
     sentence_case: 'title',
+    sentence_yOffset?: number
 
     characters_preview_charColor?: string
     characters_preview_showTextAreaBox?: boolean
@@ -292,6 +293,7 @@ export type ThumbnailsMetadata = {
     characters_preview_showLowercase?: boolean
     characters_preview_showNumbers?: boolean
     characters_preview_showSpecials?: boolean
+    characters_preview_yOffset?: number
 
     example_laptop_charColor?: string
     example_laptop_showTextAreaBox?: boolean
@@ -299,7 +301,7 @@ export type ThumbnailsMetadata = {
     example_laptop_showLowercase?: boolean
     example_laptop_showNumbers?: boolean
     example_laptop_showSpecials?: boolean
-    example_laptop_casing?: 'default' | 'lower' | 'title'
+    example_laptop_casing?: 'default' | 'lower' | 'upper' | 'title'
 
     example_tablet_charColor?: string
     example_tablet_showTextAreaBox?: boolean
@@ -307,6 +309,8 @@ export type ThumbnailsMetadata = {
     example_tablet_showLowercase?: boolean
     example_tablet_showNumbers?: boolean
     example_tablet_showSpecials?: boolean
+    example_tablet_xOffset?: number
+    example_tablet_yOffset?: number
 }
 
 export type WebsiteMetadata = {

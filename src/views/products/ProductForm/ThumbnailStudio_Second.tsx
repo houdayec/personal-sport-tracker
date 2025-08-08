@@ -27,6 +27,7 @@ const ThumbnailStudio_Sentence = () => {
     const metadata = (values.thumbnailsMetadata || {}) as ThumbnailsMetadata
     const fontColor = metadata.sentence_charColor || '#000000'
     const showTextBox = metadata.sentence_showTextAreaBox === true
+    const yOffset = metadata.sentence_yOffset || 0 // New yOffset value
 
     useEffect(() => {
         const img = new Image()
@@ -91,7 +92,8 @@ const ThumbnailStudio_Sentence = () => {
 
         const lineHeight = testFontSize * 1.2
         const totalHeight = lines.length * lineHeight
-        const startY = paddedBox.y + (paddedBox.height - totalHeight) / 2 + lineHeight / 2
+        // Apply yOffset to the startY calculation
+        const startY = paddedBox.y + (paddedBox.height - totalHeight) / 2 + lineHeight / 2 + yOffset
 
         lines.forEach((line, i) => {
             const y = startY + i * lineHeight
@@ -99,7 +101,7 @@ const ThumbnailStudio_Sentence = () => {
         })
 
         setPreviewUrl(canvas.toDataURL('image/png'))
-    }, [bgImage, metadata])
+    }, [bgImage, metadata, yOffset])
 
     return (
         <div className="mt-8">
@@ -148,6 +150,22 @@ const ThumbnailStudio_Sentence = () => {
                                     type="checkbox"
                                     checked={field.value ?? true}
                                     onChange={e => setFieldValue(field.name, e.target.checked)}
+                                />
+                            )}
+                        </Field>
+                    </FormItem>
+                    <FormItem label="Vertical Position" className="mb-4">
+                        <Field name="thumbnailsMetadata.sentence_yOffset">
+                            {({ field }: FieldProps) => (
+                                <input
+                                    {...field}
+                                    type="range"
+                                    min={-200}
+                                    max={200}
+                                    step={1}
+                                    className="w-full"
+                                    value={field.value || 0}
+                                    onChange={e => setFieldValue(field.name, parseInt(e.target.value))}
                                 />
                             )}
                         </Field>

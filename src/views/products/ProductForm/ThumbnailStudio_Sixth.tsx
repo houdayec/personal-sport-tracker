@@ -7,6 +7,7 @@ import { Product, ThumbnailsMetadata } from '@/@types/product'
 import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
 import { Card } from '@/components/ui'
 
+
 const PADDING = 100
 const CANVAS_WIDTH = 3000
 const CANVAS_HEIGHT = 2000
@@ -33,17 +34,8 @@ const ThumbnailStudioSixthMockupTablet = () => {
     const metadata = (values.thumbnailsMetadata || {}) as ThumbnailsMetadata
     const fontColor = metadata.example_tablet_charColor || '#000000'
     const showTextBox = metadata.example_tablet_showTextAreaBox === true
-
-    // Compute character lines
-    const paragraph = `Life is a journey best enjoyed with passion, laughter, and the freedom to create. Take time to breathe, explore, and embrace each moment fully. Work hard, rest well, and cherish little things.`;
-    const words = paragraph.split(' ')
-    const maxWordsPerLine = 5
-    const shortLine = "Life is better with creativity."
-
-    let lines: string[] = []
-    for (let i = 0; i < words.length; i += maxWordsPerLine) {
-        lines.push(words.slice(i, i + maxWordsPerLine).join(' '))
-    }
+    const xOffset = metadata.example_tablet_xOffset || 0
+    const yOffset = metadata.example_tablet_yOffset || 0
 
     // Draw text on top of mockup image with transform for natural tilt
     useEffect(() => {
@@ -108,18 +100,18 @@ const ThumbnailStudioSixthMockupTablet = () => {
             ctx.font = `${fontSize}px ProductFont, sans-serif`
 
             ctx.save()
-            ctx.translate(midX, midY)
+            ctx.translate(midX + xOffset, midY + yOffset)
             ctx.rotate(Math.atan2(endY - startY, endX - startX))
             ctx.fillText(shortLine, 0, 0)
             ctx.restore()
 
             setPreviewUrl(canvas.toDataURL('image/png'))
         }
-    }, [metadata])
+    }, [metadata, xOffset, yOffset])
 
     return (
         <div className="mt-8">
-            <h6 className="font-semibold mb-2">🖼️ Laptop Mockup Thumbnail</h6>
+            <h6 className="font-semibold mb-2">🖼️ Tablet Mockup Thumbnail</h6>
             <canvas
                 ref={canvasRef}
                 width={CANVAS_WIDTH}
@@ -143,7 +135,6 @@ const ThumbnailStudioSixthMockupTablet = () => {
                             bgColor="#ffffff"
                             slug="example-tablet"
                         />
-
                     </div>
                 </div>
                 <Card className="space-y-4 w-full max-w-md">
@@ -159,6 +150,42 @@ const ThumbnailStudioSixthMockupTablet = () => {
                                     type="checkbox"
                                     checked={field.value ?? false}
                                     onChange={e => setFieldValue(field.name, e.target.checked)}
+                                />
+                            )}
+                        </Field>
+                    </FormItem>
+
+                    {/* New X Position Slider */}
+                    <FormItem label="X Position (horizontal)" className="mb-4">
+                        <Field name="thumbnailsMetadata.example_tablet_xOffset">
+                            {({ field }: FieldProps) => (
+                                <input
+                                    {...field}
+                                    type="range"
+                                    min={-500}
+                                    max={500}
+                                    step={1}
+                                    className="w-full"
+                                    value={field.value || 0}
+                                    onChange={e => setFieldValue(field.name, parseInt(e.target.value))}
+                                />
+                            )}
+                        </Field>
+                    </FormItem>
+
+                    {/* New Y Position Slider */}
+                    <FormItem label="Y Position (vertical)" className="mb-4">
+                        <Field name="thumbnailsMetadata.example_tablet_yOffset">
+                            {({ field }: FieldProps) => (
+                                <input
+                                    {...field}
+                                    type="range"
+                                    min={-500}
+                                    max={500}
+                                    step={1}
+                                    className="w-full"
+                                    value={field.value || 0}
+                                    onChange={e => setFieldValue(field.name, parseInt(e.target.value))}
                                 />
                             )}
                         </Field>
