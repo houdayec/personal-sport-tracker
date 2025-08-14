@@ -116,7 +116,6 @@ const ProductView = () => {
     return (
         <Container className="h-full">
             <Loading loading={loading}>
-                {/* Render content only if data is not empty and not null */}
                 {!isEmpty(data) && data !== null ? (
                     <>
                         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
@@ -150,81 +149,97 @@ const ProductView = () => {
                             </div>
 
                             {/* Buttons Block */}
-                            <div className="grid grid-cols-2 gap-4 sm:flex sm:flex-wrap mt-4 sm:mt-0 lg:mt-0">
-                                <Tooltip title="Edit Product">
+                            <div className="flex flex-wrap gap-3 mt-4 sm:mt-0">
+                                {/* Primary Actions */}
+                                <Button
+                                    size="sm"
+                                    icon={<HiOutlinePencilAlt />}
+                                    onClick={() => navigate(`/products/${data.sku}/edit`, { state: { from: location } })}
+                                >
+                                    Edit
+                                </Button>
+
+                                {wordpressViewUrl && (
                                     <Button
-                                        variant="twoTone"
-                                        icon={<HiOutlinePencilAlt />}
-                                        onClick={() =>
-                                            navigate(`/products/${data.sku}/edit`, {
-                                                state: { from: location },
-                                            })
-                                        }
-                                    />
-                                </Tooltip>
-
-                                {/* New: View on Website Button */}
-                                {data.publishedOnWebsite && wordpressViewUrl && (
-                                    <Tooltip title="View on Website">
-                                        <Button
-                                            variant="twoTone"
-                                            icon={<FiEye />}
-                                            onClick={() => window.open(wordpressViewUrl, '_blank')}
-                                        />
-                                    </Tooltip>
+                                        size="sm"
+                                        icon={<FiEye />}
+                                        onClick={() => window.open(wordpressViewUrl, '_blank')}
+                                    >
+                                        View Website
+                                    </Button>
                                 )}
 
-                                {/* New: Edit in WordPress Button */}
-                                {data.publishedOnWebsite && wordpressEditUrl && (
-                                    <Tooltip title="Edit in WordPress">
-                                        <Button
-                                            variant="twoTone"
-                                            icon={<SiWordpress />}
-                                            onClick={() => window.open(wordpressEditUrl, '_blank')}
-                                        />
-                                    </Tooltip>
+                                {firebaseZipDownloadUrl && (
+                                    <Button
+                                        size="sm"
+                                        icon={<FiDownload />}
+                                        onClick={() => window.open(firebaseZipDownloadUrl, '_blank')}
+                                    >
+                                        Download ZIP
+                                    </Button>
                                 )}
 
-                                {/* Open in Firebase Storage Button */}
-                                {data.publishedOnWebsite && firebaseConsoleUrl && (
-                                    <Tooltip title="Open in Cloud">
+                                {/* Secondary Actions - Less-used or technical */}
+                                <div className="relative group">
+                                    <Button
+                                        size="sm"
+                                        icon={<HiOutlineTag />}
+                                        className="text-gray-700"
+                                    >
+                                        More
+                                    </Button>
+                                    <div className="absolute z-10 hidden group-hover:flex flex-col top-full mt-1 right-0 bg-white border rounded shadow-lg p-2 w-48">
+                                        {wordpressEditUrl && (
+                                            <Button
+                                                variant="plain"
+                                                className="justify-start w-full text-sm"
+                                                icon={<SiWordpress />}
+                                                onClick={() => window.open(wordpressEditUrl, '_blank')}
+                                            >
+                                                Edit WordPress
+                                            </Button>
+                                        )}
+                                        {firebaseConsoleUrl && (
+                                            <Button
+                                                variant="plain"
+                                                className="justify-start w-full text-sm"
+                                                icon={<FiCloud />}
+                                                onClick={() => window.open(firebaseConsoleUrl, '_blank')}
+                                            >
+                                                Open Firebase
+                                            </Button>
+                                        )}
                                         <Button
-                                            variant="twoTone"
-                                            icon={<FiCloud />} // Using FiEye icon for "view"
-                                            onClick={() => window.open(firebaseConsoleUrl, '_blank')}
-                                        />
-                                    </Tooltip>
-                                )}
-
-                                {/* Download ZIP from Firebase Button */}
-                                {data.publishedOnWebsite && firebaseZipDownloadUrl && (
-                                    <Tooltip title="Download ZIP">
-                                        <Button
-                                            variant="twoTone"
-                                            icon={<FiDownload />} // Using FiDownload icon for "download"
-                                            onClick={() => window.open(firebaseZipDownloadUrl, '_blank')}
-                                        />
-                                    </Tooltip>
-                                )}
+                                            variant="plain"
+                                            className="justify-start w-full text-sm"
+                                            icon={<FaGoogleDrive />}
+                                            onClick={onGoogleDriveClick}
+                                        >
+                                            Google Drive
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="grid xl:grid-cols-2 gap-4">
+                        <div className="grid xl:grid-cols-3 gap-4">
                             {/* Ensure sku is available before passing */}
-                            {/*{data.sku && <ProductButtons sku={data.sku} />}*/}
-                            <div className="space-y-4">
+                            {/* {data.sku && <ProductButtons sku={data.sku} />} */}
+                            <div className="space-y-4 xl:col-span-1">
                                 <ProductDetailsCard product={data} />
-                                {/*<FontDetailsCard product={data} />
+                                {/* <FontDetailsCard product={data} /> */}
                             </div>
-                            <div className="space-y-4">
-                                {/* Removed EtsyInfoCard as per your commented line */}
-                                {/*<EtsyInfoCard data={data.etsy} />*/}
+                            <div className="space-y-4 xl:col-span-1">
+                                {/* <EtsyInfoCard data={data.etsy} /> */}
                                 <WordPressInfoCard data={data.wordpress} />
+                            </div>
+                            <div className="space-y-2 xl:col-span-1">
+                                {/* You can move ProductButtons here in the future */}
+                                {/* <ProductButtons sku={data.sku} /> */}
                             </div>
                         </div>
                     </>
                 ) : (
-                    // Display "No product found" only if not loading and data is truly empty/null
                     !loading && (
                         <div className="h-full flex flex-col items-center justify-center">
                             <DoubleSidedImage
@@ -239,6 +254,7 @@ const ProductView = () => {
             </Loading>
         </Container>
     )
+
 }
 
 export default ProductView

@@ -7,7 +7,7 @@ import { ref, getDownloadURL } from 'firebase/storage'
 import ThumbnailUploader from './ThumbnailUploader'
 import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
 import { Product, ThumbnailsMetadata } from '@/@types/product'
-import { drawGradient, getCharacterLines, hexToRgba, ICON_PALETTE } from '@/utils/thumbnailUtils'
+import { drawGradient, getCharacterLines, hexToRgba, hexToRgbaString, ICON_PALETTE } from '@/utils/thumbnailUtils'
 import { Button, Card, Upload } from '@/components/ui'
 import IconPickerDialog from './IconPickerDialog'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -85,7 +85,7 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
         main_titleColor = '#000000', main_titleStrokeColor = '#000000', main_titleStrokeWidth = 0,
         main_charColor = '#333333', main_titleScale = 0.7, main_charScale = 1.0, main_topOffset = 150,
         main_showUppercase = true, main_showLowercase = false, main_showNumbers = true, main_showSpecials = false,
-        main_watermarkOpacity = 0.01,
+        main_watermarkOpacity = 0.02,
         main_watermarkColor = '#000000',
         main_charset = '',
         shadowColor = '#000000',
@@ -101,13 +101,22 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
         main_patternScale = 0.4,
         main_patternDiagonal = true,
         main_charVerticalOffset = 0,
+        main_watermarkVersion = 'black',
     } = meta
 
     useEffect(() => {
         const img = new Image()
-        img.src = '/img/others/fontmaze-watermark.png'
+        img.src = main_watermarkVersion === 'white'
+            ? '/img/others/fontmaze-watermark-white.png'
+            : '/img/others/fontmaze-watermark-black.png'
         img.onload = () => setWatermarkImg(img)
-    }, [])
+    }, [main_watermarkVersion])
+
+    useEffect(() => {
+        if (!values.thumbnailsMetadata?.main_watermarkColor) {
+            setFieldValue('thumbnailsMetadata.main_watermarkColor', main_titleColor)
+        }
+    }, [main_titleColor])
 
     useEffect(() => {
         const iconName = meta.main_patternIcon
@@ -218,7 +227,34 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
 
         ctx.save()
         ctx.globalAlpha = main_watermarkOpacity
-        ctx.drawImage(watermarkImg, 0, 0, CANVAS_SIZE, CANVAS_SIZE)
+
+        // Create temp canvas
+        const tempCanvas = document.createElement('canvas')
+        tempCanvas.width = watermarkImg.width
+        tempCanvas.height = watermarkImg.height
+        const tempCtx = tempCanvas.getContext('2d')!
+
+        // Draw watermark normally
+        tempCtx.drawImage(watermarkImg, 0, 0)
+
+        // Extract pixels
+        const imageData = tempCtx.getImageData(0, 0, watermarkImg.width, watermarkImg.height)
+        const data = imageData.data
+
+        // Convert to solid tint color, preserving alpha
+        const tint = hexToRgba(main_watermarkColor, 1)
+        for (let i = 0; i < data.length; i += 4) {
+            data[i] = tint.r       // R
+            data[i + 1] = tint.g   // G
+            data[i + 2] = tint.b   // B
+            // data[i + 3] stays unchanged (alpha)
+        }
+
+        tempCtx.putImageData(imageData, 0, 0)
+
+        // Draw the tinted image to final canvas
+        ctx.drawImage(tempCanvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE)
+
         ctx.restore()
 
         const titleArea = CANVAS_SIZE * 0.25
@@ -226,7 +262,7 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
         const titleFont = Math.floor(titleArea * main_titleScale)
 
         ctx.save()
-        ctx.shadowColor = hexToRgba(shadowColor, shadowOpacity)
+        ctx.shadowColor = hexToRgbaString(shadowColor, shadowOpacity)
         ctx.shadowBlur = shadowBlur
         ctx.shadowOffsetX = shadowOffsetX
         ctx.shadowOffsetY = shadowOffsetY
@@ -767,7 +803,8 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                                                                 <div
                                                                     className="w-10 h-10 rounded bg-white"
                                                                     style={{
-                                                                        boxShadow: `${p.shadowOffsetX}px ${p.shadowOffsetY}px ${p.shadowBlur}px ${hexToRgba(
+                                                                        backgroundColor: '#fff',
+                                                                        boxShadow: `${p.shadowOffsetX}px ${p.shadowOffsetY}px ${p.shadowBlur}px ${hexToRgbaString(
                                                                             p.shadowColor,
                                                                             p.shadowOpacity
                                                                         )}`,
@@ -836,10 +873,25 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                             <Card>
                                 <h5 className="font-semibold mb-2">Watermark</h5>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <InputWrapper label="Color"><Field name="thumbnailsMetadata.main_watermarkColor" type="color" component={Input} /></InputWrapper>
-                                    <InputWrapper label="Opacity"><Field name="thumbnailsMetadata.main_watermarkOpacity">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={0.10} step={0.01} className="w-full" />}</Field></InputWrapper>
+                                    <InputWrapper label="Color">
+                                        <Field name="thumbnailsMetadata.main_watermarkColor" type="color" component={Input} />
+                                    </InputWrapper>
+                                    <InputWrapper label="Opacity">
+                                        <Field name="thumbnailsMetadata.main_watermarkOpacity">
+                                            {({ field }: FieldProps) => (
+                                                <input {...field} type="range" min={0} max={0.1} step={0.01} className="w-full" />
+                                            )}
+                                        </Field>
+                                    </InputWrapper>
+                                    <InputWrapper label="Version">
+                                        <Field name="thumbnailsMetadata.main_watermarkVersion" as="select" className="input">
+                                            <option value="black">Black</option>
+                                            <option value="white">White</option>
+                                        </Field>
+                                    </InputWrapper>
                                 </div>
                             </Card>
+
                         )}
                     </div>
                 </div>

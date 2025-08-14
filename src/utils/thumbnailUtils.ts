@@ -34,11 +34,16 @@ export function drawGradient(
     ctx.fillRect(0, 0, width, height);
 }
 
-export function hexToRgba(hex: string, opacity: number): string {
+export const hexToRgba = (hex: string, alpha: number = 1) => {
     const r = parseInt(hex.slice(1, 3), 16)
     const g = parseInt(hex.slice(3, 5), 16)
     const b = parseInt(hex.slice(5, 7), 16)
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`
+    return { r, g, b, a: alpha }
+}
+
+export const hexToRgbaString = (hex: string, opacity: number) => {
+    const rgba = hexToRgba(hex, opacity)
+    return `rgba(${rgba.r}, ${rgba.g}, ${rgba.b}, ${rgba.a})`
 }
 
 export function getCharacterLines(meta: ThumbnailsMetadata): string[] {
@@ -144,7 +149,7 @@ export function renderThumbnail(
     const tf = Math.floor(titleArea * main_titleScale)
 
     ctx.save()
-    ctx.shadowColor = hexToRgba(shadowColor, shadowOpacity)
+    ctx.shadowColor = hexToRgbaString(shadowColor, shadowOpacity)
     ctx.shadowBlur = shadowBlur
     ctx.shadowOffsetX = shadowOffsetX
     ctx.shadowOffsetY = shadowOffsetY
