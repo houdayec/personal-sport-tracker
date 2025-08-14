@@ -270,6 +270,8 @@ export type ThumbnailsMetadata = {
     main_patternScale?: number
     main_patternDiagonal?: boolean
     main_patternIcon?: string
+    main_charVerticalOffset?: number
+    main_gradientSync?: boolean
 
     shadowColor?: string
     shadowBlur?: number

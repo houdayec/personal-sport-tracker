@@ -22,7 +22,53 @@ const PATTERNS = [
     { name: 'library', label: 'Icon Library', src: '' },
 ]
 
-// The isFontReady and productFontFamily props are now passed from the parent component
+const GRADIENT_PRESETS = [
+    { name: 'blue-sky', color1: '#89CFF0', color2: '#0080FF', type: 'diagonal' },
+    { name: 'sunrise', color1: '#FFD700', color2: '#FF4500', type: 'diagonal' },
+    { name: 'emerald', color1: '#2ECC71', color2: '#16A085', type: 'diagonal' },
+    { name: 'violet', color1: '#DA70D6', color2: '#800080', type: 'diagonal' },
+    { name: 'midnight', color1: '#34495E', color2: '#2C3E50', type: 'diagonal' },
+    // Nouveaux préréglages ajoutés
+    { name: 'light-grey', color1: '#f8f8f8', color2: '#e8e8e8', type: 'diagonal' },
+    { name: 'dark-grey', color1: '#333333', color2: '#1a1a1a', type: 'diagonal' },
+    { name: 'pastel-pink', color1: '#FFB6C1', color2: '#FFDAB9', type: 'diagonal' },
+    { name: 'pastel-green', color1: '#C1FFB6', color2: '#DAFFB9', type: 'diagonal' },
+    { name: 'soft-yellow', color1: '#FFECB3', color2: '#FFD54F', type: 'diagonal' },
+]
+
+// Function to lighten a hex color
+const getLighterColor = (hex: string) => {
+    let r = parseInt(hex.slice(1, 3), 16)
+    let g = parseInt(hex.slice(3, 5), 16)
+    let b = parseInt(hex.slice(5, 7), 16)
+
+    r = Math.min(255, r + 50)
+    g = Math.min(255, g + 50)
+    b = Math.min(255, b + 50)
+
+    return '#' + [r, g, b].map(x => {
+        const hex = x.toString(16)
+        return hex.length === 1 ? '0' + hex : hex
+    }).join('')
+}
+
+// Nouveaux préréglages d'ombre ajoutés
+const SHADOW_PRESETS = [
+    { name: 'none', shadowColor: '#000000', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0, shadowOpacity: 0 },
+    { name: 'subtle', shadowColor: '#000000', shadowBlur: 10, shadowOffsetX: 5, shadowOffsetY: 5, shadowOpacity: 0.5 },
+    { name: 'soft-glow', shadowColor: '#FFFFFF', shadowBlur: 15, shadowOffsetX: 0, shadowOffsetY: 0, shadowOpacity: 0.5 },
+    { name: 'deep-drop', shadowColor: '#000000', shadowBlur: 10, shadowOffsetX: 8, shadowOffsetY: 8, shadowOpacity: 0.5 },
+    { name: 'long-right', shadowColor: '#000000', shadowBlur: 5, shadowOffsetX: 20, shadowOffsetY: 5, shadowOpacity: 0.4 },
+    { name: 'long-left', shadowColor: '#000000', shadowBlur: 5, shadowOffsetX: -20, shadowOffsetY: 5, shadowOpacity: 0.4 },
+]
+
+const MENU_ITEMS = [
+    { key: 'background', label: 'Background' },
+    { key: 'title', label: 'Title' },
+    { key: 'characters', label: 'Characters' },
+    { key: 'watermark', label: 'Watermark' },
+]
+
 const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontReady: boolean, productFontFamily: string }) => {
     const { values, setFieldValue } = useFormikContext<Product>()
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -30,6 +76,7 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
     const [patternImages, setPatternImages] = useState<Record<string, HTMLImageElement>>({})
     const [watermarkImg, setWatermarkImg] = useState<HTMLImageElement | null>(null)
     const [iconDialogOpen, setIconDialogOpen] = useState(false)
+    const [activeMenu, setActiveMenu] = useState('title')
 
     const meta = values.thumbnailsMetadata ?? {} as ThumbnailsMetadata
     const {
@@ -50,11 +97,12 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
         main_gradientColor1 = '#ffffff',
         main_gradientColor2 = '#000000',
         main_gradientType = 'diagonal',
+        main_gradientSync = false,
         main_patternScale = 0.4,
         main_patternDiagonal = true,
+        main_charVerticalOffset = 0,
     } = meta
 
-    // Load watermark image
     useEffect(() => {
         const img = new Image()
         img.src = '/img/others/fontmaze-watermark.png'
@@ -77,7 +125,6 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
         }
     }, [meta.main_patternIcon])
 
-    // Preload pattern images
     useEffect(() => {
         PATTERNS.forEach(p => {
             if (!p.src) return;
@@ -91,27 +138,28 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
         });
     }, []);
 
-    // The font loading logic is now handled by the parent component.
-    // This component now depends on the 'isFontReady' prop to know when to render.
+    // Sync gradient colors if sync is enabled
+    useEffect(() => {
+        if (main_gradientSync) {
+            const lighterColor = getLighterColor(main_gradientColor1)
+            setFieldValue('thumbnailsMetadata.main_gradientColor2', lighterColor)
+        }
+    }, [main_gradientColor1, main_gradientSync])
 
-    // Compute character lines once
+
     const lines = getCharacterLines(meta)
 
-    // Schedules and draws the thumbnail on each animation frame for smooth updates
     const draw = useCallback(() => {
-        // Now using the 'isFontReady' prop instead of an internal state
         if (!isFontReady || !watermarkImg) return
 
         const canvas = canvasRef.current
         if (!canvas) return
         const ctx = canvas.getContext('2d')!
 
-        // Clear + background
         ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
         ctx.fillStyle = main_bgColor
         ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
 
-        // Gradient overlay
         if (main_gradientEnabled) {
             drawGradient(
                 ctx,
@@ -122,7 +170,6 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
             )
         }
 
-        // Pattern fill
         if (main_patternType !== 'none' && patternImages[main_patternType]) {
             const icon = patternImages[main_patternType]
             const rawEdge = Math.max(icon.width, icon.height)
@@ -169,13 +216,11 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
             ctx.restore()
         }
 
-        // Watermark
         ctx.save()
         ctx.globalAlpha = main_watermarkOpacity
         ctx.drawImage(watermarkImg, 0, 0, CANVAS_SIZE, CANVAS_SIZE)
         ctx.restore()
 
-        // Title
         const titleArea = CANVAS_SIZE * 0.25
         const yTitle = PADDING + main_topOffset
         const titleFont = Math.floor(titleArea * main_titleScale)
@@ -205,12 +250,13 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
         })
         ctx.restore()
 
-        // Characters
-        const topChars = yTitle + totalTitleHeight + PADDING
-        const bottomH = CANVAS_SIZE - topChars - PADDING
+        let charBlockTop = yTitle + totalTitleHeight + main_topOffset;
+        const charAreaHeight = CANVAS_SIZE - PADDING - charBlockTop;
+        const titleCharSpacing = 60
+        charBlockTop = yTitle + totalTitleHeight + titleCharSpacing
         const count = lines.length
         const spacing = 80
-        const baseFont = Math.floor((bottomH - spacing * (count - 1)) / count)
+        const baseFont = Math.floor((charAreaHeight - spacing * (count - 1)) / count)
         let charFont = Math.floor(baseFont * main_charScale)
 
         ctx.textAlign = 'center'
@@ -226,13 +272,13 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
         }
 
         const totalH = charFont * count + spacing * (count - 1)
-        const startY = topChars + (bottomH - totalH) / 2
+        const startY = charBlockTop + (charAreaHeight - totalH) / 2 + main_charVerticalOffset;
+
         lines.forEach((line, i) => ctx.fillText(line, CANVAS_SIZE / 2, startY + i * (charFont + spacing)))
 
-        // Update preview
         setPreviewUrl(canvas.toDataURL('image/png'))
     }, [
-        isFontReady, // This is the new dependency
+        isFontReady,
         watermarkImg,
         main_bgColor,
         main_gradientEnabled,
@@ -257,7 +303,8 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
         shadowOffsetX,
         shadowOffsetY,
         lines,
-        productFontFamily
+        productFontFamily,
+        main_charVerticalOffset,
     ])
 
     useEffect(() => {
@@ -315,216 +362,486 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                     </div>
                 </div>
 
-                <div className="lg:col-span-2 space-y-4">
-                    <Card>
-                        <h5 className="font-semibold mb-2">Background</h5>
-                        <FormItem label="Pattern">
-                            <div className="flex flex-wrap gap-3 relative">
-                                {PATTERNS.map(p => (
-                                    <div key={p.name} className="relative flex flex-col items-center">
-                                        <button
-                                            type="button"
-                                            onClick={() => setFieldValue('thumbnailsMetadata.main_patternType', p.name)}
-                                            className={`p-1 border rounded ${main_patternType === p.name ? 'border-blue-500' : 'border-gray-300'}`}
-                                        >
-                                            {p.src
-                                                ? <img src={p.src} alt={p.label} className="w-12 h-12 object-contain" />
-                                                : <div className="w-12 h-12 flex items-center justify-center text-gray-400">{p.label}</div>
-                                            }
-                                        </button>
+                <div className="lg:col-span-2">
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {MENU_ITEMS.map(item => (
+                            <Button
+                                key={item.key}
+                                type="button"
+                                onClick={() => setActiveMenu(item.key)}
+                                className={`px-4 py-2 rounded-lg ${activeMenu === item.key ? 'bg-gray-600 text-orange-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                            >
+                                {item.label}
+                            </Button>
+                        ))}
+                    </div>
 
-                                        {p.name === 'custom' && main_patternType === 'custom' && (
-                                            <div className="absolute left-0 top-full mt-2 z-10">
-                                                <Upload
-                                                    type="file"
-                                                    accept=".svg"
-                                                    onChange={handleCustomPatternUpload}
-                                                    className="text-xs"
-                                                />
-                                            </div>
-                                        )}
+                    <div className="space-y-4">
+                        {activeMenu === 'background' && (
+                            <>
+                                <Card>
+                                    <h5 className="font-semibold mb-2">Background</h5>
+                                    <FormItem label="Pattern">
+                                        <div className="flex flex-wrap gap-3 relative">
+                                            {PATTERNS.map(p => (
+                                                <div key={p.name} className="relative flex flex-col items-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFieldValue('thumbnailsMetadata.main_patternType', p.name)}
+                                                        className={`p-1 border rounded ${main_patternType === p.name ? 'border-blue-500' : 'border-gray-300'}`}
+                                                    >
+                                                        {p.src
+                                                            ? <img src={p.src} alt={p.label} className="w-12 h-12 object-contain" />
+                                                            : <div className="w-12 h-12 flex items-center justify-center text-gray-400">{p.label}</div>
+                                                        }
+                                                    </button>
 
-                                        {p.name === 'library' && main_patternType === 'library' && (
-                                            <div className="absolute left-0 top-full mt-2 z-10">
-                                                <Button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setFieldValue('thumbnailsMetadata.main_patternType', 'library')
-                                                        setIconDialogOpen(true)
-                                                    }}
-                                                    className="text-xs bg-orange-500 px-3 py-1 rounded"
-                                                >
-                                                    Open Library
-                                                </Button>
-                                            </div>
-                                        )}
+                                                    {p.name === 'custom' && main_patternType === 'custom' && (
+                                                        <div className="absolute left-0 top-full mt-2 z-10">
+                                                            <Upload
+                                                                type="file"
+                                                                accept=".svg"
+                                                                onChange={handleCustomPatternUpload}
+                                                                className="text-xs"
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {p.name === 'library' && main_patternType === 'library' && (
+                                                        <div className="absolute left-0 top-full mt-2 z-10">
+                                                            <Button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setFieldValue('thumbnailsMetadata.main_patternType', 'library')
+                                                                    setIconDialogOpen(true)
+                                                                }}
+                                                                className="text-xs bg-orange-500 px-3 py-1 rounded"
+                                                            >
+                                                                Open Library
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </FormItem>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                                        <InputWrapper label="Pattern Color"><Field name="thumbnailsMetadata.main_patternColor" type="color" component={Input} /></InputWrapper>
+                                        <InputWrapper label="Pattern Opacity"><Field name="thumbnailsMetadata.main_patternOpacity">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={0.10} step={0.01} className="w-full" />}</Field></InputWrapper>
+                                        <InputWrapper label="Background Color"><Field name="thumbnailsMetadata.main_bgColor" type="color" component={Input} /></InputWrapper>
+                                        <InputWrapper label="Density / Scale">
+                                            <Field name="thumbnailsMetadata.main_patternScale">
+                                                {({ field }: FieldProps) => (
+                                                    <input
+                                                        {...field}
+                                                        type="range"
+                                                        min={0.1}
+                                                        max={1}
+                                                        step={0.05}
+                                                        onChange={e => setFieldValue(field.name, parseFloat(e.target.value))}
+                                                    />
+                                                )}
+                                            </Field>
+                                        </InputWrapper>
+                                        <label className="flex items-center space-x-2 mt-2">
+                                            <Field name="thumbnailsMetadata.main_patternDiagonal" type="checkbox">
+                                                {({ field }: FieldProps) => (
+                                                    <input
+                                                        {...field}
+                                                        type="checkbox"
+                                                        checked={!!field.value}
+                                                        onChange={e => setFieldValue(field.name, e.target.checked)}
+                                                    />
+                                                )}
+                                            </Field>
+                                            <span className="text-sm">Diagonal repeat</span>
+                                        </label>
                                     </div>
-                                ))}
-                            </div>
-                        </FormItem>
+                                </Card>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                            <InputWrapper label="Pattern Color"><Field name="thumbnailsMetadata.main_patternColor" type="color" component={Input} /></InputWrapper>
-                            <InputWrapper label="Pattern Opacity"><Field name="thumbnailsMetadata.main_patternOpacity">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={0.10} step={0.01} className="w-full" />}</Field></InputWrapper>
-                            <InputWrapper label="Background Color"><Field name="thumbnailsMetadata.main_bgColor" type="color" component={Input} /></InputWrapper>
-                            <InputWrapper label="Density / Scale">
-                                <Field name="thumbnailsMetadata.main_patternScale">
-                                    {({ field }: FieldProps) => (
-                                        <input
-                                            {...field}
-                                            type="range"
-                                            min={0.1}
-                                            max={1}
-                                            step={0.05}
-                                            onChange={e => setFieldValue(field.name, parseFloat(e.target.value))}
-                                        />
-                                    )}
-                                </Field>
-                            </InputWrapper>
-                            <label className="flex items-center space-x-2 mt-2">
-                                <Field name="thumbnailsMetadata.main_patternDiagonal" type="checkbox">
-                                    {({ field }: FieldProps) => (
-                                        <input
-                                            {...field}
-                                            type="checkbox"
-                                            checked={!!field.value}
-                                            onChange={e => setFieldValue(field.name, e.target.checked)}
-                                        />
-                                    )}
-                                </Field>
-                                <span className="text-sm">Diagonal repeat</span>
-                            </label>
-                        </div>
-                    </Card>
+                                <Card>
+                                    <h5 className="font-semibold mb-2">Gradient</h5>
+                                    <div className="flex flex-wrap items-center gap-4 mb-4">
+                                        <label className="flex items-center space-x-2">
+                                            <Field name="thumbnailsMetadata.main_gradientEnabled">
+                                                {({ field }: FieldProps) => (
+                                                    <input
+                                                        {...field}
+                                                        type="checkbox"
+                                                        checked={!!field.value}
+                                                        onChange={e => setFieldValue(field.name, e.target.checked)}
+                                                    />
+                                                )}
+                                            </Field>
+                                            <span className="text-sm font-medium">Active</span>
+                                        </label>
 
-                    <Card>
-                        <h5 className="font-semibold mb-2. mt-2">Gradient</h5>
-                        <div className="flex flex-wrap items-center gap-4 mb-4">
-                            <label className="flex items-center space-x-2">
-                                <Field name="thumbnailsMetadata.main_gradientEnabled">
-                                    {({ field }: FieldProps) => (
-                                        <input
-                                            {...field}
-                                            type="checkbox"
-                                            checked={!!field.value}
-                                            onChange={e => setFieldValue(field.name, e.target.checked)}
-                                        />
-                                    )}
-                                </Field>
-                                <span className="text-sm font-medium">Active</span>
-                            </label>
+                                        <label className="flex items-center space-x-2">
+                                            <Field name="thumbnailsMetadata.main_gradientSync">
+                                                {({ field }: FieldProps) => (
+                                                    <input
+                                                        {...field}
+                                                        type="checkbox"
+                                                        checked={!!field.value}
+                                                        onChange={e => setFieldValue(field.name, e.target.checked)}
+                                                    />
+                                                )}
+                                            </Field>
+                                            <span className="text-sm font-medium">Sync Colors</span>
+                                        </label>
+                                    </div>
 
-                            <label className="flex flex-col items-start text-sm">
-                                <span>Type</span>
-                                <Field
-                                    as="select"
-                                    name="thumbnailsMetadata.main_gradientType"
-                                    className="input text-sm"
-                                >
-                                    <option value="center">Center</option>
-                                    <option value="diagonal">Bottom-Left → Top-Right</option>
-                                </Field>
-                            </label>
-                            <label className="flex flex-col items-center text-sm">
-                                <span>Color 1</span>
-                                <Field
-                                    name="thumbnailsMetadata.main_gradientColor1"
-                                    type="color"
-                                    component={Input}
-                                    className="w-10 h-10 p-0"
-                                />
-                            </label>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                                        <label className="flex flex-col items-start text-sm">
+                                            <span>Type</span>
+                                            <Field
+                                                as="select"
+                                                name="thumbnailsMetadata.main_gradientType"
+                                                className="input text-sm"
+                                            >
+                                                <option value="center">Center</option>
+                                                <option value="diagonal">Bottom-Left → Top-Right</option>
+                                            </Field>
+                                        </label>
+                                        <label className="flex flex-col items-center text-sm">
+                                            <span>Color 1</span>
+                                            <Field
+                                                name="thumbnailsMetadata.main_gradientColor1"
+                                                type="color"
+                                                component={Input}
+                                                className="w-10 h-10 p-0"
+                                            />
+                                        </label>
 
-                            <label className="flex flex-col items-center text-sm">
-                                <span>Color 2</span>
-                                <Field
-                                    name="thumbnailsMetadata.main_gradientColor2"
-                                    type="color"
-                                    component={Input}
-                                    className="w-10 h-10 p-0"
-                                />
-                            </label>
-                        </div>
-                    </Card>
-                    <Card>
-                        <h5 className="font-semibold mb-2">Title</h5>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <InputWrapper label="Title (multiline)">
-                                <Field name="thumbnailsMetadata.main_titleText" as="textarea" rows={2} className="input" />
-                            </InputWrapper>
-                            <InputWrapper label="Scale"><Field name="thumbnailsMetadata.main_titleScale">{({ field }: FieldProps) => <input {...field} type="range" min={0.1} max={2} step={0.1} className="w-full" />}</Field></InputWrapper>
-                            <InputWrapper label="Top Offset"><Field name="thumbnailsMetadata.main_topOffset">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={200} step={10} className="w-full" />}</Field></InputWrapper>
-                            <InputWrapper label="Color"><Field name="thumbnailsMetadata.main_titleColor" type="color" component={Input} /></InputWrapper>
-                            <InputWrapper label="Stroke Color"><Field name="thumbnailsMetadata.main_titleStrokeColor" type="color" component={Input} /></InputWrapper>
-                            <InputWrapper label="Stroke Width"><Field name="thumbnailsMetadata.main_titleStrokeWidth">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={20} step={1} className="w-full" />}</Field></InputWrapper>
-                            <InputWrapper label="Shadow Color">
-                                <Field name="thumbnailsMetadata.main.shadowColor" type="color" component={Input} />
-                            </InputWrapper>
-                            <InputWrapper label="Shadow Opacity">
-                                <Field name="thumbnailsMetadata.main.shadowOpacity">
-                                    {({ field }: FieldProps) => <input {...field} type="range" min={0} max={1} step={0.05} className="w-full" />}
-                                </Field>
-                            </InputWrapper>
-                            <InputWrapper label="Shadow Blur">
-                                <Field name="thumbnailsMetadata.main.shadowBlur">
-                                    {({ field }: FieldProps) => <input {...field} type="range" min={0} max={50} step={1} className="w-full" />}
-                                </Field>
-                            </InputWrapper>
-                            <InputWrapper label="Shadow X Offset">
-                                <Field name="thumbnailsMetadata.main.shadowOffsetX">
-                                    {({ field }: FieldProps) => <input {...field} type="range" min={-100} max={100} step={1} className="w-full" />}
-                                </Field>
-                            </InputWrapper>
-                            <InputWrapper label="Shadow Y Offset">
-                                <Field name="thumbnailsMetadata.main.shadowOffsetY">
-                                    {({ field }: FieldProps) => <input {...field} type="range" min={-100} max={100} step={1} className="w-full" />}
-                                </Field>
-                            </InputWrapper>
-
-                        </div>
-                    </Card>
-
-                    <Card>
-                        <h5 className="font-semibold mb-2">Watermark</h5>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <InputWrapper label="Color"><Field name="thumbnailsMetadata.main_watermarkColor" type="color" component={Input} /></InputWrapper>
-                            <InputWrapper label="Opacity"><Field name="thumbnailsMetadata.main_watermarkOpacity">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={0.10} step={0.01} className="w-full" />}</Field></InputWrapper>
-                        </div>
-                    </Card>
-
-                    <Card>
-                        <h5 className="font-semibold mb-2">Characters</h5>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                            <InputWrapper label="Alphabet Size"><Field name="thumbnailsMetadata.main_charScale">{({ field }: FieldProps) => <input {...field} type="range" min={0.05} max={2} step={0.05} className="w-full" />}</Field></InputWrapper>
-                            <InputWrapper label="Color"><Field name="thumbnailsMetadata.main_charColor" type="color" component={Input} /></InputWrapper>
-                        </div>
-                        <FormItem label="Character Sets">
-                            <div className="flex flex-wrap gap-4">
-                                {['Uppercase', 'Lowercase', 'Numbers', 'Specials'].map((opt, key) => (
-                                    <label key={key} className="flex items-center space-x-2">
-                                        <Field
-                                            name={`thumbnailsMetadata.main_show${opt}` as keyof Product}
-                                            type="checkbox"
-                                            render={({ field }: FieldProps) => (
-                                                <input
-                                                    {...field}
-                                                    type="checkbox"
-                                                    checked={!!field.value}
-                                                    onChange={e => setFieldValue(field.name, e.target.checked)}
-                                                />
-                                            )}
-                                        />
-                                        <span>{opt}</span>
-                                    </label>
-                                ))}
-                            </div>
-                        </FormItem>
-                        {!main_showUppercase && !main_showLowercase && !main_showNumbers && !main_showSpecials && (
-                            <FormItem label="Custom main_charset (newline separated)">
-                                <Field name="thumbnailsMetadata.main_charset" component={Input} />
-                            </FormItem>
+                                        <label className="flex flex-col items-center text-sm">
+                                            <span>Color 2</span>
+                                            <Field
+                                                name="thumbnailsMetadata.main_gradientColor2"
+                                                type="color"
+                                                component={Input}
+                                                className="w-10 h-10 p-0"
+                                            />
+                                        </label>
+                                    </div>
+                                    <h6 className="font-medium mb-2 mt-4">Presets</h6>
+                                    <div className="flex flex-wrap gap-2">
+                                        {GRADIENT_PRESETS.map(p => (
+                                            <Button
+                                                key={p.name}
+                                                type="button"
+                                                onClick={() => {
+                                                    setFieldValue('thumbnailsMetadata.main_gradientEnabled', true)
+                                                    setFieldValue('thumbnailsMetadata.main_gradientColor1', p.color1)
+                                                    setFieldValue('thumbnailsMetadata.main_gradientColor2', p.color2)
+                                                    setFieldValue('thumbnailsMetadata.main_gradientType', p.type)
+                                                }}
+                                                className="p-1 border rounded"
+                                                style={{
+                                                    background: `linear-gradient(135deg, ${p.color1} 0%, ${p.color2} 100%)`,
+                                                    width: '40px',
+                                                    height: '40px',
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </Card>
+                            </>
                         )}
-                    </Card>
+
+                        {activeMenu === 'title' && (
+                            <Card className="space-y-5">
+                                {/* --- Featured ------------------------------------------------------ */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h5 className="font-semibold">Title (Featured)</h5>
+                                        <span className="text-xs text-gray-500">Most-used settings</span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                        {/* Title textarea spans full width on large screens */}
+                                        <div className="lg:col-span-3">
+                                            <InputWrapper label="Title (multiline)">
+                                                <Field
+                                                    name="thumbnailsMetadata.main_titleText"
+                                                    as="textarea"
+                                                    rows={2}
+                                                    className="input"
+                                                    placeholder="e.g. Star\nWars"
+                                                />
+                                            </InputWrapper>
+                                        </div>
+
+                                        <InputWrapper label="Scale">
+                                            <Field name="thumbnailsMetadata.main_titleScale">
+                                                {({ field }: FieldProps) => (
+                                                    <input
+                                                        {...field}
+                                                        type="range"
+                                                        min={0.1}
+                                                        max={2}
+                                                        step={0.1}
+                                                        className="w-full"
+                                                    />
+                                                )}
+                                            </Field>
+                                        </InputWrapper>
+
+                                        <InputWrapper label="Top Offset">
+                                            <Field name="thumbnailsMetadata.main_topOffset">
+                                                {({ field }: FieldProps) => (
+                                                    <input
+                                                        {...field}
+                                                        type="range"
+                                                        min={0}
+                                                        max={200}
+                                                        step={10}
+                                                        className="w-full"
+                                                    />
+                                                )}
+                                            </Field>
+                                        </InputWrapper>
+
+                                        <InputWrapper label="Text Color">
+                                            <Field
+                                                name="thumbnailsMetadata.main_titleColor"
+                                                type="color"
+                                                component={Input}
+                                            />
+                                        </InputWrapper>
+                                    </div>
+                                </div>
+
+                                {/* --- Stroke -------------------------------------------------------- */}
+                                <div>
+                                    <h6 className="font-medium mb-2">Outline / Stroke</h6>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <InputWrapper label="Stroke Color">
+                                            <Field
+                                                name="thumbnailsMetadata.main_titleStrokeColor"
+                                                type="color"
+                                                component={Input}
+                                            />
+                                        </InputWrapper>
+
+                                        <InputWrapper label="Stroke Width">
+                                            <Field name="thumbnailsMetadata.main_titleStrokeWidth">
+                                                {({ field }: FieldProps) => (
+                                                    <input
+                                                        {...field}
+                                                        type="range"
+                                                        min={0}
+                                                        max={20}
+                                                        step={1}
+                                                        className="w-full"
+                                                    />
+                                                )}
+                                            </Field>
+                                        </InputWrapper>
+
+                                        {/* Little preview chip */}
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-medium mb-1">Preview</span>
+                                            <div className="h-10 rounded border flex items-center justify-center text-xs text-gray-600">
+                                                Stroke preview is shown on the main canvas
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* --- Shadow (Advanced) -------------------------------------------- */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h6 className="font-medium">Shadow (Advanced)</h6>
+                                        <Field name="thumbnailsMetadata.shadowColor">
+                                            {({ form }) => (
+                                                <button
+                                                    type="button"
+                                                    className="text-xs text-blue-600 hover:underline"
+                                                    onClick={() => {
+                                                        form.setFieldValue('thumbnailsMetadata.shadowColor', '#000000')
+                                                        form.setFieldValue('thumbnailsMetadata.shadowBlur', 0)
+                                                        form.setFieldValue('thumbnailsMetadata.shadowOffsetX', 0)
+                                                        form.setFieldValue('thumbnailsMetadata.shadowOffsetY', 0)
+                                                        form.setFieldValue('thumbnailsMetadata.shadowOpacity', 0.3)
+                                                    }}
+                                                >
+                                                    Reset to defaults
+                                                </button>
+                                            )}
+                                        </Field>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        {/* Controls */}
+                                        <div className="space-y-4 lg:col-span-1">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <InputWrapper label="Shadow Color">
+                                                    <Field
+                                                        name="thumbnailsMetadata.shadowColor"
+                                                        type="color"
+                                                        component={Input}
+                                                    />
+                                                </InputWrapper>
+
+                                                <InputWrapper label="Opacity">
+                                                    <Field name="thumbnailsMetadata.shadowOpacity">
+                                                        {({ field }: FieldProps) => (
+                                                            <input
+                                                                {...field}
+                                                                type="range"
+                                                                min={0}
+                                                                max={1}
+                                                                step={0.05}
+                                                                className="w-full"
+                                                            />
+                                                        )}
+                                                    </Field>
+                                                </InputWrapper>
+
+                                                <InputWrapper label="Blur">
+                                                    <Field name="thumbnailsMetadata.shadowBlur">
+                                                        {({ field }: FieldProps) => (
+                                                            <input
+                                                                {...field}
+                                                                type="range"
+                                                                min={0}
+                                                                max={50}
+                                                                step={1}
+                                                                className="w-full"
+                                                            />
+                                                        )}
+                                                    </Field>
+                                                </InputWrapper>
+
+                                                <InputWrapper label="Offset X">
+                                                    <Field name="thumbnailsMetadata.shadowOffsetX">
+                                                        {({ field }: FieldProps) => (
+                                                            <input
+                                                                {...field}
+                                                                type="range"
+                                                                min={-100}
+                                                                max={100}
+                                                                step={1}
+                                                                className="w-full"
+                                                            />
+                                                        )}
+                                                    </Field>
+                                                </InputWrapper>
+
+                                                <InputWrapper label="Offset Y">
+                                                    <Field name="thumbnailsMetadata.shadowOffsetY">
+                                                        {({ field }: FieldProps) => (
+                                                            <input
+                                                                {...field}
+                                                                type="range"
+                                                                min={-100}
+                                                                max={100}
+                                                                step={1}
+                                                                className="w-full"
+                                                            />
+                                                        )}
+                                                    </Field>
+                                                </InputWrapper>
+                                            </div>
+                                        </div>
+
+                                        {/* Presets + Live chip */}
+                                        <div className="lg:col-span-2">
+                                            <h6 className="font-medium mb-3">Shadow Presets</h6>
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                                {SHADOW_PRESETS.map((p) => (
+                                                    <Field key={p.name} name="thumbnailsMetadata.shadowColor">
+                                                        {({ form }) => (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    form.setFieldValue('thumbnailsMetadata.shadowColor', p.shadowColor)
+                                                                    form.setFieldValue('thumbnailsMetadata.shadowBlur', p.shadowBlur)
+                                                                    form.setFieldValue('thumbnailsMetadata.shadowOffsetX', p.shadowOffsetX)
+                                                                    form.setFieldValue('thumbnailsMetadata.shadowOffsetY', p.shadowOffsetY)
+                                                                    form.setFieldValue('thumbnailsMetadata.shadowOpacity', p.shadowOpacity)
+                                                                }}
+                                                                className="p-2 border rounded bg-white flex flex-col items-center justify-center hover:border-blue-400 transition"
+                                                            >
+                                                                <div
+                                                                    className="w-10 h-10 rounded bg-white"
+                                                                    style={{
+                                                                        boxShadow: `${p.shadowOffsetX}px ${p.shadowOffsetY}px ${p.shadowBlur}px ${hexToRgba(
+                                                                            p.shadowColor,
+                                                                            p.shadowOpacity
+                                                                        )}`,
+                                                                    }}
+                                                                    title={p.name}
+                                                                />
+                                                                <span className="mt-1 text-[10px] text-gray-600 truncate w-full text-center">
+                                                                    {p.name}
+                                                                </span>
+                                                            </button>
+                                                        )}
+                                                    </Field>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+
+                        )}
+
+                        {activeMenu === 'characters' && (
+                            <Card>
+                                <h5 className="font-semibold mb-2">Characters</h5>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                    <InputWrapper label="Alphabet Size"><Field name="thumbnailsMetadata.main_charScale">{({ field }: FieldProps) => <input {...field} type="range" min={0.05} max={2} step={0.05} className="w-full" />}</Field></InputWrapper>
+                                    <InputWrapper label="Color"><Field name="thumbnailsMetadata.main_charColor" type="color" component={Input} /></InputWrapper>
+                                    <InputWrapper label="Vertical Offset">
+                                        <Field name="thumbnailsMetadata.main_charVerticalOffset">
+                                            {({ field }: FieldProps) => (
+                                                <input {...field} type="range" min={-100} max={100} step={5} className="w-full" />
+                                            )}
+                                        </Field>
+                                    </InputWrapper>
+                                </div>
+                                <FormItem label="Character Sets">
+                                    <div className="flex flex-wrap gap-4">
+                                        {['Uppercase', 'Lowercase', 'Numbers', 'Specials'].map((opt, key) => (
+                                            <label key={key} className="flex items-center space-x-2">
+                                                <Field
+                                                    name={`thumbnailsMetadata.main_show${opt}` as keyof Product}
+                                                    type="checkbox"
+                                                    render={({ field }: FieldProps) => (
+                                                        <input
+                                                            {...field}
+                                                            type="checkbox"
+                                                            checked={!!field.value}
+                                                            onChange={e => setFieldValue(field.name, e.target.checked)}
+                                                        />
+                                                    )}
+                                                />
+                                                <span>{opt}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </FormItem>
+                                {!main_showUppercase && !main_showLowercase && !main_showNumbers && !main_showSpecials && (
+                                    <FormItem label="Custom main_charset (newline separated)">
+                                        <Field name="thumbnailsMetadata.main_charset" component={Input} />
+                                    </FormItem>
+                                )}
+                            </Card>
+                        )}
+
+                        {activeMenu === 'watermark' && (
+                            <Card>
+                                <h5 className="font-semibold mb-2">Watermark</h5>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <InputWrapper label="Color"><Field name="thumbnailsMetadata.main_watermarkColor" type="color" component={Input} /></InputWrapper>
+                                    <InputWrapper label="Opacity"><Field name="thumbnailsMetadata.main_watermarkOpacity">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={0.10} step={0.01} className="w-full" />}</Field></InputWrapper>
+                                </div>
+                            </Card>
+                        )}
+                    </div>
                 </div>
             </div>
             <IconPickerDialog

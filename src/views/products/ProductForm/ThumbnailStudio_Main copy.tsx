@@ -7,12 +7,11 @@ import { ref, getDownloadURL } from 'firebase/storage'
 import ThumbnailUploader from './ThumbnailUploader'
 import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
 import { Product, ThumbnailsMetadata } from '@/@types/product'
-import { HexColorPicker } from "react-colorful";
 import { drawGradient, getCharacterLines, hexToRgba, ICON_PALETTE } from '@/utils/thumbnailUtils'
 import { Button, Card, Upload } from '@/components/ui'
 import IconPickerDialog from './IconPickerDialog'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { Loader2 } from 'lucide-react' // Using Lucide React for a spinner icon
+import { Loader2 } from 'lucide-react'
 
 const CANVAS_SIZE = 2000
 const PADDING = 100
@@ -23,17 +22,14 @@ const PATTERNS = [
     { name: 'library', label: 'Icon Library', src: '' },
 ]
 
-const ThumbnailPreviewStudio = () => {
+// The isFontReady and productFontFamily props are now passed from the parent component
+const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontReady: boolean, productFontFamily: string }) => {
     const { values, setFieldValue } = useFormikContext<Product>()
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-    const [isLoading, setIsLoading] = useState(true) // New state for loading
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [patternImages, setPatternImages] = useState<Record<string, HTMLImageElement>>({})
     const [watermarkImg, setWatermarkImg] = useState<HTMLImageElement | null>(null)
     const [iconDialogOpen, setIconDialogOpen] = useState(false)
-
-    // Create a unique font family name for each product
-    const productFontFamily = values.sku ? `ProductFont-${values.sku}` : 'ProductFontFallback';
 
     const meta = values.thumbnailsMetadata ?? {} as ThumbnailsMetadata
     const {
@@ -54,8 +50,8 @@ const ThumbnailPreviewStudio = () => {
         main_gradientColor1 = '#ffffff',
         main_gradientColor2 = '#000000',
         main_gradientType = 'diagonal',
-        main_patternScale = 0.4,   // 0.1 = very dense, 1 = very sparse
-        main_patternDiagonal = true, // true = rotate pattern grid 45°
+        main_patternScale = 0.4,
+        main_patternDiagonal = true,
     } = meta
 
     // Load watermark image
@@ -95,36 +91,16 @@ const ThumbnailPreviewStudio = () => {
         });
     }, []);
 
-    // Load font and set loading state
-    useEffect(() => {
-        if (!values.sku) {
-            setIsLoading(false);
-            return;
-        }
-
-        setIsLoading(true);
-
-        getDownloadURL(ref(storage, `products/${values.sku}/files/font.ttf`))
-            .then(url => {
-                // Use the unique font family name
-                const fontFace = new FontFace(productFontFamily, `url(${url})`);
-                return fontFace.load().then(() => document.fonts.add(fontFace));
-            })
-            .catch(() => {
-                // Handle font loading errors gracefully
-                console.error(`Failed to load font for sku: ${values.sku}`);
-            })
-            .finally(() => {
-                setIsLoading(false);
-            });
-    }, [values.sku, productFontFamily]); // Depend on productFontFamily to re-run effect if it changes
+    // The font loading logic is now handled by the parent component.
+    // This component now depends on the 'isFontReady' prop to know when to render.
 
     // Compute character lines once
     const lines = getCharacterLines(meta)
 
     // Schedules and draws the thumbnail on each animation frame for smooth updates
     const draw = useCallback(() => {
-        if (isLoading || !watermarkImg) return
+        // Now using the 'isFontReady' prop instead of an internal state
+        if (!isFontReady || !watermarkImg) return
 
         const canvas = canvasRef.current
         if (!canvas) return
@@ -151,17 +127,14 @@ const ThumbnailPreviewStudio = () => {
             const icon = patternImages[main_patternType]
             const rawEdge = Math.max(icon.width, icon.height)
 
-            // 1️⃣  Icon size & tile size derived from scale slider
             const iconSize = rawEdge * main_patternScale
             const tileSize = iconSize * 2
 
-            // 2️⃣  Build tile canvas
             const tile = document.createElement('canvas')
             tile.width = tileSize
             tile.height = tileSize
             const tctx = tile.getContext('2d')!
 
-            // 3️⃣  Draw icon dead-centre (we no longer rotate it here)
             tctx.drawImage(
                 icon,
                 (tileSize - iconSize) / 2,
@@ -170,13 +143,11 @@ const ThumbnailPreviewStudio = () => {
                 iconSize
             )
 
-            // 4️⃣  Tint only icon pixels
             tctx.globalCompositeOperation = 'source-atop'
             tctx.fillStyle = main_patternColor
             tctx.fillRect(0, 0, tileSize, tileSize)
             tctx.globalCompositeOperation = 'source-over'
 
-            // 5️⃣  Paint repeating pattern
             ctx.save()
             ctx.globalAlpha = main_patternOpacity
             if (main_patternDiagonal) {
@@ -217,7 +188,6 @@ const ThumbnailPreviewStudio = () => {
 
         ctx.textAlign = 'center'
         ctx.textBaseline = 'top'
-        // Use the dynamic font family name here
         ctx.font = `${titleFont}px "${productFontFamily}", sans-serif`
         ctx.fillStyle = main_titleColor
         const titleLines = main_titleText.split('\n')
@@ -246,7 +216,6 @@ const ThumbnailPreviewStudio = () => {
         ctx.textAlign = 'center'
         ctx.textBaseline = 'top'
         ctx.fillStyle = main_charColor
-        // Use the dynamic font family name here too
         ctx.font = `${charFont}px "${productFontFamily}", sans-serif`
 
         const maxW = Math.max(...lines.map(l => ctx.measureText(l).width))
@@ -263,8 +232,7 @@ const ThumbnailPreviewStudio = () => {
         // Update preview
         setPreviewUrl(canvas.toDataURL('image/png'))
     }, [
-        // Dependencies updated to include the new loading state
-        isLoading,
+        isFontReady, // This is the new dependency
         watermarkImg,
         main_bgColor,
         main_gradientEnabled,
@@ -292,7 +260,6 @@ const ThumbnailPreviewStudio = () => {
         productFontFamily
     ])
 
-    // Invokes draw via requestAnimationFrame for up to 60fps
     useEffect(() => {
         const id = requestAnimationFrame(draw)
         return () => cancelAnimationFrame(id)
@@ -305,9 +272,7 @@ const ThumbnailPreviewStudio = () => {
         }
     }, [])
 
-    // Reads an uploaded SVG file, turns it into an Image, and stores it under `patternImages.custom`
     const handleCustomPatternUpload = (files: File[], fileList: File[]) => {
-
         const file = files[0]
         if (!file) return
 
@@ -333,9 +298,8 @@ const ThumbnailPreviewStudio = () => {
                         style={{ display: 'none' }}
                     />
 
-                    {/* Preview */}
                     <div className="border rounded bg-white overflow-hidden mx-auto" style={{ width: '100%', maxWidth: '600px', aspectRatio: '1' }}>
-                        {isLoading ? (
+                        {!isFontReady ? (
                             <div className="w-full h-full flex items-center justify-center">
                                 <Loader2 className="h-10 w-10 animate-spin text-gray-500" />
                             </div>
@@ -345,17 +309,13 @@ const ThumbnailPreviewStudio = () => {
                             <div className="w-full h-full flex items-center justify-center">Font not available</div>
                         )}
                     </div>
-                    {/* Upload */}
                     <div className="pt-2">
                         <ThumbnailStudioMetadata slug="main" />
                         <ThumbnailUploader canvasRef={canvasRef} bgColor={main_bgColor} slug="main" />
                     </div>
                 </div>
 
-                {/* Controls */}
                 <div className="lg:col-span-2 space-y-4">
-
-                    {/* Section: Background */}
                     <Card>
                         <h5 className="font-semibold mb-2">Background</h5>
                         <FormItem label="Pattern">
@@ -389,7 +349,7 @@ const ThumbnailPreviewStudio = () => {
                                                 <Button
                                                     type="button"
                                                     onClick={() => {
-                                                        setFieldValue('thumbnailsMetadata.main_patternType', p.name)
+                                                        setFieldValue('thumbnailsMetadata.main_patternType', 'library')
                                                         setIconDialogOpen(true)
                                                     }}
                                                     className="text-xs bg-orange-500 px-3 py-1 rounded"

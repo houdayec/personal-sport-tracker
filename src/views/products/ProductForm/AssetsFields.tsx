@@ -614,7 +614,7 @@ const AssetsFields = (props: AssetsFormFields) => {
                             variant="twoTone"
                             icon={<BsGear />}
                         >
-                            Generate Font Assets
+                            Generate Font Files
                         </Button>
                     </div>
 
@@ -627,7 +627,7 @@ const AssetsFields = (props: AssetsFormFields) => {
                             variant="twoTone"
                             icon={<HiOutlineCloudUpload />}
                         >
-                            {`Upload Font & Assets ${isUploading ? `(${uploadCount}/${totalFilesToUpload})` : ''}`}
+                            {`Upload Files ${isUploading ? `(${uploadCount}/${totalFilesToUpload})` : ''}`}
                         </Button>
                     </div>
                 </div>
