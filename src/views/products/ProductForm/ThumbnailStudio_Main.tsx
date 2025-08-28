@@ -23,17 +23,16 @@ const PATTERNS = [
 ]
 
 const GRADIENT_PRESETS = [
-    { name: 'blue-sky', color1: '#89CFF0', color2: '#0080FF', type: 'diagonal' },
-    { name: 'sunrise', color1: '#FFD700', color2: '#FF4500', type: 'diagonal' },
-    { name: 'emerald', color1: '#2ECC71', color2: '#16A085', type: 'diagonal' },
-    { name: 'violet', color1: '#DA70D6', color2: '#800080', type: 'diagonal' },
-    { name: 'midnight', color1: '#34495E', color2: '#2C3E50', type: 'diagonal' },
-    // Nouveaux préréglages ajoutés
-    { name: 'light-grey', color1: '#f8f8f8', color2: '#e8e8e8', type: 'diagonal' },
-    { name: 'dark-grey', color1: '#333333', color2: '#1a1a1a', type: 'diagonal' },
-    { name: 'pastel-pink', color1: '#FFB6C1', color2: '#FFDAB9', type: 'diagonal' },
-    { name: 'pastel-green', color1: '#C1FFB6', color2: '#DAFFB9', type: 'diagonal' },
-    { name: 'soft-yellow', color1: '#FFECB3', color2: '#FFD54F', type: 'diagonal' },
+    { name: 'sky-blue', color1: '#89CFF0', color2: '#0080FF', type: 'diagonal' },
+    { name: 'sunset', color1: '#FF7E5F', color2: '#FEB47B', type: 'diagonal' },
+    { name: 'mint', color1: '#98FF98', color2: '#00C896', type: 'diagonal' },
+    { name: 'lavender', color1: '#E6E6FA', color2: '#B57EDC', type: 'diagonal' },
+    { name: 'midnight-blue', color1: '#2C3E50', color2: '#1A252F', type: 'diagonal' },
+    { name: 'classic-black', color1: '#000000', color2: '#111111', type: 'diagonal' },
+    { name: 'light-grey', color1: '#f0f0f0', color2: '#d9d9d9', type: 'diagonal' },
+    { name: 'charcoal', color1: '#444444', color2: '#222222', type: 'diagonal' },
+    { name: 'peachy', color1: '#FFDAB9', color2: '#FFB6C1', type: 'diagonal' },
+    { name: 'lemonade', color1: '#FFF9C4', color2: '#FFF176', type: 'diagonal' },
 ]
 
 // Function to lighten a hex color
@@ -416,87 +415,6 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                         {activeMenu === 'background' && (
                             <>
                                 <Card>
-                                    <h5 className="font-semibold mb-2">Background</h5>
-                                    <FormItem label="Pattern">
-                                        <div className="flex flex-wrap gap-3 relative">
-                                            {PATTERNS.map(p => (
-                                                <div key={p.name} className="relative flex flex-col items-center">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFieldValue('thumbnailsMetadata.main_patternType', p.name)}
-                                                        className={`p-1 border rounded ${main_patternType === p.name ? 'border-blue-500' : 'border-gray-300'}`}
-                                                    >
-                                                        {p.src
-                                                            ? <img src={p.src} alt={p.label} className="w-12 h-12 object-contain" />
-                                                            : <div className="w-12 h-12 flex items-center justify-center text-gray-400">{p.label}</div>
-                                                        }
-                                                    </button>
-
-                                                    {p.name === 'custom' && main_patternType === 'custom' && (
-                                                        <div className="absolute left-0 top-full mt-2 z-10">
-                                                            <Upload
-                                                                type="file"
-                                                                accept=".svg"
-                                                                onChange={handleCustomPatternUpload}
-                                                                className="text-xs"
-                                                            />
-                                                        </div>
-                                                    )}
-
-                                                    {p.name === 'library' && main_patternType === 'library' && (
-                                                        <div className="absolute left-0 top-full mt-2 z-10">
-                                                            <Button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setFieldValue('thumbnailsMetadata.main_patternType', 'library')
-                                                                    setIconDialogOpen(true)
-                                                                }}
-                                                                className="text-xs bg-orange-500 px-3 py-1 rounded"
-                                                            >
-                                                                Open Library
-                                                            </Button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </FormItem>
-
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                                        <InputWrapper label="Pattern Color"><Field name="thumbnailsMetadata.main_patternColor" type="color" component={Input} /></InputWrapper>
-                                        <InputWrapper label="Pattern Opacity"><Field name="thumbnailsMetadata.main_patternOpacity">{({ field }: FieldProps) => <input {...field} type="range" min={0} max={0.10} step={0.01} className="w-full" />}</Field></InputWrapper>
-                                        <InputWrapper label="Background Color"><Field name="thumbnailsMetadata.main_bgColor" type="color" component={Input} /></InputWrapper>
-                                        <InputWrapper label="Density / Scale">
-                                            <Field name="thumbnailsMetadata.main_patternScale">
-                                                {({ field }: FieldProps) => (
-                                                    <input
-                                                        {...field}
-                                                        type="range"
-                                                        min={0.1}
-                                                        max={1}
-                                                        step={0.05}
-                                                        onChange={e => setFieldValue(field.name, parseFloat(e.target.value))}
-                                                    />
-                                                )}
-                                            </Field>
-                                        </InputWrapper>
-                                        <label className="flex items-center space-x-2 mt-2">
-                                            <Field name="thumbnailsMetadata.main_patternDiagonal" type="checkbox">
-                                                {({ field }: FieldProps) => (
-                                                    <input
-                                                        {...field}
-                                                        type="checkbox"
-                                                        checked={!!field.value}
-                                                        onChange={e => setFieldValue(field.name, e.target.checked)}
-                                                    />
-                                                )}
-                                            </Field>
-                                            <span className="text-sm">Diagonal repeat</span>
-                                        </label>
-                                    </div>
-                                </Card>
-
-                                <Card>
                                     <h5 className="font-semibold mb-2">Gradient</h5>
                                     <div className="flex flex-wrap items-center gap-4 mb-4">
                                         <label className="flex items-center space-x-2">
@@ -567,12 +485,15 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                                                 key={p.name}
                                                 type="button"
                                                 onClick={() => {
-                                                    setFieldValue('thumbnailsMetadata.main_gradientEnabled', true)
-                                                    setFieldValue('thumbnailsMetadata.main_gradientColor1', p.color1)
-                                                    setFieldValue('thumbnailsMetadata.main_gradientColor2', p.color2)
-                                                    setFieldValue('thumbnailsMetadata.main_gradientType', p.type)
+                                                    if (!main_gradientSync) {
+                                                        setFieldValue('thumbnailsMetadata.main_gradientEnabled', true)
+                                                        setFieldValue('thumbnailsMetadata.main_gradientColor1', p.color1)
+                                                        setFieldValue('thumbnailsMetadata.main_gradientColor2', p.color2)
+                                                        setFieldValue('thumbnailsMetadata.main_gradientType', p.type)
+                                                    }
                                                 }}
-                                                className="p-1 border rounded"
+                                                disabled={main_gradientSync} // Disable when syncing
+                                                className={`p-1 border rounded ${main_gradientSync ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                 style={{
                                                     background: `linear-gradient(135deg, ${p.color1} 0%, ${p.color2} 100%)`,
                                                     width: '40px',
@@ -581,6 +502,106 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                                             />
                                         ))}
                                     </div>
+                                </Card>
+
+                                <Card>
+                                    <h5 className="font-semibold mb-2">Background</h5>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                        <InputWrapper label="Background Color">
+                                            <Field name="thumbnailsMetadata.main_bgColor" type="color" component={Input} />
+                                        </InputWrapper>
+                                    </div>
+
+                                    <FormItem label="Pattern">
+                                        <div className="flex flex-col md:flex-row gap-6">
+                                            {/* Pattern buttons horizontal scroll */}
+                                            <div className="flex gap-3 overflow-x-auto pb-2">
+                                                {PATTERNS.map(p => (
+                                                    <div key={p.name} className="relative flex-shrink-0">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFieldValue('thumbnailsMetadata.main_patternType', p.name)}
+                                                            className={`p-1 border rounded ${main_patternType === p.name ? 'border-blue-500' : 'border-gray-300'}`}
+                                                        >
+                                                            {p.src ? (
+                                                                <img src={p.src} alt={p.label} className="w-12 h-12 object-contain" />
+                                                            ) : (
+                                                                <div className="w-12 h-12 flex items-center justify-center text-gray-400">{p.label}</div>
+                                                            )}
+                                                        </button>
+
+                                                        {p.name === 'custom' && main_patternType === 'custom' && (
+                                                            <div className="absolute left-0 top-full mt-2 z-10">
+                                                                <Upload
+                                                                    type="file"
+                                                                    accept=".svg"
+                                                                    onChange={handleCustomPatternUpload}
+                                                                    className="text-xs"
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {p.name === 'library' && main_patternType === 'library' && (
+                                                            <div className="absolute left-0 top-full mt-2 z-10">
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setFieldValue('thumbnailsMetadata.main_patternType', 'library')
+                                                                        setIconDialogOpen(true)
+                                                                    }}
+                                                                    className="text-xs bg-orange-500 px-3 py-1 rounded"
+                                                                >
+                                                                    Open Library
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Pattern controls */}
+                                            <div className="grid grid-cols-2 gap-4 min-w-[250px] flex-shrink-0">
+                                                <InputWrapper label="Pattern Color">
+                                                    <Field name="thumbnailsMetadata.main_patternColor" type="color" component={Input} />
+                                                </InputWrapper>
+                                                <InputWrapper label="Pattern Opacity">
+                                                    <Field name="thumbnailsMetadata.main_patternOpacity">
+                                                        {({ field }: FieldProps) => (
+                                                            <input {...field} type="range" min={0} max={0.1} step={0.01} className="w-full" />
+                                                        )}
+                                                    </Field>
+                                                </InputWrapper>
+                                                <InputWrapper label="Density / Scale">
+                                                    <Field name="thumbnailsMetadata.main_patternScale">
+                                                        {({ field }: FieldProps) => (
+                                                            <input
+                                                                {...field}
+                                                                type="range"
+                                                                min={0.1}
+                                                                max={1}
+                                                                step={0.05}
+                                                                onChange={e => setFieldValue(field.name, parseFloat(e.target.value))}
+                                                            />
+                                                        )}
+                                                    </Field>
+                                                </InputWrapper>
+                                                <label className="flex items-center space-x-2 mt-2">
+                                                    <Field name="thumbnailsMetadata.main_patternDiagonal" type="checkbox">
+                                                        {({ field }: FieldProps) => (
+                                                            <input
+                                                                {...field}
+                                                                type="checkbox"
+                                                                checked={!!field.value}
+                                                                onChange={e => setFieldValue(field.name, e.target.checked)}
+                                                            />
+                                                        )}
+                                                    </Field>
+                                                    <span className="text-sm">Diagonal repeat</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </FormItem>
                                 </Card>
                             </>
                         )}
@@ -608,7 +629,7 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                                             </InputWrapper>
                                         </div>
 
-                                        <InputWrapper label="Scale">
+                                        <InputWrapper label="Size">
                                             <Field name="thumbnailsMetadata.main_titleScale">
                                                 {({ field }: FieldProps) => (
                                                     <input
@@ -623,7 +644,7 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                                             </Field>
                                         </InputWrapper>
 
-                                        <InputWrapper label="Top Offset">
+                                        <InputWrapper label="Top Margin">
                                             <Field name="thumbnailsMetadata.main_topOffset">
                                                 {({ field }: FieldProps) => (
                                                     <input
@@ -667,7 +688,7 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                                                         {...field}
                                                         type="range"
                                                         min={0}
-                                                        max={20}
+                                                        max={50}
                                                         step={1}
                                                         className="w-full"
                                                     />

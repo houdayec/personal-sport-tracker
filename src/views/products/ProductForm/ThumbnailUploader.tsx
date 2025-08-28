@@ -139,9 +139,9 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
             const webpRef = ref(storage, `${basePath}/square/${filename}-square.webp`)
             const firebaseUrl = await getDownloadURL(webpRef)
 
-            /*await updateDoc(doc(db, 'products', sku), {
+            await updateDoc(doc(db, 'products', sku), {
                 [`thumbnails.${slug}.firebaseUrl`]: firebaseUrl,
-            })*/
+            })
 
             setFieldValue(`thumbnails.${slug}.firebaseUrl`, firebaseUrl)
             setFieldValue(`thumbnails.${slug}.generated`, true)

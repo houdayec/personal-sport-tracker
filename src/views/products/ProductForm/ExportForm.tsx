@@ -444,7 +444,7 @@ const ExportForm = () => {
                                                         <Button
                                                             onClick={() => handleDeleteThumbnail(path)}
                                                             type="button"
-                                                            className="absolute top-1 right-1 z-10 bg-red-500/80 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors duration-200"
+                                                            className="absolute top-1 right-1 z-10 bg-red-500 rounded-full p-1 shadow-md hover:bg-red-600 hover:text-white transition-colors duration-200"
                                                             size="xs"
                                                             disabled={thumbnails.length === 0} // Only disable if no thumbnails left
                                                             icon={<HiTrash />}
