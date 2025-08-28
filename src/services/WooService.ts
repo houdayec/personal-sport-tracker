@@ -64,8 +64,10 @@ export const generateWordPressHtml = (
 [wpcode id="833"]
 <hr>
 <p><strong>Disclaimer:</strong><br>
-The <strong>${cleanMainKeyword} font</strong> was fully designed from scratch by FontMaze. It is not affiliated with or endorsed by <strong>${product.wordpress?.trademarkName}</strong>. No copyright infringement is intended.<br>
-If you believe there is an issue, please <a href="https://www.fontmaze.com/contact/">contact us</a>.
+The <strong>${cleanMainKeyword} font</strong> was independently created by FontMaze.  
+It is an original design and is not associated with, sponsored by, or endorsed by any brand or trademark holder.  
+No copyright or trademark infringement is intended.<br>
+If you have any concerns, please <a href="https://www.fontmaze.com/contact/">contact us</a>.
 </p>
 `.trim(),
                 slug: fullSlug,

@@ -537,7 +537,11 @@ const AssetsFields = (props: AssetsFormFields) => {
         const hasFontFiles = finalFontBuffer && values.fontData?.generated?.fullName
 
         for (const { char, svgBlob, pngBlob } of glyphAssets) {
-            const safeChar = char in safeCharMap ? safeCharMap[char] : char
+            let safeChar = char in safeCharMap ? safeCharMap[char] : char
+
+            if (char.length === 1 && /[a-zA-Z]/.test(char)) {
+                safeChar += char === char.toUpperCase() ? '_upper' : '_lower'
+            }
             await upload(`products/${sku}/files/Final Product/SVG/${safeChar}.svg`, svgBlob)
             count++; setUploadCount(count)
             await upload(`products/${sku}/files/Final Product/PNG/${safeChar}.png`, pngBlob)
@@ -586,7 +590,7 @@ const AssetsFields = (props: AssetsFormFields) => {
         setFieldValue('fontData.generated.uploaded', true)
         toast.push(
             <Notification title="Uploaded" type="success" duration={2500}>
-                Uploaded {uploadCount}/{totalFilesToUpload} files
+                Uploaded {count}/{totalFilesToUpload} files
             </Notification>,
             { placement: 'top-center' }
         )
@@ -600,7 +604,11 @@ const AssetsFields = (props: AssetsFormFields) => {
         const pngF = zip.folder('PNG')!
 
         glyphAssets.forEach(({ char, svgBlob, pngBlob }) => {
-            const safeChar = char in safeCharMap ? safeCharMap[char] : char
+            let safeChar = char in safeCharMap ? safeCharMap[char] : char
+
+            if (char.length === 1 && /[a-zA-Z]/.test(char)) {
+                safeChar += char === char.toUpperCase() ? '_upper' : '_lower'
+            }
             svgF.file(`${safeChar}.svg`, svgBlob)
             pngF.file(`${safeChar}.png`, pngBlob)
         })
@@ -699,6 +707,7 @@ const AssetsFields = (props: AssetsFormFields) => {
 
                             <Button
                                 size="sm"
+                                type='button'
                                 className="mt-3"
                                 icon={<FaDownload />}
                                 onClick={async () => {
