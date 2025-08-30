@@ -289,6 +289,9 @@ export type ThumbnailsMetadata = {
     sentence_showTextAreaBox?: boolean
     sentence_case: 'title',
     sentence_yOffset?: number
+    sentence2_enabled?: boolean
+    sentence2_case?: 'title' | 'upper' | 'lower'
+    sentence2_yOffset?: number
 
     characters_preview_charColor?: string
     characters_preview_showTextAreaBox?: boolean
@@ -297,6 +300,11 @@ export type ThumbnailsMetadata = {
     characters_preview_showNumbers?: boolean
     characters_preview_showSpecials?: boolean
     characters_preview_yOffset?: number
+    characters_preview_autoFontSize?: boolean
+    characters_preview_manualFontSize?: number
+    characters_preview_lineHeightRatio?: number
+
+    included_files_charColor?: string
 
     example_laptop_charColor?: string
     example_laptop_showTextAreaBox?: boolean

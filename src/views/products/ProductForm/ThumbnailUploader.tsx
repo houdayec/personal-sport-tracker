@@ -112,7 +112,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
             <Notification title="Thumbnails Ready" type="success" duration={2500}>
                 {images.length} versions generated
             </Notification>,
-            { placement: 'top-center' }
+            { placement: 'bottom-center' }
         )
     }
 
@@ -150,7 +150,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
                 <Notification title="Thumbnails Uploaded" type="success" duration={2500}>
                     {filename} in JPG & WEBP formats
                 </Notification>,
-                { placement: 'top-center' }
+                { placement: 'bottom-center' }
             )
             setUploadSuccess(true) // Set success state to true on successful upload
         } catch (error) {
@@ -159,7 +159,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
                 <Notification title="Upload Failed" type="danger" duration={2500}>
                     Failed to upload thumbnails.
                 </Notification>,
-                { placement: 'top-center' }
+                { placement: 'bottom-center' }
             )
             setUploadSuccess(false) // Ensure success is false on error
         } finally {

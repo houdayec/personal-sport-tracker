@@ -48,24 +48,33 @@ export const hexToRgbaString = (hex: string, opacity: number) => {
 
 export function getCharacterLines(meta: ThumbnailsMetadata): string[] {
     const letterPairs = [
-        'Aa Bb Cc Dd Ee Ff Gg',
-        'Hh Ii Jj Kk Ll Mm Nn',
-        'Oo Pp Qq Rr Ss Tt Uu',
+        'Aa Bb Cc Dd Ee',
+        'Ff Gg Hh Ii Jj',
+        'Kk Ll Mm Nn Oo',
+        'Pp Qq Rr Ss Tt Uu',
         'Vv Ww Xx Yy Zz'
     ]
-    const uppercaseLines = ['A B C D E F G H I J', 'K L M N O P Q R', 'S T U V W X Y Z']
-    const lowercaseLines = uppercaseLines.map(l => l.toLowerCase())
+    const uppercaseLines = ['A B C D E F G', 'H I J K L M N', 'O P Q R S T U', 'V W X Y Z']
+    const lowercaseLines = ['a b c d e f g', 'h i j k l m n', 'o p q r s t u', 'v w x y z']
     const numberLine = '0 1 2 3 4 5 6 7 8 9'
     const specialLine = '! @ # $ % ^ & * ( ) - _ = +'
 
     let lines: string[] = []
-    if (meta.main_showUppercase && meta.main_showLowercase) lines = [...letterPairs]
-    else if (meta.main_showUppercase) lines = [...uppercaseLines]
-    else if (meta.main_showLowercase) lines = [...lowercaseLines]
+
+    if (meta.main_showUppercase && meta.main_showLowercase) {
+        lines = [...letterPairs]
+    } else if (meta.main_showUppercase) {
+        lines = [...uppercaseLines]
+    } else if (meta.main_showLowercase) {
+        lines = [...lowercaseLines]
+    }
+
     if (meta.main_showNumbers) lines.push(numberLine)
     if (meta.main_showSpecials) lines.push(specialLine)
 
-    return lines.length > 0 ? lines : meta.main_charset?.split('\n').filter(Boolean) || [...letterPairs]
+    return lines.length > 0
+        ? lines
+        : meta.main_charset?.split('\n').map(line => line.trim()).filter(Boolean) || []
 }
 
 /**

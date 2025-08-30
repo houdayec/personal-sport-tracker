@@ -352,6 +352,12 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
             const fallback = values.name || 'Font Name'
             setFieldValue('thumbnailsMetadata.main_titleText', fallback)
         }
+
+        // Set initial character sets if not defined
+        if (!values.thumbnailsMetadata?.main_showUppercase && !values.thumbnailsMetadata?.main_showLowercase && !values.thumbnailsMetadata?.main_showNumbers && !values.thumbnailsMetadata?.main_showSpecials) {
+            setFieldValue('thumbnailsMetadata.main_showUppercase', true)
+            setFieldValue('thumbnailsMetadata.main_showLowercase', true)
+        }
     }, [])
 
     const handleCustomPatternUpload = (files: File[], fileList: File[]) => {
@@ -637,7 +643,7 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                                                         type="range"
                                                         min={0.1}
                                                         max={2}
-                                                        step={0.1}
+                                                        step={0.01}
                                                         className="w-full"
                                                     />
                                                 )}
@@ -882,11 +888,19 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                                         ))}
                                     </div>
                                 </FormItem>
-                                {!main_showUppercase && !main_showLowercase && !main_showNumbers && !main_showSpecials && (
-                                    <FormItem label="Custom main_charset (newline separated)">
-                                        <Field name="thumbnailsMetadata.main_charset" component={Input} />
-                                    </FormItem>
-                                )}
+                                <FormItem label="Custom Character Set (one per line, used only if none selected above)">
+                                    <Field
+                                        name="thumbnailsMetadata.main_charset"
+                                        as="textarea" rows={5} className="input"
+                                        disabled={
+                                            main_showUppercase ||
+                                            main_showLowercase ||
+                                            main_showNumbers ||
+                                            main_showSpecials
+                                        }
+                                    />
+                                </FormItem>
+
                             </Card>
                         )}
 
@@ -895,12 +909,25 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                                 <h5 className="font-semibold mb-2">Watermark</h5>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <InputWrapper label="Color">
-                                        <Field name="thumbnailsMetadata.main_watermarkColor" type="color" component={Input} />
+                                        <div className="flex items-center gap-2">
+                                            <Field name="thumbnailsMetadata.main_watermarkColor" type="color" component={Input} />
+                                            <div className="flex gap-1">
+                                                {['#000000', '#ffffff', main_titleColor].map((preset, i) => (
+                                                    <button
+                                                        key={i}
+                                                        type="button"
+                                                        className="w-6 h-6 rounded border"
+                                                        style={{ backgroundColor: preset }}
+                                                        onClick={() => setFieldValue('thumbnailsMetadata.main_watermarkColor', preset)}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
                                     </InputWrapper>
                                     <InputWrapper label="Opacity">
                                         <Field name="thumbnailsMetadata.main_watermarkOpacity">
                                             {({ field }: FieldProps) => (
-                                                <input {...field} type="range" min={0} max={0.1} step={0.01} className="w-full" />
+                                                <input {...field} type="range" min={0} max={0.1} step={0.005} className="w-full" />
                                             )}
                                         </Field>
                                     </InputWrapper>
@@ -912,7 +939,6 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                                     </InputWrapper>
                                 </div>
                             </Card>
-
                         )}
                     </div>
                 </div>

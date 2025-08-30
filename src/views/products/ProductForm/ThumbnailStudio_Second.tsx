@@ -48,10 +48,7 @@ const ThumbnailStudio_Sentence = ({
     // This component now relies on the 'isFontReady' prop.
 
     const draw = useCallback(() => {
-        // Now using the 'isFontReady' prop instead of the removed fontLoaded state
-        if (!bgImage || !isFontReady) {
-            return;
-        }
+        if (!bgImage || !isFontReady) return
 
         const canvas = canvasRef.current
         if (!canvas) return
@@ -72,31 +69,39 @@ const ThumbnailStudio_Sentence = ({
             height: TEXT_BOX.height - 2 * padding,
         }
 
-        const casing = (metadata.sentence_case || 'title') as 'title' | 'lower' | 'upper'
+        const formatLines = (casing: 'title' | 'lower' | 'upper') => {
+            return ['The Quick Brown', 'Fox Jumps Over', 'The Lazy Dog'].map(line => {
+                switch (casing) {
+                    case 'lower': return line.toLowerCase()
+                    case 'upper': return line.toUpperCase()
+                    default:
+                        return line.split(' ')
+                            .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                            .join(' ')
+                }
+            })
+        }
 
-        const lines = [
-            'The Quick Brown',
-            'Fox Jumps Over',
-            'The Lazy Dog',
-        ].map(line => {
-            switch (casing) {
-                case 'lower': return line.toLowerCase()
-                case 'upper': return line.toUpperCase()
-                default:
-                    return line.split(' ')
-                        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-                        .join(' ')
-            }
-        })
+        const casing1 = (metadata.sentence_case || 'title') as 'title' | 'lower' | 'upper'
+        const casing2 = (metadata.sentence2_case || 'title') as 'title' | 'lower' | 'upper'
+        const yOffset1 = metadata.sentence_yOffset || 0
+        const yOffset2 = metadata.sentence2_yOffset || 0
+        const sentenceGap = 50
 
+        const lines1 = formatLines(casing1)
+        const lines2 = metadata.sentence2_enabled ? formatLines(casing2) : []
+        const totalLineCount = lines1.length + lines2.length
+        const hasSecond = lines2.length > 0
+
+        // Font sizing
         let testFontSize = 10
         ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
+        ctx.textBaseline = 'top'
 
         while (true) {
             ctx.font = `${testFontSize}px "${productFontFamily}", sans-serif`
-            const heights = testFontSize * 1.2 * lines.length
-            const widths = lines.map(line => ctx.measureText(line).width)
+            const heights = testFontSize * 1.2 * totalLineCount + (hasSecond ? sentenceGap : 0)
+            const widths = [...lines1, ...lines2].map(line => ctx.measureText(line).width)
             const maxWidth = Math.max(...widths)
             if (heights > paddedBox.height || maxWidth > paddedBox.width) break
             testFontSize += 1
@@ -107,16 +112,26 @@ const ThumbnailStudio_Sentence = ({
         ctx.fillStyle = fontColor
 
         const lineHeight = testFontSize * 1.2
-        const totalHeight = lines.length * lineHeight
-        const startY = paddedBox.y + (paddedBox.height - totalHeight) / 2 + lineHeight / 2 + yOffset
+        const totalHeight = lineHeight * totalLineCount + (hasSecond ? sentenceGap : 0)
+        const startY = paddedBox.y + (paddedBox.height - totalHeight) / 2
 
-        lines.forEach((line, i) => {
-            const y = startY + i * lineHeight
+        // Draw first block
+        lines1.forEach((line, i) => {
+            const y = startY + i * lineHeight + yOffset1
             ctx.fillText(line, paddedBox.x + paddedBox.width / 2, y)
         })
 
+        // Draw second block
+        if (hasSecond) {
+            const offset = lines1.length * lineHeight + sentenceGap
+            lines2.forEach((line, i) => {
+                const y = startY + offset + i * lineHeight + yOffset2
+                ctx.fillText(line, paddedBox.x + paddedBox.width / 2, y)
+            })
+        }
+
         setPreviewUrl(canvas.toDataURL('image/png'))
-    }, [bgImage, metadata, yOffset, isFontReady, productFontFamily]) // Added isFontReady to the dependency array
+    }, [bgImage, metadata, yOffset, isFontReady, productFontFamily, fontColor, showTextBox])
 
     useEffect(() => {
         const id = requestAnimationFrame(draw)
@@ -197,6 +212,45 @@ const ThumbnailStudio_Sentence = ({
                         </Field>
                     </FormItem>
                 </Card>
+                <Card className="space-y-4 w-full max-w-md">
+                    <h5 className="font-semibold mb-2">Second Sentence (Optional)</h5>
+                    <FormItem label="Enable Second Sentence">
+                        <Field name="thumbnailsMetadata.sentence2_enabled">
+                            {({ field }: FieldProps) => (
+                                <input
+                                    {...field}
+                                    type="checkbox"
+                                    checked={!!field.value}
+                                    onChange={e => setFieldValue(field.name, e.target.checked)}
+                                />
+                            )}
+                        </Field>
+                    </FormItem>
+                    <FormItem label="Casing">
+                        <Field as="select" name="thumbnailsMetadata.sentence2_case" className="input w-full">
+                            <option value="title">The Quick Brown</option>
+                            <option value="lower">the quick brown</option>
+                            <option value="upper">THE QUICK BROWN</option>
+                        </Field>
+                    </FormItem>
+                    <FormItem label="Vertical Offset">
+                        <Field name="thumbnailsMetadata.sentence2_yOffset">
+                            {({ field }: FieldProps) => (
+                                <input
+                                    {...field}
+                                    type="range"
+                                    min={-200}
+                                    max={200}
+                                    step={1}
+                                    className="w-full"
+                                    value={field.value || 0}
+                                    onChange={e => setFieldValue(field.name, parseInt(e.target.value))}
+                                />
+                            )}
+                        </Field>
+                    </FormItem>
+                </Card>
+
             </div>
         </div>
     )

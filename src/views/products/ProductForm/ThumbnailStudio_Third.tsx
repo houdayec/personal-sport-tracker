@@ -37,6 +37,7 @@ const ThumbnailStudioThirdCharacters = ({
     const fontColor = metadata.characters_preview_charColor || '#000000'
     const showTextBox = metadata.characters_preview_showTextAreaBox === true
     const yOffset = metadata.characters_preview_yOffset || 0
+    const lineHeightRatio = metadata.characters_preview_lineHeightRatio || 1.5
 
     // New metadata fields for manual font size control
     const autoFontSize = metadata.characters_preview_autoFontSize ?? true;
@@ -79,10 +80,11 @@ const ThumbnailStudioThirdCharacters = ({
         }
 
         const letterPairs = [
-            'Aa Bb Cc Dd Ee Ff Gg',
-            'Hh Ii Jj Kk Ll Mm',
-            'Nn Oo Pp Qq Rr Ss Tt',
-            'Uu Vv Ww Xx Yy Zz'
+            'Aa Bb Cc Dd Ee',
+            'Ff Gg Hh Ii Jj',
+            'Kk Ll Mm Nn Oo',
+            'Pp Qq Rr Ss Tt Uu',
+            'Vv Ww Xx Yy Zz'
         ]
 
         const uppercaseLines = [
@@ -128,7 +130,7 @@ const ThumbnailStudioThirdCharacters = ({
 
         ctx.font = `${finalFontSize}px "${productFontFamily}", sans-serif`
 
-        const lineHeight = finalFontSize * 1.5
+        const lineHeight = finalFontSize * lineHeightRatio
 
         const supportedLines = lines.map(line => {
             return line
@@ -230,6 +232,23 @@ const ThumbnailStudioThirdCharacters = ({
                             )}
                         </Field>
                     </FormItem>
+                    <FormItem label="Line Height">
+                        <Field name="thumbnailsMetadata.characters_preview_lineHeightRatio">
+                            {({ field }: FieldProps) => (
+                                <input
+                                    {...field}
+                                    type="range"
+                                    min={1.0}
+                                    max={2.5}
+                                    step={0.05}
+                                    className="w-full"
+                                    value={field.value || 1.5}
+                                    onChange={e => setFieldValue(field.name, parseFloat(e.target.value))}
+                                />
+                            )}
+                        </Field>
+                    </FormItem>
+
                     <FormItem label="Character Sets">
                         <div className="flex flex-wrap gap-4">
                             {['Uppercase', 'Lowercase', 'Numbers', 'Specials'].map((opt, key) => (
