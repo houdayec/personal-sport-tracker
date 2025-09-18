@@ -273,6 +273,8 @@ export type ThumbnailsMetadata = {
     main_charVerticalOffset?: number
     main_gradientSync?: boolean
     main_watermarkVersion?: string
+    main_charLines?: number
+    main_charLineHeight?: number
 
     shadowColor?: string
     shadowBlur?: number

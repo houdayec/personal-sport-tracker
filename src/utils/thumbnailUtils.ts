@@ -46,7 +46,7 @@ export const hexToRgbaString = (hex: string, opacity: number) => {
     return `rgba(${rgba.r}, ${rgba.g}, ${rgba.b}, ${rgba.a})`
 }
 
-export function getCharacterLines(meta: ThumbnailsMetadata): string[] {
+export function getCharacterLines2(meta: ThumbnailsMetadata): string[] {
     const letterPairs = [
         'Aa Bb Cc Dd Ee',
         'Ff Gg Hh Ii Jj',
@@ -54,28 +54,81 @@ export function getCharacterLines(meta: ThumbnailsMetadata): string[] {
         'Pp Qq Rr Ss Tt Uu',
         'Vv Ww Xx Yy Zz'
     ]
-    const uppercaseLines = ['A B C D E F G', 'H I J K L M N', 'O P Q R S T U', 'V W X Y Z']
-    const lowercaseLines = ['a b c d e f g', 'h i j k l m n', 'o p q r s t u', 'v w x y z']
-    const numberLine = '0 1 2 3 4 5 6 7 8 9'
-    const specialLine = '! @ # $ % ^ & * ( ) - _ = +'
+    const uppercase = 'A B C D E F G H I J K L M N O P Q R S T U V W X Y Z'.split(' ')
+    const lowercase = 'a b c d e f g h i j k l m n o p q r s t u v w x y z'.split(' ')
+    const numbers = '0 1 2 3 4 5 6 7 8 9'.split(' ')
+    const specials = '! @ # $ % ^ & * ( ) - _ = +'.split(' ')
 
     let lines: string[] = []
 
+    // Case: both uppercase + lowercase → use predefined pairs (keeps your old behavior)
     if (meta.main_showUppercase && meta.main_showLowercase) {
         lines = [...letterPairs]
-    } else if (meta.main_showUppercase) {
-        lines = [...uppercaseLines]
-    } else if (meta.main_showLowercase) {
-        lines = [...lowercaseLines]
+    }
+    // Case: only uppercase → split by chosen line count
+    else if (meta.main_showUppercase) {
+        const lineCount = meta.main_charLines || 4
+        const perLine = Math.ceil(uppercase.length / lineCount)
+        for (let i = 0; i < lineCount; i++) {
+            lines.push(uppercase.slice(i * perLine, (i + 1) * perLine).join(' '))
+        }
+    }
+    // Case: only lowercase → split by chosen line count
+    else if (meta.main_showLowercase) {
+        const lineCount = meta.main_charLines || 4
+        const perLine = Math.ceil(lowercase.length / lineCount)
+        for (let i = 0; i < lineCount; i++) {
+            lines.push(lowercase.slice(i * perLine, (i + 1) * perLine).join(' '))
+        }
     }
 
-    if (meta.main_showNumbers) lines.push(numberLine)
-    if (meta.main_showSpecials) lines.push(specialLine)
+    if (meta.main_showNumbers) lines.push(numbers.join(' '))
+    if (meta.main_showSpecials) lines.push(specials.join(' '))
 
     return lines.length > 0
         ? lines
         : meta.main_charset?.split('\n').map(line => line.trim()).filter(Boolean) || []
 }
+
+export function getCharacterLines(meta: ThumbnailsMetadata): string[] {
+    const uppercase = 'A B C D E F G H I J K L M N O P Q R S T U V W X Y Z'.split(' ')
+    const lowercase = 'a b c d e f g h i j k l m n o p q r s t u v w x y z'.split(' ')
+    const numbers = '0 1 2 3 4 5 6 7 8 9'.split(' ')
+    const specials = '! @ # $ % ^ & * ( ) - _ = +'.split(' ')
+
+    let lines: string[] = []
+
+    // Helper to split evenly into N lines
+    const splitIntoLines = (arr: string[], lineCount: number) => {
+        const perLine = Math.ceil(arr.length / lineCount)
+        const res: string[] = []
+        for (let i = 0; i < lineCount; i++) {
+            const slice = arr.slice(i * perLine, (i + 1) * perLine)
+            if (slice.length) res.push(slice.join(' '))
+        }
+        return res
+    }
+
+    const lineCount = meta.main_charLines || 4
+
+    if (meta.main_showUppercase && meta.main_showLowercase) {
+        // Merge Aa, Bb, etc.
+        const pairs = uppercase.map((u, i) => `${u}${lowercase[i]}`)
+        lines = splitIntoLines(pairs, lineCount)
+    } else if (meta.main_showUppercase) {
+        lines = splitIntoLines(uppercase, lineCount)
+    } else if (meta.main_showLowercase) {
+        lines = splitIntoLines(lowercase, lineCount)
+    }
+
+    if (meta.main_showNumbers) lines.push(numbers.join(' '))
+    if (meta.main_showSpecials) lines.push(specials.join(' '))
+
+    return lines.length > 0
+        ? lines
+        : meta.main_charset?.split('\n').map(l => l.trim()).filter(Boolean) || []
+}
+
 
 /**
  * Renders the thumbnail onto the provided canvas using metadata, pattern images, and watermark.
