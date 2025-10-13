@@ -14,7 +14,7 @@ import { saveAs } from 'file-saver'
 import { Field, FormikErrors, FormikTouched, FieldProps, useFormikContext } from 'formik'
 import { HiCheck, HiCheckCircle, HiOutlineCloudUpload } from 'react-icons/hi'
 import { BsGear } from 'react-icons/bs'
-import { FaDownload } from 'react-icons/fa'
+import { FaDownload, FaEdit, FaInternetExplorer, FaLink, FaMouse, FaWindowMaximize } from 'react-icons/fa'
 import fontkit from 'fontkit'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 
@@ -639,6 +639,18 @@ const AssetsFields = (props: AssetsFormFields) => {
     return (
         <AdaptableCard divider className="mb-4">
             <h5 className="mb-2">Generate Font Files</h5>
+            <Button
+                size="sm"
+                type='button'
+                className="mb-3"
+                icon={<FaMouse />}
+                onClick={async () => {
+                    const url = `https://www.glyphrstudio.com/app/`
+                    window.open(url, '_blank')
+                }}
+            >
+                Open Glyphr Studio
+            </Button>
             <FormItem label="Upload .TTF or .OTF File (OTF will be converted to TTF)">
                 <Upload
                     draggable

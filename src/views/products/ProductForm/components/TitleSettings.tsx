@@ -48,7 +48,7 @@ export default function TitleSettings() {
                     <FormItem label="Top Margin">
                         <Field name="thumbnailsMetadata.main_topOffset">
                             {({ field }: FieldProps) => (
-                                <input {...field} type="range" min={0} max={200} step={10} className="w-full" />
+                                <input {...field} type="range" min={0} max={300} step={10} className="w-full" />
                             )}
                         </Field>
                     </FormItem>

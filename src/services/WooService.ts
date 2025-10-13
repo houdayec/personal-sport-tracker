@@ -51,14 +51,14 @@ export const generateWordPressHtml = (
 `.trim(),
                 content: `
 <h2 class="wp-block-heading">Our ${cleanMainKeyword} Font, a ${cleanSecondKeyword} Style Typeface</h2>
-<p>Make your next project stand out with our ${cleanMainKeyword} font - a flexible and stylish typeface made for creators.</p>
+<p>Make your next project stand out with our ${cleanMainKeyword} font - a flexible and stylish typeface made for everyone.</p>
 <p>Handcrafted in our studio with care and attention to detail, the ${cleanMainKeyword} font brings a unique, personal touch to your designs.</p>
 <hr>
 <h2>Why Choose FontMaze?</h2>
-<p>At FontMaze, <strong>every font is crafted with care in our studio</strong> - no auto-generation, no shortcuts. We combine design expertise with attention to detail to ensure premium quality across all our products.</p>
+<p><strong>We are experienced font designers</strong>, formerly working with brands and NGOs - now crafting each FontMaze typeface with precision and care.</p>
 <p>Our fonts are easy to install and work seamlessly with popular tools like Cricut, Canva, Silhouette, and more. Whether you're a beginner or a seasoned creator, you’ll get started in minutes.</p>
 <p>Need help? <a href="https://www.fontmaze.com/contact/">Reach out to us here</a> - we offer fast, friendly support from real people who care about your success.</p>
-<p>Start designing instantly with the ${cleanMainKeyword} font - perfect for social media graphics, printable crafts, digital downloads, and creative projects of all kinds.</p>
+<p>Start designing instantly with the ${cleanMainKeyword} font, perfect for social media graphics, printable crafts, digital downloads, and creative projects of all kinds.</p>
 
 [wpcode id="834"]
 [wpcode id="833"]
