@@ -394,7 +394,7 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
                         style={{ display: 'none' }}
                     />
 
-                    <div className="border rounded bg-white overflow-hidden mx-auto" style={{ width: '100%', maxWidth: '600px', aspectRatio: '1' }}>
+                    <div className="border rounded bg-white overflow-hidden mx-auto" style={{ width: '100%', maxWidth: '400px', aspectRatio: '1' }}>
                         {!isFontReady ? (
                             <div className="w-full h-full flex items-center justify-center">
                                 <Loader2 className="h-10 w-10 animate-spin text-gray-500" />

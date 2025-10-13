@@ -45,12 +45,11 @@ const ThumbnailStudio_IncludedFilesAndCompatibility = () => {
     return (
         <div className="mt-8 space-y-6">
             <h6 className="font-semibold text-lg mb-4">📁 Included Files & Compatibility</h6>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                {/* Included Files */}
-                <div>
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
+                <div className="flex-1 max-w-md">
                     <h5 className="font-semibold mb-2">Included Files</h5>
                     <canvas ref={filesCanvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} style={{ display: 'none' }} />
-                    <div className="border rounded bg-white overflow-hidden aspect-[3/2] w-full max-w-full">
+                    <div className="border rounded bg-white overflow-hidden aspect-[3/2] w-full">
                         {filesPreview
                             ? <img src={filesPreview} alt="Included files preview" className="w-full h-full object-contain" />
                             : <div className="w-full h-full flex items-center justify-center">Generating…</div>}
@@ -61,11 +60,10 @@ const ThumbnailStudio_IncludedFilesAndCompatibility = () => {
                     </div>
                 </div>
 
-                {/* Compatibility */}
-                <div>
+                <div className="flex-1 max-w-md">
                     <h5 className="font-semibold mb-2">Compatibility</h5>
                     <canvas ref={compatCanvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} style={{ display: 'none' }} />
-                    <div className="border rounded bg-white overflow-hidden aspect-[3/2] w-full max-w-full">
+                    <div className="border rounded bg-white overflow-hidden aspect-[3/2] w-full">
                         {compatPreview
                             ? <img src={compatPreview} alt="Compatibility preview" className="w-full h-full object-contain" />
                             : <div className="w-full h-full flex items-center justify-center">Generating…</div>}
@@ -76,6 +74,7 @@ const ThumbnailStudio_IncludedFilesAndCompatibility = () => {
                     </div>
                 </div>
             </div>
+
         </div>
     )
 
