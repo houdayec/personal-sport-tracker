@@ -2,11 +2,15 @@ import AdaptableCard from '@/components/shared/AdaptableCard'
 import RichTextEditor from '@/components/shared/RichTextEditor'
 import Input from '@/components/ui/Input'
 import { FormItem } from '@/components/ui/Form'
-import { Field, FormikErrors, FormikTouched, FieldProps } from 'formik'
+import { Field, FormikErrors, FormikTouched, FieldProps, useFormikContext } from 'formik'
 import { Select } from '@/components/ui'
 import { useEffect, useState } from 'react'
 import { fetchWordpressProductCategories } from '@/services/WooService'
 import { categoryOptions, getPricingByCategory, statusOptions } from '@/@types/product'
+import Button from '@/components/ui/Button'
+import { toast } from '@/components/ui'
+import Notification from '@/components/ui/Notification'
+import { HiOutlineClipboardCopy } from 'react-icons/hi'
 
 type FormFieldsName = {
     name: string
@@ -29,6 +33,7 @@ const ProductInfoFields = (props: BasicInformationFields) => {
     const { touched, errors } = props
     const [wordpressCategoryOptions, setWordpressCategoryOptions] = useState<{ value: number; label: string }[]>([])
     const [loading, setLoading] = useState(false)
+    const { values } = useFormikContext<any>()
 
     useEffect(() => {
         setLoading(true)
@@ -38,6 +43,34 @@ const ProductInfoFields = (props: BasicInformationFields) => {
             })
             .finally(() => setLoading(false))
     }, [])
+
+    const buildKeywordsPrompt = () => {
+        const productName = values?.name || 'Font product'
+        const categoryIds: number[] = values?.wordpress?.categoriesIds || []
+        const categoryLabels = wordpressCategoryOptions
+            .filter(opt => categoryIds.includes(opt.value))
+            .map(opt => opt.label)
+
+        return [
+            `You are an SEO expert for digital fonts.`,
+            `Generate TWO keywords for a product page:`,
+            `1) Main keyword (2–4 words)`,
+            `2) Second keyword (2–4 words)`,
+            `They must be highly relevant, search-driven, and not repetitive.`,
+            `Avoid trademarks unless explicitly required.`,
+            `Use the product name and WordPress categories for context.`,
+            ``,
+            `Product name: ${productName}`,
+            `WordPress categories: ${categoryLabels.length ? categoryLabels.join(', ') : 'None selected'}`,
+            ``,
+            `Return only the two keywords, one per line, no extra text.`,
+        ].join('\n')
+    }
+
+    const copyKeywordsPrompt = () => {
+        navigator.clipboard.writeText(buildKeywordsPrompt())
+        toast.push(<Notification type="success" title="Keywords prompt copied!" />, { placement: 'bottom-start' })
+    }
 
     return (
         <AdaptableCard divider className="mb-4">
@@ -117,6 +150,20 @@ const ProductInfoFields = (props: BasicInformationFields) => {
                 <FormItem label="Second Keyword" invalid={(errors.secondKeyword && touched.secondKeyword) as boolean}>
                     <Field type="text" name="secondKeyword" placeholder="Second keyword" component={Input} />
                 </FormItem>
+                <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50/60 p-3">
+                    <div className="text-sm text-gray-600">
+                        Need keyword ideas? Copy an AI prompt based on product name and WordPress categories.
+                    </div>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="twoTone"
+                        icon={<HiOutlineClipboardCopy />}
+                        onClick={copyKeywordsPrompt}
+                    >
+                        Copy Keyword Prompt
+                    </Button>
+                </div>
                 <FormItem label="Trademark Name" invalid={(errors.secondKeyword && touched.secondKeyword) as boolean}>
                     <Field type="text" name="wordpress.trademarkName" placeholder="Trademark (Lego, Disney...)" component={Input} />
                 </FormItem>

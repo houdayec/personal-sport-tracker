@@ -36,6 +36,7 @@ const ThumbnailStudioSixthMockupTablet = ({
     const showTextBox = metadata.example_tablet_showTextAreaBox === true
     const xOffset = metadata.example_tablet_xOffset || 0
     const yOffset = metadata.example_tablet_yOffset || 0
+    const letter = (metadata.example_tablet_letter || 'A').slice(0, 1).toUpperCase()
 
     // New metadata fields for manual font size control
     const autoFontSize = metadata.example_tablet_autoFontSize ?? true;
@@ -77,7 +78,7 @@ const ThumbnailStudioSixthMockupTablet = ({
         ctx.textBaseline = 'middle'
         ctx.fillStyle = fontColor
 
-        const shortLine = "A"
+        const shortLine = letter || 'A'
 
         // Interpolate line at 50% height
         const t = 0.5
@@ -122,7 +123,7 @@ const ThumbnailStudioSixthMockupTablet = ({
         ctx.restore()
 
         setPreviewUrl(canvas.toDataURL('image/png'))
-    }, [metadata, xOffset, yOffset, bgImage, isFontReady, productFontFamily, autoFontSize, manualFontSize])
+    }, [metadata, xOffset, yOffset, bgImage, isFontReady, productFontFamily, autoFontSize, manualFontSize, letter])
 
     useEffect(() => {
         const id = requestAnimationFrame(draw)
@@ -166,6 +167,21 @@ const ThumbnailStudioSixthMockupTablet = ({
                     <h5 className="font-semibold mb-2">Settings</h5>
                     <FormItem label="Font Color">
                         <Field name="thumbnailsMetadata.example_tablet_charColor" type="color" component={Input} />
+                    </FormItem>
+                    <FormItem label="Letter">
+                        <Field name="thumbnailsMetadata.example_tablet_letter">
+                            {({ field }: FieldProps) => (
+                                <Input
+                                    {...field}
+                                    maxLength={1}
+                                    placeholder="A"
+                                    value={(field.value || 'A').toUpperCase().slice(0, 1)}
+                                    onChange={(e) =>
+                                        setFieldValue(field.name, e.target.value.toUpperCase().slice(0, 1))
+                                    }
+                                />
+                            )}
+                        </Field>
                     </FormItem>
                     <FormItem label="Show Text Area Box">
                         <Field name="thumbnailsMetadata.example_tablet_showTextAreaBox">

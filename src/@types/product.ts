@@ -1,3 +1,5 @@
+import type { ReviewDraft, ReviewSeed } from './review'
+
 export class Product {
     sku!: string
     name!: string
@@ -29,6 +31,8 @@ export class Product {
     wordpress?: WordPressData
     thumbnailsMetadata?: ThumbnailsMetadata
     websiteMetadata?: WebsiteMetadata
+    reviews?: ReviewDraft[]
+    reviewSeed?: ReviewSeed
 
     toPlainObject(): Record<string, any> {
         const { ...rest } = this
@@ -74,6 +78,8 @@ export class Product {
         newProduct.publishedOnWebsite = data.publishedOnWebsite ?? false
         newProduct.wordpressReviewUpdatedAt = data.wordpressReviewUpdatedAt ?? null
         newProduct.status = data.status || 'draft'
+        newProduct.reviews = data.reviews ?? []
+        newProduct.reviewSeed = data.reviewSeed ?? undefined
 
         if (data.category === 'football_font') {
 
@@ -149,6 +155,7 @@ export class Product {
                     version: "1.000",
                 },
             },
+            reviews: [],
         })
     }
 
@@ -326,6 +333,7 @@ export type ThumbnailsMetadata = {
     example_tablet_yOffset?: number
     example_tablet_autoFontSize?: boolean
     example_tablet_manualFontSize?: number
+    example_tablet_letter?: string
 
 }
 

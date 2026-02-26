@@ -6,6 +6,7 @@ import { collection, CollectionReference, doc, DocumentData, getDoc, getDocs, ge
 import { db } from '@/firebase'
 import { ProductFilterQueries } from '@/views/products/ProductList/store/productListSlice'
 import { Product } from '@/@types/product'
+import type { ReviewDraft, ReviewSeed } from '@/@types/review'
 import { filter } from 'lodash'
 import { table } from 'console'
 import { DashboardData, DashboardQuery } from '@/views/etsy/EtsyStats/store'
@@ -525,6 +526,69 @@ export async function apiCreateNewProduct<T, U>(product: Product) {
     }
 }
 
+export async function apiUpdateProductReviews(
+    sku: string,
+    reviews: ReviewDraft[],
+    reviewSeed?: ReviewSeed
+) {
+    const productRef = doc(db, 'products', sku)
+    await updateDoc(productRef, {
+        reviews,
+        reviewSeed: reviewSeed || null,
+    })
+    return true
+}
+
+export async function apiGetAllProducts(): Promise<Product[]> {
+    const productsRef = collection(db, 'products')
+    const snapshot = await getDocs(productsRef)
+    return snapshot.docs.map(doc => Product.fromFirestore(doc.id, doc.data()))
+}
+
+export async function apiMarkReviewsUpdated(
+    sku: string,
+    reviewSeed?: ReviewSeed
+) {
+    const productRef = doc(db, 'products', sku)
+    await updateDoc(productRef, {
+        wordpressReviewUpdatedAt: Date.now(),
+        reviewSeed: reviewSeed || null,
+    })
+    return true
+}
+
+export async function apiUpdateProductWordpressId(
+    sku: string,
+    wordpressId: number
+) {
+    const productRef = doc(db, 'products', sku)
+    await updateDoc(productRef, {
+        'wordpress.id': wordpressId,
+    })
+    return true
+}
+
+export async function apiGetNextSku(prefix = 'FMZ', pad = 3): Promise<string> {
+    const productsRef = collection(db, 'products')
+    const snapshot = await getDocs(productsRef)
+
+    let max = 0
+    const re = new RegExp(`^${prefix}(\\d+)$`, 'i')
+
+    snapshot.docs.forEach((docSnap) => {
+        const id = docSnap.id
+        const match = id.match(re)
+        if (!match) return
+        const num = parseInt(match[1], 10)
+        if (!Number.isNaN(num) && num > max) {
+            max = num
+        }
+    })
+
+    const next = max + 1
+    return `${prefix}${String(next).padStart(pad, '0')}`
+}
+
 export async function apiGetWooCommerceOrdersOld<T, U extends TableQueries>(params: U) {
     const queryParams = new URLSearchParams();
 
@@ -974,4 +1038,3 @@ export const markOrderAsCompleted = async (orderId: string) => {
         return false;
     }
 };
-

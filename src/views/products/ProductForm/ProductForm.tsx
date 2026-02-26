@@ -26,6 +26,7 @@ import { useFormikContext } from 'formik';
 import ThumbnailForm from './ThumbnailForm'
 import WordpressForm from './WordpressForm'
 import ExportForm from './ExportForm'
+import ReviewsForm from './ReviewsForm'
 
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 type FormikRef = FormikProps<any>
@@ -132,7 +133,7 @@ const DeleteProductButton = ({ onDelete }: { onDelete: OnDelete }) => {
 
 const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
 
-    const tabOrder = ['product', 'assets', 'thumbnails', 'wordpress', 'export']
+    const tabOrder = ['product', 'assets', 'thumbnails', 'wordpress', 'reviews', 'export']
     const [activeTab, setActiveTab] = useState('product')
     const [allowedTabs, setAllowedTabs] = useState(['product']) // first tab always allowed
 
@@ -212,6 +213,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
         console.log('All slugs generated:', allSlugsGenerated)
         if (allSlugsGenerated) {
             newAllowedTabs.push('wordpress')
+            newAllowedTabs.push('reviews')
         }
 
         if (values.wordpress?.rankMath?.permalink) {
@@ -264,6 +266,7 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
                                                 <TabNav value="assets" disabled={!allowedTabs.includes('assets')}>📦 Font Info & Files</TabNav>
                                                 <TabNav value="thumbnails" disabled={!allowedTabs.includes('thumbnails')}>🖼 Thumbnails</TabNav>
                                                 <TabNav value="wordpress" disabled={!allowedTabs.includes('wordpress')}>📝 WordPress Post</TabNav>
+                                                <TabNav value="reviews" disabled={!allowedTabs.includes('reviews')}>⭐ Reviews</TabNav>
                                                 <TabNav value="export" disabled={!allowedTabs.includes('export')}>📤 Export</TabNav>
                                             </TabList>
 
@@ -286,6 +289,10 @@ const ProductForm = forwardRef<FormikRef, ProductForm>((props, ref) => {
 
                                                 <TabContent value="wordpress">
                                                     <WordpressForm touched={touched} errors={errors} />
+                                                </TabContent>
+
+                                                <TabContent value="reviews">
+                                                    <ReviewsForm mode={type} />
                                                 </TabContent>
 
                                                 <TabContent value="export">

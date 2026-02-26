@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import AdaptableCard from '@/components/shared/AdaptableCard'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
+import Progress from '@/components/ui/Progress'
 import { HiCheckCircle, HiTrash, HiXCircle } from 'react-icons/hi'
 import { useFormikContext } from 'formik'
 import _ from 'lodash'
@@ -15,6 +16,7 @@ import {
     listWebpSquareThumbnails,
     uploadImageToWordPress,
     publishWooProduct,
+    createWooProductReviews,
 } from '@/services/WooService'
 import {
     DndContext,
@@ -32,6 +34,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 import { generateZipFromFirebase, uploadZipToFirebase, uploadZipToWordPress, assignZipToFileBird, exportThumbnailsToFileBird, deleteThumbnailFromStorage } from '@/services/StorageService'
+import { generateBatchId } from '@/utils/reviewGenerator'
 
 type UploadStatus = 'idle' | 'pending' | 'success' | 'error'
 
@@ -41,6 +44,7 @@ type ExportStep = {
     label: string;
     status: 'idle' | 'pending' | 'success' | 'error';
     progress?: string; // Optional: for progress like "X/Y"
+    percent?: number;
 }
 
 // SortableThumbnail component (no changes to its core logic, only how it's used)
@@ -78,10 +82,11 @@ const SortableThumbnail = ({ id, url, status }: { id: string; url: string; statu
 
 // Define the initial steps for the export process
 const initialExportSteps: ExportStep[] = [
-    { id: 'thumbnails', label: 'Uploading thumbnails', status: 'idle', progress: '' },
-    { id: 'package', label: 'Creating ZIP and uploading', status: 'idle', progress: '' },
-    { id: 'publish', label: 'Publishing product', status: 'idle', progress: '' },
-    { id: 'complete', label: 'Finalizing export', status: 'idle', progress: '' },
+    { id: 'thumbnails', label: 'Uploading thumbnails', status: 'idle', progress: '', percent: 0 },
+    { id: 'package', label: 'Creating ZIP and uploading', status: 'idle', progress: '', percent: 0 },
+    { id: 'publish', label: 'Publishing product', status: 'idle', progress: '', percent: 0 },
+    { id: 'reviews', label: 'Creating reviews', status: 'idle', progress: '', percent: 0 },
+    { id: 'complete', label: 'Finalizing export', status: 'idle', progress: '', percent: 0 },
 ];
 
 
@@ -224,10 +229,22 @@ const ExportForm = () => {
     }
 
     // Helper to update a specific step's status and progress
-    const updateExportStep = (id: string, status: ExportStep['status'], progress?: string) => {
+    const updateExportStep = (
+        id: string,
+        status: ExportStep['status'],
+        progress?: string,
+        percent?: number
+    ) => {
         setExportSteps(prevSteps =>
             prevSteps.map(step =>
-                step.id === id ? { ...step, status, progress: progress !== undefined ? progress : step.progress } : step
+                step.id === id
+                    ? {
+                        ...step,
+                        status,
+                        progress: progress !== undefined ? progress : step.progress,
+                        percent: percent !== undefined ? percent : step.percent,
+                    }
+                    : step
             )
         );
     };
@@ -242,6 +259,7 @@ const ExportForm = () => {
         const mediaIds: number[] = []
         const totalThumbnails = thumbnails.length;
         let uploadedCount = 0;
+        let anyFailed = false
 
         for (const { path } of thumbnails) {
             const fileName = path.split('/').pop() || ''
@@ -254,7 +272,12 @@ const ExportForm = () => {
             try {
                 console.log(`[uploadThumbnailsStep] • uploading ${slug}`)
                 uploadedCount++; // Increment count before upload attempt
-                updateExportStep('thumbnails', 'pending', `${uploadedCount}/${totalThumbnails}`); // Update progress
+                updateExportStep(
+                    'thumbnails',
+                    'pending',
+                    `${uploadedCount}/${totalThumbnails}`,
+                    Math.round((uploadedCount / totalThumbnails) * 100)
+                ); // Update progress
                 const media = await uploadImageToWordPress(path, meta)
                 mediaIds.push(media.id)
 
@@ -271,23 +294,33 @@ const ExportForm = () => {
             } catch (err) {
                 console.error(`[uploadThumbnailsStep] ✗ ${slug}`, err)
                 setStatusMap(s => ({ ...s, [path]: 'error' }))
+                anyFailed = true
                 // If one fails, mark the overall step as error, but continue trying others
-                updateExportStep('thumbnails', 'error', `${uploadedCount}/${totalThumbnails}`);
+                updateExportStep(
+                    'thumbnails',
+                    'error',
+                    `${uploadedCount}/${totalThumbnails}`,
+                    Math.round((uploadedCount / totalThumbnails) * 100)
+                );
             }
         }
         // After loop, check if any thumbnail failed to set overall step status
-        const anyThumbnailFailed = Object.values(statusMap).some(status => status === 'error');
-        updateExportStep('thumbnails', anyThumbnailFailed ? 'error' : 'success', `${uploadedCount}/${totalThumbnails}`);
+        updateExportStep(
+            'thumbnails',
+            anyFailed ? 'error' : 'success',
+            `${uploadedCount}/${totalThumbnails}`,
+            100
+        );
         return mediaIds
     }
 
     // Packages final product files into a ZIP and uploads to Firebase & WP
     const packageStep = async (fbFolderId: number, mediaIds: number[]) => {
         console.log('[packageStep] ▶️ starting packaging')
-        updateExportStep('package', 'pending'); // Set step to pending at start
+        updateExportStep('package', 'pending', 'Preparing…', 5); // Set step to pending at start
 
         try {
-            updateExportStep('package', 'pending', 'Generating ZIP…');
+            updateExportStep('package', 'pending', 'Generating ZIP…', 25);
             const { zipBlob, zipFilename } = await generateZipFromFirebase(
                 `products/${values.sku}/files/Final Product`,
                 values.sku,
@@ -295,24 +328,24 @@ const ExportForm = () => {
             )
             console.log('[packageStep]   ✓ ZIP generated')
 
-            updateExportStep('package', 'pending', 'Uploading ZIP to Firebase…');
+            updateExportStep('package', 'pending', 'Uploading ZIP to Firebase…', 50);
             const firebaseUrl = await uploadZipToFirebase(zipBlob, values.sku, zipFilename)
             console.log('[packageStep]   ✓ uploaded to Firebase')
 
-            updateExportStep('package', 'pending', 'Uploading ZIP to WordPress…');
+            updateExportStep('package', 'pending', 'Uploading ZIP to WordPress…', 75);
             const wpZipMedia = await uploadZipToWordPress(zipBlob, zipFilename)
             console.log('[packageStep]   ✓ uploaded to WP (ID:', wpZipMedia.id, ')')
 
-            updateExportStep('package', 'pending', 'Assigning ZIP in FileBird…');
+            updateExportStep('package', 'pending', 'Assigning ZIP in FileBird…', 90);
             await assignZipToFileBird(fbFolderId, wpZipMedia.id)
             console.log('[packageStep]   ✓ assigned to FileBird folder', fbFolderId)
 
-            updateExportStep('package', 'success', 'Package complete!');
+            updateExportStep('package', 'success', 'Package complete!', 100);
             // Return wpZipMedia which contains the source_url for download
             return { firebaseUrl, wpZipMedia };
         } catch (err) {
             console.error('[packageStep] ❌', err)
-            updateExportStep('package', 'error', 'Packaging failed');
+            updateExportStep('package', 'error', 'Packaging failed', 100);
             throw err; // Re-throw to propagate error to main handler
         }
     }
@@ -347,13 +380,13 @@ const ExportForm = () => {
             }
 
             // Step 3: Publishing product
-            updateExportStep('publish', 'pending');
+            updateExportStep('publish', 'pending', 'Publishing…', 50);
             const publishedProduct = await publishWooProduct(
                 clonedProduct,
                 mediaIds,
                 customerZipFile,
             )
-            updateExportStep('publish', 'success');
+            updateExportStep('publish', 'success', 'Published', 100);
 
             if (publishedProduct?.id) {
                 setFieldValue('wordpress.id', publishedProduct.id)
@@ -367,8 +400,25 @@ const ExportForm = () => {
                 edit: `https://www.fontmaze.com/wp-admin/post.php?post=${publishedProduct.id}&action=edit&classic-editor`,
             })
 
-            // Step 4: Finalizing
-            updateExportStep('complete', 'success', 'All done!');
+            // Step 4: Creating reviews (optional)
+            updateExportStep('reviews', 'pending', 'Starting…', 5);
+            const reviews = values.reviews || []
+            if (publishedProduct?.id && reviews.length) {
+                const batchId = values.reviewSeed?.batchId || generateBatchId()
+                const createdIds = await createWooProductReviews(publishedProduct.id, reviews, batchId)
+                setFieldValue('reviewSeed', {
+                    batchId,
+                    createdReviewIds: createdIds,
+                    createdAt: Date.now(),
+                })
+                const pct = Math.round((createdIds.length / reviews.length) * 100)
+                updateExportStep('reviews', 'success', `${createdIds.length}/${reviews.length}`, pct)
+            } else {
+                updateExportStep('reviews', 'success', 'Skipped (0)', 100)
+            }
+
+            // Step 5: Finalizing
+            updateExportStep('complete', 'success', 'All done!', 100);
             submitForm();
         } catch (err) {
             console.error('[handleUploadAndPublish] ❌', err)
@@ -382,7 +432,7 @@ const ExportForm = () => {
             );
             const currentCompleteStep = exportSteps.find(s => s.id === 'complete');
             if (currentCompleteStep && currentCompleteStep.status !== 'error') {
-                updateExportStep('complete', 'error', 'Error occurred');
+                updateExportStep('complete', 'error', 'Error occurred', 100);
             }
         } finally {
             setWorking(false)
@@ -403,11 +453,38 @@ const ExportForm = () => {
                 </div>
             ) : (
                 <>
+                    <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50/60 p-4">
+                        <div className="flex items-center justify-between gap-4">
+                            <div>
+                                <h6 className="text-sm font-semibold text-gray-700">Overall Progress</h6>
+                                <p className="text-xs text-gray-500">
+                                    Tracks all export tasks combined.
+                                </p>
+                            </div>
+                            <div className="text-sm font-semibold text-gray-700">
+                                {Math.round(
+                                    exportSteps.reduce((sum, step) => sum + (step.percent ?? 0), 0) /
+                                    Math.max(exportSteps.length, 1)
+                                )}%
+                            </div>
+                        </div>
+                        <div className="mt-2">
+                            <Progress
+                                percent={Math.round(
+                                    exportSteps.reduce((sum, step) => sum + (step.percent ?? 0), 0) /
+                                    Math.max(exportSteps.length, 1)
+                                )}
+                                size="sm"
+                                showInfo={false}
+                            />
+                        </div>
+                    </div>
                     <div className="flex flex-wrap gap-3 mb-4">
                         <DndContext
                             collisionDetection={closestCenter}
-                            sensors={working ? [] : sensors} // Disable dragging if working
+                            sensors={sensors}
                             onDragEnd={({ active, over }) => {
+                                if (working) return
                                 if (active.id !== over?.id) {
                                     const oldIndex = thumbnails.findIndex(t => t.path === active.id)
                                     const newIndex = thumbnails.findIndex(t => t.path === over?.id)
@@ -481,14 +558,22 @@ const ExportForm = () => {
                         <h6 className="mb-3 text-base font-semibold">Export Progress:</h6>
                         <ul className="space-y-2">
                             {exportSteps.map(step => (
-                                <li key={step.id} className="flex items-center gap-2 text-gray-700">
-                                    {step.status === 'pending' && <Spinner size={16} className="text-blue-500" />}
-                                    {step.status === 'success' && <HiCheckCircle className="text-green-500" size={20} />}
-                                    {step.status === 'error' && <HiXCircle className="text-red-500" size={20} />}
-                                    {step.status === 'idle' && <span className="w-5 h-5 flex items-center justify-center text-gray-400">•</span>} {/* Bullet for idle */}
-                                    <span className={step.status === 'pending' ? 'font-semibold' : ''}>
-                                        {step.label} {step.progress && `(${step.progress})`}
-                                    </span>
+                                <li key={step.id} className="text-gray-700">
+                                    <div className="flex items-center gap-2">
+                                        {step.status === 'pending' && <Spinner size={16} className="text-blue-500" />}
+                                        {step.status === 'success' && <HiCheckCircle className="text-green-500" size={20} />}
+                                        {step.status === 'error' && <HiXCircle className="text-red-500" size={20} />}
+                                        {step.status === 'idle' && <span className="w-5 h-5 flex items-center justify-center text-gray-400">•</span>} {/* Bullet for idle */}
+                                        <span className={step.status === 'pending' ? 'font-semibold' : ''}>
+                                            {step.label} {step.progress && `(${step.progress})`}
+                                        </span>
+                                        <span className="ml-auto text-xs text-gray-500">
+                                            {step.percent ?? 0}%
+                                        </span>
+                                    </div>
+                                    <div className="mt-2">
+                                        <Progress percent={step.percent ?? 0} size="sm" showInfo={false} />
+                                    </div>
                                 </li>
                             ))}
                         </ul>

@@ -4,6 +4,7 @@ import { getDownloadURL, ref, listAll } from 'firebase/storage'
 import { storage } from '@/firebase'
 import WordpressApiService from './WordpressService'
 import { Product } from '@/@types/product'
+import type { ReviewDraft } from '@/@types/review'
 import { slugify } from '@/utils/thumbnailUtils'
 
 const API_URL = import.meta.env.VITE_WOOCOMMERCE_BASE_URL
@@ -257,6 +258,117 @@ export async function publishWooProduct(product: any, imageIds: number[], zipMed
         console.log('[publishWooProduct] ✅ Created', res.data.id)
         return res.data
     }
+}
+
+export async function createWooProductReviews(
+    productId: number,
+    reviews: ReviewDraft[],
+    batchId: string
+): Promise<number[]> {
+    const createdIds: number[] = []
+    const marker = `fmz_seed:${batchId}`
+    for (let i = 0; i < reviews.length; i++) {
+        const review = reviews[i]
+        const text = review.text?.trim() || ''
+        const date = new Date(review.date)
+        const dateIso = isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString()
+        const rating = review.rating >= 3 && review.rating <= 5 ? review.rating : 5
+        const reviewer = review.authorName?.trim() || 'Anonymous'
+        const emptyBody = '\u2060' // word joiner keeps non-empty but remains invisible
+        const payload = {
+            product_id: productId,
+            review: text
+                ? `${text}\n\n<!-- ${marker} -->`
+                : `${emptyBody}\n\n<!-- ${marker} -->`,
+            reviewer,
+            reviewer_email: `seed+${batchId}-${i + 1}@fontmaze.local`,
+            rating,
+            verified: false,
+            date_created: dateIso,
+        }
+
+        const res = await axios.post(`${API_URL}/products/reviews`, payload, {
+            auth: AUTH,
+        })
+        if (res?.data?.id) {
+            createdIds.push(res.data.id)
+        }
+    }
+    return createdIds
+}
+
+const listWooProductReviews = async (productId: number) => {
+    const all: any[] = []
+    let page = 1
+    const perPage = 100
+    while (true) {
+        const res = await axios.get(`${API_URL}/products/reviews`, {
+            auth: AUTH,
+            params: { product: productId, per_page: perPage, page },
+        })
+        const items = Array.isArray(res.data) ? res.data : []
+        all.push(...items)
+        if (items.length < perPage) break
+        page++
+    }
+    return all
+}
+
+export async function deleteWooReviewsByBatch(productId: number, batchId: string): Promise<number> {
+    const marker = `fmz_seed:${batchId}`
+    const reviews = await listWooProductReviews(productId)
+    const toDelete = reviews.filter((r: any) => typeof r.review === 'string' && r.review.includes(marker))
+    for (const r of toDelete) {
+        await axios.delete(`${API_URL}/products/reviews/${r.id}`, {
+            auth: AUTH,
+            params: { force: true },
+        })
+    }
+    return toDelete.length
+}
+
+export async function updateWooProductReviews(
+    productId: number,
+    reviews: ReviewDraft[],
+    batchId: string
+): Promise<{ createdIds: number[]; deletedCount: number }> {
+    const deletedCount = await deleteWooReviewsByBatch(productId, batchId)
+    const createdIds = await createWooProductReviews(productId, reviews, batchId)
+    return { createdIds, deletedCount }
+}
+
+export async function fetchWooReviewStats(productId: number): Promise<{
+    reviewCount: number
+    newestReviewDate?: string
+}> {
+    const res = await axios.get(`${API_URL}/products/reviews`, {
+        auth: AUTH,
+        params: {
+            product: productId,
+            per_page: 1,
+            page: 1,
+            order: 'desc',
+            orderby: 'date',
+        },
+    })
+    const totalHeader = res.headers?.['x-wp-total']
+    const reviewCount = totalHeader ? parseInt(totalHeader, 10) : (Array.isArray(res.data) ? res.data.length : 0)
+    const newest = Array.isArray(res.data) && res.data.length > 0
+        ? (res.data[0].date_created || res.data[0].date_created_gmt || res.data[0].date)
+        : undefined
+    return { reviewCount, newestReviewDate: newest }
+}
+
+export async function fetchWooProductBySku(sku: string): Promise<{ id: number } | null> {
+    const res = await axios.get(`${API_URL}/products`, {
+        auth: AUTH,
+        params: {
+            sku,
+            per_page: 1,
+        },
+    })
+    const match = Array.isArray(res.data) && res.data.length > 0 ? res.data[0] : null
+    return match?.id ? { id: match.id } : null
 }
 
 // Fetch product categories from WooCommerce
