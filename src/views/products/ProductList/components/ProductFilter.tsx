@@ -112,6 +112,21 @@ const FilterForm = forwardRef<FormikProps<ProductFilterQueries>, FilterFormProps
                                 </Field>
                             </FormItem>
 
+                            <FormItem label="WordPress ID">
+                                <Field name="wordpressLinked">
+                                    {({ field, form }: FieldProps) => (
+                                        <Radio.Group
+                                            value={field.value}
+                                            onChange={(val) => form.setFieldValue(field.name, val)}
+                                        >
+                                            <Radio value={undefined}>All</Radio>
+                                            <Radio value={true}>Has WP ID</Radio>
+                                            <Radio value={false}>Missing WP ID</Radio>
+                                        </Radio.Group>
+                                    )}
+                                </Field>
+                            </FormItem>
+
                         </FormContainer>
                     </Form>
                 )}

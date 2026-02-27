@@ -417,6 +417,13 @@ export async function apiGetProducts<T, U extends TableQueries & { filterData?: 
         }
     }
 
+    if (filterData?.wordpressLinked !== undefined) {
+        allProducts = allProducts.filter(p => {
+            const hasId = !!p.wordpress?.id
+            return filterData.wordpressLinked ? hasId : !hasId
+        })
+    }
+
     // Apply sorting locally
     let { key = 'sku', order = 'desc' } = sort || {}
 

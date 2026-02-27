@@ -18,6 +18,7 @@ export type ProductFilterQueries = {
     category?: string[]
     etsyPublished?: boolean | undefined
     websitePublished?: boolean | undefined
+    wordpressLinked?: boolean | undefined
 }
 
 export type SalesProductListState = {
@@ -70,6 +71,7 @@ export const initialFilterData: ProductFilterQueries = {
     category: ['font', 'football_font'],
     etsyPublished: undefined,
     websitePublished: undefined,
+    wordpressLinked: undefined,
 }
 
 const initialState: SalesProductListState = {

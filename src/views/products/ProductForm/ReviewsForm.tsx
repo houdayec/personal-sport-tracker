@@ -60,9 +60,9 @@ const localeLabels: Record<ReviewLocale, string> = {
 }
 
 const promptLengthGuidance: Record<PromptLength, string> = {
-    short: '1–2 sentences, 30–55 words.',
-    medium: '2–3 sentences, 55–95 words.',
-    long: '3–5 sentences, 95–150 words.',
+    short: '1 sentence, 8–20 words.',
+    medium: '1–2 sentences, 20–40 words.',
+    long: '2–3 sentences, 40–65 words.',
 }
 
 const buildPrompt = (
@@ -75,23 +75,19 @@ const buildPrompt = (
     const productName = typeof (product as any).getNameWithCategory === 'function'
         ? (product as any).getNameWithCategory()
         : product.name
-    const tools = 'Illustrator, Figma, Canva'
     const languageLabel = promptLanguageLabels[language]
     return [
-        `Write a genuine, human-sounding customer review for a digital font product in ${languageLabel}.`,
-        `It should feel like a real person wrote it — natural, specific, and not polished or salesy.`,
-        `Product: ${productName || 'Font'} (SKU: ${product.sku || 'N/A'})`,
-        `Category: ${product.getCategoryName?.() || product.category || 'font'}`,
-        `Keywords: ${product.mainKeyword || ''} ${product.secondKeyword ? `| ${product.secondKeyword}` : ''}`.trim(),
+        `Write a short, genuine customer review for a font in ${languageLabel}.`,
+        `It should sound like a real person who just used the font—natural, casual, and slightly imperfect.`,
+        `Product name: ${productName || 'This font'}.`,
+        `Category: ${product.getCategoryName?.() || product.category || 'font'}.`,
         `Target rating: ${review.rating} stars.`,
-        `Reviewer name: ${review.authorName || 'FirstName L.'}.`,
-        `Date context: ${review.date ? review.date.slice(0, 10) : 'recent'}.`,
-        `Tone: natural, conversational, lightly imperfect; avoid repetition and marketing language.`,
-        `Include one believable use case: logo, branding, packaging, social templates.`,
-        `Optionally mention a tool: ${tools}.`,
-        `Add one small concrete detail (e.g., file install, spacing, glyphs, mockup, print).`,
+        `Tone: simple, honest, not salesy.`,
+        `No technical details, no SKU, no marketing language.`,
+        `You may mention a simple use case (logo, branding, packaging, social post), but keep it minimal.`,
         `Length: ${promptLengthGuidance[length]}`,
-        review.text ? `Current draft (can rewrite): "${review.text}"` : '',
+        `Sometimes it can be very short, even just “Great, thanks.”`,
+        review.text ? `Current draft (rewrite if needed): "${review.text}"` : '',
         `Return only the review text.`,
         `Review #${index + 1}.`,
     ]

@@ -1,9 +1,19 @@
 import type { Product } from '@/@types/product'
 import type { ReviewDraft } from '@/@types/review'
-import { generateNameWithFormat, pickReviewText, generateBatchId } from '@/utils/reviewGenerator'
+import {
+    generateNameWithFormat,
+    pickReviewText,
+    generateBatchId,
+    type NameFormat,
+    type ReviewLocale,
+} from '@/utils/reviewGenerator'
 
 export type Freshness = 'ok' | 'stale' | 'very_stale' | 'none'
 export type BatchPreset = 'auto' | 'light' | 'normal' | 'boost'
+export type ReviewGenOptions = {
+    nameFormat?: NameFormat
+    locale?: ReviewLocale
+}
 
 const randInt = (min: number, max: number) =>
     Math.floor(Math.random() * (max - min + 1)) + min
@@ -117,7 +127,8 @@ export const generateRatingsForCount = (count: number): (3 | 4 | 5)[] => {
 
 export const generateReviewsForProduct = (
     product: Product,
-    count: number
+    count: number,
+    options: ReviewGenOptions = {}
 ): ReviewDraft[] => {
     if (count <= 0) return []
     const usedNames = new Set<string>()
@@ -132,7 +143,7 @@ export const generateReviewsForProduct = (
         let nameFormat: ReviewDraft['nameFormat'] = 'first_last_initial'
         let locale: ReviewDraft['locale'] = 'en_US'
         while (tries < 10) {
-            const generated = generateNameWithFormat()
+            const generated = generateNameWithFormat(options.nameFormat, options.locale)
             name = generated.name
             nameFormat = generated.format
             locale = generated.locale
@@ -157,6 +168,13 @@ export const generateReviewsForProduct = (
     }
 
     return reviews
+}
+
+export const generateSingleReviewForProduct = (
+    product: Product,
+    options: ReviewGenOptions = {}
+): ReviewDraft => {
+    return generateReviewsForProduct(product, 1, options)[0]
 }
 
 export const buildBatchPlan = (
