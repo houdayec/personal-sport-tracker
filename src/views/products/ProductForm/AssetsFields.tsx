@@ -61,7 +61,8 @@ const AssetsFields = (props: AssetsFormFields) => {
     const [originalFontBuffer, setOriginalFontBuffer] = useState<ArrayBuffer | null>(null)
     const [fontNamePreviewUrl, setFontNamePreviewUrl] = useState<string | null>(null)
 
-    const totalFilesToUpload = glyphAssets.length * 2 + (finalFontBuffer ? 6 : 0)
+    const hasFontFiles = !!finalFontBuffer && !!values.fontData?.generated?.fullName
+    const totalFilesToUpload = glyphAssets.length * 2 + (hasFontFiles ? 7 : 0) + (originalFontBuffer ? 2 : 0)
     const generationCompleted = glyphAssets.length > 0 && !isGenerating
     const uploadCompleted = !isUploading && values.fontData?.generated?.uploaded === true
 
@@ -472,6 +473,40 @@ const AssetsFields = (props: AssetsFormFields) => {
         task.on('state_changed', snap => console.log(path, (snap.bytesTransferred / snap.totalBytes * 100).toFixed(0) + '%'), err => rej(err), () => res())
     })
 
+    const runWithConcurrency = async (
+        tasks: Array<() => Promise<void>>,
+        limit: number,
+        onComplete?: (completed: number, total: number) => void
+    ) => {
+        let inFlight = 0
+        let index = 0
+        let completed = 0
+        const total = tasks.length
+        if (total === 0) return
+
+        return new Promise<void>((resolve, reject) => {
+            const launchNext = () => {
+                while (inFlight < limit && index < total) {
+                    const task = tasks[index++]
+                    inFlight++
+                    task()
+                        .then(() => {
+                            completed++
+                            onComplete?.(completed, total)
+                            inFlight--
+                            if (completed === total) {
+                                resolve()
+                                return
+                            }
+                            launchNext()
+                        })
+                        .catch(reject)
+                }
+            }
+            launchNext()
+        })
+    }
+
     const safeCharMap: Record<string, string> = {
         '!': '_exclamation', '@': '_at', '#': '_hash', '$': '_dollar', '%': '_percent', '^': '_caret', '&': '_ampersand', '*': '_asterisk', '(': '_parenLeft', ')': '_parenRight', '-': '_dash', '_': '_underscore', '=': '_equals', '+': '_plus', '[': '_bracketLeft', ']': '_bracketRight', '{': '_braceLeft', '}': '_braceRight', ';': '_semicolon', ':': '_colon', "'": '_quote', '"': '_doubleQuote', ',': '_comma', '.': '_dot', '<': '_lessThan', '>': '_greaterThan', '/': '_slash', '?': '_question', '\\': '_backslash', '|': '_pipe', '`': '_backtick', '~': '_tilde'
     }
@@ -532,9 +567,8 @@ const AssetsFields = (props: AssetsFormFields) => {
         const sku = values.sku
         if (!sku) return
         setIsUploading(true)
-        let count = 0
-
-        const hasFontFiles = finalFontBuffer && values.fontData?.generated?.fullName
+        setUploadCount(0)
+        const tasks: Array<() => Promise<void>> = []
 
         for (const { char, svgBlob, pngBlob } of glyphAssets) {
             let safeChar = char in safeCharMap ? safeCharMap[char] : char
@@ -542,10 +576,8 @@ const AssetsFields = (props: AssetsFormFields) => {
             if (char.length === 1 && /[a-zA-Z]/.test(char)) {
                 safeChar += char === char.toUpperCase() ? '_upper' : '_lower'
             }
-            await upload(`products/${sku}/files/Final Product/SVG/${safeChar}.svg`, svgBlob)
-            count++; setUploadCount(count)
-            await upload(`products/${sku}/files/Final Product/PNG/${safeChar}.png`, pngBlob)
-            count++; setUploadCount(count)
+            tasks.push(() => upload(`products/${sku}/files/Final Product/SVG/${safeChar}.svg`, svgBlob))
+            tasks.push(() => upload(`products/${sku}/files/Final Product/PNG/${safeChar}.png`, pngBlob))
         }
 
         if (hasFontFiles) {
@@ -557,40 +589,39 @@ const AssetsFields = (props: AssetsFormFields) => {
                 'ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿŒœŠšŸƒ€'
             const proofBlob = await generateFontProofPng(font!, chars.split(''))
 
-            await upload(`products/${sku}/files/font_map.png`, proofBlob)
-            count++; setUploadCount(count)
-            await upload(`products/${sku}/files/Final Product/Font Preview.png`, proofBlob)
-            count++; setUploadCount(count)
+            tasks.push(() => upload(`products/${sku}/files/font_map.png`, proofBlob))
+            tasks.push(() => upload(`products/${sku}/files/Final Product/Font Preview.png`, proofBlob))
 
             const helpPdf = await fetch('/data/files/How to Get Help.pdf').then(r => r.blob())
-            await upload(`products/${sku}/files/Final Product/How to Get Help.pdf`, helpPdf)
-            count++; setUploadCount(count)
+            tasks.push(() => upload(`products/${sku}/files/Final Product/How to Get Help.pdf`, helpPdf))
 
-            await upload(`products/${sku}/files/font.ttf`, ttfBlob)
-            count++; setUploadCount(count)
-            await upload(`products/${sku}/files/font.otf`, otfBlob)
-            count++; setUploadCount(count)
+            tasks.push(() => upload(`products/${sku}/files/font.ttf`, ttfBlob))
+            tasks.push(() => upload(`products/${sku}/files/font.otf`, otfBlob))
 
-            await upload(`products/${sku}/files/Final Product/Font Files To Install/${finalName}.ttf`, ttfBlob)
-            count++; setUploadCount(count)
-            await upload(`products/${sku}/files/Final Product/Font Files To Install/${finalName}.otf`, otfBlob)
-            count++; setUploadCount(count)
+            tasks.push(() => upload(`products/${sku}/files/Final Product/Font Files To Install/${finalName}.ttf`, ttfBlob))
+            tasks.push(() => upload(`products/${sku}/files/Final Product/Font Files To Install/${finalName}.otf`, otfBlob))
         }
 
         if (originalFontBuffer) {
             const originalTtfBlob = new Blob([originalFontBuffer], { type: 'font/ttf' })
             const originalOtfBlob = new Blob([originalFontBuffer], { type: 'font/otf' })
 
-            await upload(`products/${sku}/files/original_font.ttf`, originalTtfBlob)
-            count++; setUploadCount(count)
-            await upload(`products/${sku}/files/original_font.otf`, originalOtfBlob)
-            count++; setUploadCount(count)
+            tasks.push(() => upload(`products/${sku}/files/original_font.ttf`, originalTtfBlob))
+            tasks.push(() => upload(`products/${sku}/files/original_font.otf`, originalOtfBlob))
         }
+
+        let completed = 0
+        const hwConcurrency = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 6
+        const concurrency = Math.min(8, Math.max(3, Math.floor((hwConcurrency || 6) / 2)))
+        await runWithConcurrency(tasks, concurrency, (done) => {
+            completed = done
+            setUploadCount(done)
+        })
 
         setFieldValue('fontData.generated.uploaded', true)
         toast.push(
             <Notification title="Uploaded" type="success" duration={2500}>
-                Uploaded {count}/{totalFilesToUpload} files
+                Uploaded {completed}/{totalFilesToUpload} files
             </Notification>,
             { placement: 'top-center' }
         )

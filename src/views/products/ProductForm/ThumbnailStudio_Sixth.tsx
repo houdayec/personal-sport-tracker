@@ -5,7 +5,7 @@ import { FormItem } from '@/components/ui/Form'
 import ThumbnailUploader from './ThumbnailUploader'
 import { Product, ThumbnailsMetadata } from '@/@types/product'
 import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
-import { Card } from '@/components/ui'
+import { Card, Button } from '@/components/ui'
 import { Loader2 } from 'lucide-react'
 
 const PADDING = 100
@@ -30,6 +30,7 @@ const ThumbnailStudioSixthMockupTablet = ({
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
+    const [showTabletMeta, setShowTabletMeta] = useState(false)
 
     const metadata = (values.thumbnailsMetadata || {}) as ThumbnailsMetadata
     const fontColor = metadata.example_tablet_charColor || '#000000'
@@ -152,14 +153,29 @@ const ThumbnailStudioSixthMockupTablet = ({
                             <div className="w-full h-full flex items-center justify-center">Generating…</div>
                         )}
                     </div>
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                            <Button
+                                type="button"
+                                onClick={() => setShowTabletMeta(prev => !prev)}
+                                className="w-full"
+                            >
+                                {showTabletMeta ? 'Hide Metadata' : '🖋️ Metadata'}
+                            </Button>
+                            <div className="col-span-2">
+                                <ThumbnailUploader
+                                    canvasRef={canvasRef}
+                                    bgColor="#ffffff"
+                                    slug="example-tablet"
+                                    layout="grid"
+                                />
+                            </div>
+                        </div>
                         <ThumbnailStudioMetadata
                             slug="example-tablet"
-                        />
-                        <ThumbnailUploader
-                            canvasRef={canvasRef}
-                            bgColor="#ffffff"
-                            slug="example-tablet"
+                            showToggle={false}
+                            showMeta={showTabletMeta}
+                            className="mt-0 mb-0 space-y-3"
                         />
                     </div>
                 </div>

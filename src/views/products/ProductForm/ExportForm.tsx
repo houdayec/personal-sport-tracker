@@ -89,6 +89,37 @@ const initialExportSteps: ExportStep[] = [
     { id: 'complete', label: 'Finalizing export', status: 'idle', progress: '', percent: 0 },
 ];
 
+const THUMBNAIL_UPLOAD_CONCURRENCY = 3
+
+const runWithConcurrency = async (tasks: Array<() => Promise<void>>, limit: number) => {
+    let inFlight = 0
+    let index = 0
+    let completed = 0
+    const total = tasks.length
+    if (total === 0) return
+
+    return new Promise<void>((resolve, reject) => {
+        const launchNext = () => {
+            while (inFlight < limit && index < total) {
+                const task = tasks[index++]
+                inFlight++
+                task()
+                    .then(() => {
+                        completed++
+                        inFlight--
+                        if (completed === total) {
+                            resolve()
+                            return
+                        }
+                        launchNext()
+                    })
+                    .catch(reject)
+            }
+        }
+        launchNext()
+    })
+}
+
 
 const ExportForm = () => {
     const { values, setFieldValue, submitForm } = useFormikContext<Product>()
@@ -256,12 +287,12 @@ const ExportForm = () => {
         thumbnails.forEach(t => (init[t.path] = 'pending'))
         setStatusMap(init) // Set all thumbnails to pending initially
 
-        const mediaIds: number[] = []
+        const mediaIds: (number | null)[] = Array.from({ length: thumbnails.length }).fill(null)
         const totalThumbnails = thumbnails.length;
-        let uploadedCount = 0;
+        let completedCount = 0;
         let anyFailed = false
 
-        for (const { path } of thumbnails) {
+        const tasks = thumbnails.map(({ path }, index) => async () => {
             const fileName = path.split('/').pop() || ''
             const slug = fileName
                 .replace(/\.[^/.]+$/, '')
@@ -271,15 +302,8 @@ const ExportForm = () => {
 
             try {
                 console.log(`[uploadThumbnailsStep] • uploading ${slug}`)
-                uploadedCount++; // Increment count before upload attempt
-                updateExportStep(
-                    'thumbnails',
-                    'pending',
-                    `${uploadedCount}/${totalThumbnails}`,
-                    Math.round((uploadedCount / totalThumbnails) * 100)
-                ); // Update progress
                 const media = await uploadImageToWordPress(path, meta)
-                mediaIds.push(media.id)
+                mediaIds[index] = media.id
 
                 setFieldValue(`thumbnails.${slug}.wordpressData`, {
                     id: media.id,
@@ -295,23 +319,26 @@ const ExportForm = () => {
                 console.error(`[uploadThumbnailsStep] ✗ ${slug}`, err)
                 setStatusMap(s => ({ ...s, [path]: 'error' }))
                 anyFailed = true
-                // If one fails, mark the overall step as error, but continue trying others
+            } finally {
+                completedCount += 1
                 updateExportStep(
                     'thumbnails',
-                    'error',
-                    `${uploadedCount}/${totalThumbnails}`,
-                    Math.round((uploadedCount / totalThumbnails) * 100)
+                    anyFailed ? 'error' : 'pending',
+                    `${completedCount}/${totalThumbnails}`,
+                    Math.round((completedCount / Math.max(totalThumbnails, 1)) * 100)
                 );
             }
-        }
+        })
+
+        await runWithConcurrency(tasks, THUMBNAIL_UPLOAD_CONCURRENCY)
         // After loop, check if any thumbnail failed to set overall step status
         updateExportStep(
             'thumbnails',
             anyFailed ? 'error' : 'success',
-            `${uploadedCount}/${totalThumbnails}`,
+            `${completedCount}/${totalThumbnails}`,
             100
         );
-        return mediaIds
+        return mediaIds.filter((id): id is number => typeof id === 'number')
     }
 
     // Packages final product files into a ZIP and uploads to Firebase & WP
@@ -320,23 +347,35 @@ const ExportForm = () => {
         updateExportStep('package', 'pending', 'Preparing…', 5); // Set step to pending at start
 
         try {
-            updateExportStep('package', 'pending', 'Generating ZIP…', 25);
+            const zipProgressStart = 10
+            const zipProgressSpan = 60
+            updateExportStep('package', 'pending', 'Generating ZIP…', zipProgressStart);
             const { zipBlob, zipFilename } = await generateZipFromFirebase(
                 `products/${values.sku}/files/Final Product`,
                 values.sku,
                 values.name,
+                (completed, total) => {
+                    const safeTotal = Math.max(total, 1)
+                    const pct = zipProgressStart + Math.round((completed / safeTotal) * zipProgressSpan)
+                    updateExportStep(
+                        'package',
+                        'pending',
+                        `Zipping files ${completed}/${total}`,
+                        pct
+                    )
+                }
             )
             console.log('[packageStep]   ✓ ZIP generated')
 
-            updateExportStep('package', 'pending', 'Uploading ZIP to Firebase…', 50);
+            updateExportStep('package', 'pending', 'Uploading ZIP to Firebase…', 75);
             const firebaseUrl = await uploadZipToFirebase(zipBlob, values.sku, zipFilename)
             console.log('[packageStep]   ✓ uploaded to Firebase')
 
-            updateExportStep('package', 'pending', 'Uploading ZIP to WordPress…', 75);
+            updateExportStep('package', 'pending', 'Uploading ZIP to WordPress…', 85);
             const wpZipMedia = await uploadZipToWordPress(zipBlob, zipFilename)
             console.log('[packageStep]   ✓ uploaded to WP (ID:', wpZipMedia.id, ')')
 
-            updateExportStep('package', 'pending', 'Assigning ZIP in FileBird…', 90);
+            updateExportStep('package', 'pending', 'Assigning ZIP in FileBird…', 95);
             await assignZipToFileBird(fbFolderId, wpZipMedia.id)
             console.log('[packageStep]   ✓ assigned to FileBird folder', fbFolderId)
 

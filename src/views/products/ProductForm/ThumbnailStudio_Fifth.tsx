@@ -5,7 +5,7 @@ import { FormItem } from '@/components/ui/Form'
 import ThumbnailUploader from './ThumbnailUploader'
 import { Product, ThumbnailsMetadata } from '@/@types/product'
 import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
-import { Card } from '@/components/ui'
+import { Card, Button } from '@/components/ui'
 import { Loader2 } from 'lucide-react'
 
 const PADDING = 100
@@ -30,6 +30,7 @@ const ThumbnailStudioFifthMockupLaptop = ({
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
+    const [showLaptopMeta, setShowLaptopMeta] = useState(false)
     // The font-ready state and its useEffect have been removed.
     // The component now relies on the isFontReady prop from the parent.
 
@@ -173,12 +174,29 @@ const ThumbnailStudioFifthMockupLaptop = ({
                             <div className="w-full h-full flex items-center justify-center">Generating…</div>
                         )}
                     </div>
-                    <div className="pt-2">
-                        <ThumbnailStudioMetadata slug="example-laptop" />
-                        <ThumbnailUploader
-                            canvasRef={canvasRef}
-                            bgColor="#ffffff"
+                    <div className="pt-2 space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                            <Button
+                                type="button"
+                                onClick={() => setShowLaptopMeta(prev => !prev)}
+                                className="w-full"
+                            >
+                                {showLaptopMeta ? 'Hide Metadata' : '🖋️ Metadata'}
+                            </Button>
+                            <div className="col-span-2">
+                                <ThumbnailUploader
+                                    canvasRef={canvasRef}
+                                    bgColor="#ffffff"
+                                    slug="example-laptop"
+                                    layout="grid"
+                                />
+                            </div>
+                        </div>
+                        <ThumbnailStudioMetadata
                             slug="example-laptop"
+                            showToggle={false}
+                            showMeta={showLaptopMeta}
+                            className="mt-0 mb-0 space-y-3"
                         />
                     </div>
                 </div>

@@ -26,6 +26,41 @@ import { db, storage } from '@/firebase'
 import { ref as dbRef, remove } from 'firebase/database'
 import { deleteDoc, doc } from 'firebase/firestore'
 
+const ZIP_DOWNLOAD_CONCURRENCY = 6
+const ZIP_COMPRESSION_LEVEL = 3
+
+const runWithConcurrency = async (
+    tasks: Array<() => Promise<void>>,
+    limit: number,
+) => {
+    let inFlight = 0
+    let index = 0
+    let completed = 0
+    const total = tasks.length
+    if (total === 0) return
+
+    return new Promise<void>((resolve, reject) => {
+        const launchNext = () => {
+            while (inFlight < limit && index < total) {
+                const task = tasks[index++]
+                inFlight++
+                task()
+                    .then(() => {
+                        completed++
+                        inFlight--
+                        if (completed === total) {
+                            resolve()
+                            return
+                        }
+                        launchNext()
+                    })
+                    .catch(reject)
+            }
+        }
+        launchNext()
+    })
+}
+
 /**
  * Recursively lists all file references under a given Firebase Storage reference.
  */
@@ -63,7 +98,8 @@ export async function exportThumbnailsToFileBird(
 export async function generateZipFromFirebase(
     firebaseFolderPath: string,
     sku: string,
-    fontName: string
+    fontName: string,
+    onProgress?: (completed: number, total: number) => void
 ): Promise<{ zipBlob: Blob; zipFilename: string }> {
     const base = firebaseFolderPath.replace(/\/$/, '')
     console.log(`[generateZipFromFirebase] zipping folder ${base}`)
@@ -72,17 +108,27 @@ export async function generateZipFromFirebase(
     const files = await listAllFilesRecursively(rootRef)
 
     console.log(`[generateZipFromFirebase] found ${files.length} files`)
-    for (const f of files) {
+    onProgress?.(0, files.length)
+    const tasks = files.map((f) => async () => {
         const relPath = f.fullPath.replace(base + '/', '')
         console.log(`[generateZipFromFirebase] adding ${relPath}`)
-        const blob = await (await fetch(await getDownloadURL(f))).blob()
+        const url = await getDownloadURL(f)
+        const blob = await (await fetch(url)).blob()
         zip.file(relPath, blob)
-    }
+    })
+    let completed = 0
+    const wrappedTasks = tasks.map((task) => async () => {
+        await task()
+        completed += 1
+        onProgress?.(completed, files.length)
+    })
+    await runWithConcurrency(wrappedTasks, ZIP_DOWNLOAD_CONCURRENCY)
 
     const buffer = await zip.generateAsync({
         type: 'arraybuffer',
         compression: 'DEFLATE',
-        compressionOptions: { level: 6 },
+        compressionOptions: { level: ZIP_COMPRESSION_LEVEL },
+        streamFiles: true,
     })
     const zipBlob = new Blob([buffer], { type: 'application/zip' })
     const zipFilename = `${sku}_${fontName}.zip`
@@ -104,12 +150,13 @@ export async function uploadZipToFirebase(
     console.log(`[uploadZipToFirebase] uploading ${zipFilename}`)
     const path = `products/${sku}/${zipFilename}`
     const zipRef = storageRef(storage, path)
-    await uploadBytes(zipRef, zipBlob)
-    const url = await getDownloadURL(zipRef)
-
     const path2 = `products/${sku}/files/Final Product.zip`
     const zipRef2 = storageRef(storage, path2)
-    await uploadBytes(zipRef2, zipBlob)
+    await Promise.all([
+        uploadBytes(zipRef, zipBlob),
+        uploadBytes(zipRef2, zipBlob),
+    ])
+    const url = await getDownloadURL(zipRef)
     console.log(`[uploadZipToFirebase] uploaded at ${url}`)
     return url
 }

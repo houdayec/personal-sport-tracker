@@ -5,7 +5,7 @@ import { FormItem } from '@/components/ui/Form'
 import ThumbnailUploader from './ThumbnailUploader'
 import { Product, ThumbnailsMetadata } from '@/@types/product'
 import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
-import { Card } from '@/components/ui'
+import { Card, Button } from '@/components/ui'
 import { Loader2 } from 'lucide-react'
 
 const IMAGE_SRC = '/img/others/thumbnail-preview.png'
@@ -30,6 +30,7 @@ const ThumbnailStudio_Sentence = ({
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+    const [showSentenceMeta, setShowSentenceMeta] = useState(false)
     // The fontLoaded state has been removed, as the component now relies on the isFontReady prop.
 
     const metadata = (values.thumbnailsMetadata || {}) as ThumbnailsMetadata
@@ -162,12 +163,29 @@ const ThumbnailStudio_Sentence = ({
                             <div className="w-full h-full flex items-center justify-center">Loading…</div>
                         )}
                     </div>
-                    <div className="pt-2">
-                        <ThumbnailStudioMetadata slug="sentence" />
-                        <ThumbnailUploader
-                            canvasRef={canvasRef}
-                            bgColor="#ffffff"
+                    <div className="pt-2 space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                            <Button
+                                type="button"
+                                onClick={() => setShowSentenceMeta(prev => !prev)}
+                                className="w-full"
+                            >
+                                {showSentenceMeta ? 'Hide Metadata' : '🖋️ Metadata'}
+                            </Button>
+                            <div className="col-span-2">
+                                <ThumbnailUploader
+                                    canvasRef={canvasRef}
+                                    bgColor="#ffffff"
+                                    slug="sentence"
+                                    layout="grid"
+                                />
+                            </div>
+                        </div>
+                        <ThumbnailStudioMetadata
                             slug="sentence"
+                            showToggle={false}
+                            showMeta={showSentenceMeta}
+                            className="mt-0 mb-0 space-y-3"
                         />
                     </div>
                 </div>

@@ -312,6 +312,7 @@ export type ThumbnailsMetadata = {
     characters_preview_autoFontSize?: boolean
     characters_preview_manualFontSize?: number
     characters_preview_lineHeightRatio?: number
+    characters_preview_charLines?: number
 
     included_files_charColor?: string
 

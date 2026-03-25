@@ -5,7 +5,7 @@ import { FormItem } from '@/components/ui/Form'
 import ThumbnailUploader from './ThumbnailUploader'
 import { Product, ThumbnailsMetadata } from '@/@types/product'
 import ThumbnailStudioMetadata from './ThumbnailStudioMetadata'
-import { Card } from '@/components/ui'
+import { Card, Button } from '@/components/ui'
 import { Loader2 } from 'lucide-react'
 
 const PADDING = 100
@@ -30,6 +30,7 @@ const ThumbnailStudioThirdCharacters = ({
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
+    const [showCharactersMeta, setShowCharactersMeta] = useState(false)
 
     // The redundant local state for isFontReady and productFontFamily have been removed.
 
@@ -38,6 +39,7 @@ const ThumbnailStudioThirdCharacters = ({
     const showTextBox = metadata.characters_preview_showTextAreaBox === true
     const yOffset = metadata.characters_preview_yOffset || 0
     const lineHeightRatio = metadata.characters_preview_lineHeightRatio || 1.5
+    const charLines = metadata.characters_preview_charLines || 4
 
     // New metadata fields for manual font size control
     const autoFontSize = metadata.characters_preview_autoFontSize ?? true;
@@ -47,6 +49,12 @@ const ThumbnailStudioThirdCharacters = ({
     const showLowercase = metadata.characters_preview_showLowercase ?? true
     const showNumbers = metadata.characters_preview_showNumbers ?? true
     const showSpecials = metadata.characters_preview_showSpecials ?? true
+
+    useEffect(() => {
+        if (!values.thumbnailsMetadata?.characters_preview_charLines) {
+            setFieldValue('thumbnailsMetadata.characters_preview_charLines', 4)
+        }
+    }, [setFieldValue, values.thumbnailsMetadata?.characters_preview_charLines])
 
     // Load background image
     useEffect(() => {
@@ -79,35 +87,36 @@ const ThumbnailStudioThirdCharacters = ({
             height: TEXT_BOX.height - 2 * PADDING,
         }
 
-        const letterPairs = [
-            'Aa Bb Cc Dd Ee',
-            'Ff Gg Hh Ii Jj',
-            'Kk Ll Mm Nn Oo',
-            'Pp Qq Rr Ss Tt Uu',
-            'Vv Ww Xx Yy Zz'
-        ]
+        const uppercase = 'A B C D E F G H I J K L M N O P Q R S T U V W X Y Z'.split(' ')
+        const lowercase = 'a b c d e f g h i j k l m n o p q r s t u v w x y z'.split(' ')
+        const numbers = '0 1 2 3 4 5 6 7 8 9'.split(' ')
+        const specials = '! @ # $ % ^ & * ( ) - _ = +'.split(' ')
 
-        const uppercaseLines = [
-            'A B C D E F G',
-            'H I J K L M',
-            'N O P Q R S T',
-            'U V W X Y Z'
-        ]
-
-        const lowercaseLines = uppercaseLines.map(l => l.toLowerCase())
-        const numberLine = '0 1 2 3 4 5 6 7 8 9'
-        const specialLines = [
-            '! @ # $ % ^',
-            '& * ( ) - _ = +'
-        ]
+        const splitIntoLines = (arr: string[], lineCount: number) => {
+            const perLine = Math.ceil(arr.length / lineCount)
+            const res: string[] = []
+            for (let i = 0; i < lineCount; i++) {
+                const slice = arr.slice(i * perLine, (i + 1) * perLine)
+                if (slice.length) res.push(slice.join(' '))
+            }
+            return res
+        }
 
         let lines: string[] = []
-        if (main_showUppercase && showLowercase) lines = [...letterPairs]
-        else if (main_showUppercase) lines = [...uppercaseLines]
-        else if (showLowercase) lines = [...lowercaseLines]
-        if (showNumbers) lines.push(numberLine)
-        if (showSpecials) lines.push(...specialLines)
-        if (lines.length === 0) lines = [...letterPairs]
+        if (main_showUppercase && showLowercase) {
+            const pairs = uppercase.map((u, i) => `${u}${lowercase[i]}`)
+            lines = splitIntoLines(pairs, charLines)
+        } else if (main_showUppercase) {
+            lines = splitIntoLines(uppercase, charLines)
+        } else if (showLowercase) {
+            lines = splitIntoLines(lowercase, charLines)
+        }
+        if (showNumbers) lines.push(numbers.join(' '))
+        if (showSpecials) lines.push(...splitIntoLines(specials, 2))
+        if (lines.length === 0) {
+            const pairs = uppercase.map((u, i) => `${u}${lowercase[i]}`)
+            lines = splitIntoLines(pairs, charLines)
+        }
 
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
@@ -148,7 +157,7 @@ const ThumbnailStudioThirdCharacters = ({
         })
 
         setPreviewUrl(canvas.toDataURL('image/png'))
-    }, [metadata, yOffset, bgImage, isFontReady, productFontFamily, autoFontSize, manualFontSize])
+    }, [metadata, yOffset, bgImage, isFontReady, productFontFamily, autoFontSize, manualFontSize, charLines])
 
     useEffect(() => {
         const id = requestAnimationFrame(draw)
@@ -177,12 +186,29 @@ const ThumbnailStudioThirdCharacters = ({
                             <div className="w-full h-full flex items-center justify-center">Generating…</div>
                         )}
                     </div>
-                    <div className="pt-2">
-                        <ThumbnailStudioMetadata slug="characters-preview" />
-                        <ThumbnailUploader
-                            canvasRef={canvasRef}
-                            bgColor="#ffffff"
+                    <div className="pt-2 space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                            <Button
+                                type="button"
+                                onClick={() => setShowCharactersMeta(prev => !prev)}
+                                className="w-full"
+                            >
+                                {showCharactersMeta ? 'Hide Metadata' : '🖋️ Metadata'}
+                            </Button>
+                            <div className="col-span-2">
+                                <ThumbnailUploader
+                                    canvasRef={canvasRef}
+                                    bgColor="#ffffff"
+                                    slug="characters-preview"
+                                    layout="grid"
+                                />
+                            </div>
+                        </div>
+                        <ThumbnailStudioMetadata
                             slug="characters-preview"
+                            showToggle={false}
+                            showMeta={showCharactersMeta}
+                            className="mt-0 mb-0 space-y-3"
                         />
                     </div>
                 </div>
@@ -230,6 +256,14 @@ const ThumbnailStudioThirdCharacters = ({
                                     onChange={e => setFieldValue(field.name, parseInt(e.target.value))}
                                 />
                             )}
+                        </Field>
+                    </FormItem>
+                    <FormItem label="Lines">
+                        <Field name="thumbnailsMetadata.characters_preview_charLines" as="select" className="input w-full">
+                            <option value={3}>3 lines</option>
+                            <option value={4}>4 lines</option>
+                            <option value={5}>5 lines</option>
+                            <option value={6}>6 lines</option>
                         </Field>
                     </FormItem>
                     <FormItem label="Line Height">

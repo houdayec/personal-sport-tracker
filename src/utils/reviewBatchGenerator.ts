@@ -86,9 +86,10 @@ export const generateDatesForCount = (count: number): string[] => {
             randomDateBetweenDays(60, 120),
         ])
     }
+    const maxAgeDays = count > 5 ? 180 : 120
     const dates: string[] = [randomDateBetweenDays(0, 7)]
     while (dates.length < count) {
-        dates.push(randomDateBetweenDays(14, 120))
+        dates.push(randomDateBetweenDays(14, maxAgeDays))
     }
     return shuffle(dates)
 }

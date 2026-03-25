@@ -14,6 +14,7 @@ type Props = {
     canvasRef: RefObject<HTMLCanvasElement | null>
     bgColor: string
     slug: string
+    layout?: 'stack' | 'row' | 'grid'
 }
 
 const canvasToBlob = (canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> =>
@@ -30,7 +31,7 @@ const cropSquareFromCanvas = (canvas: HTMLCanvasElement): HTMLCanvasElement => {
     return cropped
 }
 
-const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
+const ThumbnailUploader = ({ canvasRef, bgColor, slug, layout = 'stack' }: Props) => {
     const { values, setFieldValue } = useFormikContext<Product>()
     const [isUploading, setIsUploading] = useState(false)
     const [thumbnails, setThumbnails] = useState<Blob[]>([])
@@ -112,7 +113,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
             <Notification title="Thumbnails Ready" type="success" duration={2500}>
                 {images.length} versions generated
             </Notification>,
-            { placement: 'bottom-center' }
+            { placement: 'bottom-start' }
         )
     }
 
@@ -150,7 +151,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
                 <Notification title="Thumbnails Uploaded" type="success" duration={2500}>
                     {filename} in JPG & WEBP formats
                 </Notification>,
-                { placement: 'bottom-center' }
+                { placement: 'bottom-start' }
             )
             setUploadSuccess(true) // Set success state to true on successful upload
         } catch (error) {
@@ -159,7 +160,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
                 <Notification title="Upload Failed" type="danger" duration={2500}>
                     Failed to upload thumbnails.
                 </Notification>,
-                { placement: 'bottom-center' }
+                { placement: 'bottom-start' }
             )
             setUploadSuccess(false) // Ensure success is false on error
         } finally {
@@ -167,10 +168,22 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
         }
     }
 
+    const isRow = layout === 'row'
+    const isGrid = layout === 'grid'
+    const buttonClass = isRow ? '' : 'w-full'
+
     return (
-        <div className="w-full">
-            <div className="space-y-2">
-                <Button onClick={generateThumbnails} className="w-full" type='button'>
+        <div className={isRow ? "" : "w-full"}>
+            <div
+                className={
+                    isGrid
+                        ? "grid grid-cols-2 gap-2 w-full"
+                        : isRow
+                            ? "flex flex-wrap gap-2"
+                            : "space-y-2"
+                }
+            >
+                <Button onClick={generateThumbnails} className={buttonClass} type='button'>
                     ⚙️ Generate
                 </Button>
                 <Button
@@ -181,7 +194,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
                     // Disable if uploading, no thumbnails, or already successfully uploaded
                     disabled={isUploading || !thumbnails.length || uploadSuccess}
                     // Apply custom background color only when uploadSuccess is true
-                    className={`w-full ${uploadSuccess ? 'bg-emerald-500 text-white hover:bg-emerald-600' : ''}`}
+                    className={`${buttonClass} ${uploadSuccess ? 'bg-emerald-500 text-white hover:bg-emerald-600' : ''}`}
                 >
                     {isUploading ? (
                         <div className="flex items-center justify-center gap-2 w-full">
@@ -192,40 +205,40 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug }: Props) => {
                         <>📤 Upload</>
                     )}
                 </Button>
-                {previewData && (
-                    <>
-                        <div>
-                            <label className="block mb-1 font-semibold">Format</label>
-                            <Radio.Group value={selectedFormat} onChange={val => setSelectedFormat(val as any)} className="flex gap-4">
-                                <Radio value="png">PNG</Radio>
-                                <Radio value="jpg">JPG</Radio>
-                                <Radio value="webp">WEBP</Radio>
-                            </Radio.Group>
-                        </div>
-
-                        <div>
-                            <label className="block mb-1 font-semibold">Aspect Ratio</label>
-                            <Radio.Group value={selectedAspect} onChange={val => setSelectedAspect(val as any)} className="flex gap-4">
-                                <Radio value="square">Square</Radio>
-                                <Radio value="landscape">Landscape</Radio>
-                            </Radio.Group>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-                            {previewData.images
-                                .filter(img => img.format === selectedFormat && img.type === selectedAspect)
-                                .map((img, idx) => (
-                                    <div key={idx} className="text-center">
-                                        <img src={img.url} className="w-full max-w-full border rounded object-contain" alt={img.type} />
-                                        <div className="text-sm mt-1">
-                                            {img.type} – {(img.size / 1024).toFixed(1)} KB
-                                        </div>
-                                    </div>
-                                ))}
-                        </div>
-                    </>
-                )}
             </div>
+            {previewData && (
+                <div className="mt-3 space-y-3">
+                    <div>
+                        <label className="block mb-1 font-semibold">Format</label>
+                        <Radio.Group value={selectedFormat} onChange={val => setSelectedFormat(val as any)} className="flex gap-4">
+                            <Radio value="png">PNG</Radio>
+                            <Radio value="jpg">JPG</Radio>
+                            <Radio value="webp">WEBP</Radio>
+                        </Radio.Group>
+                    </div>
+
+                    <div>
+                        <label className="block mb-1 font-semibold">Aspect Ratio</label>
+                        <Radio.Group value={selectedAspect} onChange={val => setSelectedAspect(val as any)} className="flex gap-4">
+                            <Radio value="square">Square</Radio>
+                            <Radio value="landscape">Landscape</Radio>
+                        </Radio.Group>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                        {previewData.images
+                            .filter(img => img.format === selectedFormat && img.type === selectedAspect)
+                            .map((img, idx) => (
+                                <div key={idx} className="text-center">
+                                    <img src={img.url} className="w-full max-w-full border rounded object-contain" alt={img.type} />
+                                    <div className="text-sm mt-1">
+                                        {img.type} – {(img.size / 1024).toFixed(1)} KB
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

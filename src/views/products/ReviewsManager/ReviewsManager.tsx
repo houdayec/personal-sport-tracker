@@ -431,25 +431,28 @@ const ReviewsManager = () => {
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-end gap-4 mb-4">
-                    <div className="min-w-[240px] flex-1">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Search</label>
-                        <Input
-                            placeholder="Search by name or SKU"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full"
-                        />
+                <div className="flex flex-col lg:flex-row lg:items-end lg:flex-nowrap gap-3 mb-4">
+                    <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                        <div className="min-w-[220px] flex-1">
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Search</label>
+                            <Input
+                                placeholder="Search by name or SKU"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full"
+                            />
+                        </div>
+                        <div className="min-w-[200px]">
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Filter</label>
+                            <Select
+                                options={staleFilterOptions}
+                                value={staleFilterOptions.find(opt => opt.value === staleFilter)}
+                                onChange={(opt) => setStaleFilter((opt?.value as StaleFilter) || 'all')}
+                            />
+                        </div>
                     </div>
-                    <div className="min-w-[220px]">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Filter</label>
-                        <Select
-                            options={staleFilterOptions}
-                            value={staleFilterOptions.find(opt => opt.value === staleFilter)}
-                            onChange={(opt) => setStaleFilter((opt?.value as StaleFilter) || 'all')}
-                        />
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 lg:ml-auto">
                         {statsLoading ? (
                             <>
                                 <Spinner size="sm" />
@@ -471,11 +474,13 @@ const ReviewsManager = () => {
                             </span>
                         )}
                     </div>
-                    <div className="flex items-center gap-2 ml-auto">
+
+                    <div className="flex items-center gap-2 lg:ml-3">
                         <Button size="sm" variant="twoTone" onClick={refreshStats} disabled={statsLoading || !rows.length}>
                             Refresh stats
                         </Button>
                         <Button
+                            size="sm"
                             variant="solid"
                             disabled={!selectedSkus.length}
                             onClick={handleGeneratePreview}

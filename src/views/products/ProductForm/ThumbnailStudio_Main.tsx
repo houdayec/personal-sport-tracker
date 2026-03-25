@@ -105,7 +105,7 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
         main_patternDiagonal = true,
         main_charVerticalOffset = 0,
         main_watermarkVersion = 'black',
-        main_charLines = 3,
+        main_charLines = 4,
         main_charLineHeight = 80,
     } = meta
 
@@ -122,6 +122,12 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
             setFieldValue('thumbnailsMetadata.main_watermarkColor', main_titleColor)
         }
     }, [main_titleColor])
+
+    useEffect(() => {
+        if (!values.thumbnailsMetadata?.main_charLines) {
+            setFieldValue('thumbnailsMetadata.main_charLines', 4)
+        }
+    }, [setFieldValue, values.thumbnailsMetadata?.main_charLines])
 
     useEffect(() => {
         const iconName = meta.main_patternIcon
@@ -348,6 +354,7 @@ const ThumbnailPreviewStudio = ({ isFontReady, productFontFamily }: { isFontRead
         productFontFamily,
         main_charVerticalOffset,
         main_charLines,
+        main_charLineHeight,
     ])
 
     useEffect(() => {

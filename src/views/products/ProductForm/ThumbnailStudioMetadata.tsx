@@ -8,11 +8,23 @@ import React from 'react'
 
 type Props = {
     slug: string
+    showToggle?: boolean
+    showMeta?: boolean
+    onToggle?: () => void
+    className?: string
 }
 
-const ThumbnailStudioMetadata = ({ slug }: Props) => {
+const ThumbnailStudioMetadata = ({ slug, showToggle = true, showMeta, onToggle, className }: Props) => {
     const { values, setFieldValue } = useFormikContext<Product>()
-    const [showMeta, setShowMeta] = useState(false)
+    const [localShowMeta, setLocalShowMeta] = useState(false)
+    const isOpen = typeof showMeta === 'boolean' ? showMeta : localShowMeta
+    const toggleMeta = () => {
+        if (onToggle) {
+            onToggle()
+            return
+        }
+        setLocalShowMeta(prev => !prev)
+    }
 
     const mainKeyword = typeof values.mainKeyword === 'string'
         ? values.mainKeyword.trim().toLowerCase()
@@ -76,12 +88,14 @@ const ThumbnailStudioMetadata = ({ slug }: Props) => {
     }, [mainKeyword, secondKeyword, slug])
 
     return (
-        <div className="mt-2 mb-2 space-y-4">
-            <Button type="button" onClick={() => setShowMeta(!showMeta)} className="w-full">
-                {showMeta ? 'Hide Metadata' : '🖋️ Edit Metadata'}
-            </Button>
+        <div className={className ?? "mt-2 mb-2 space-y-4"}>
+            {showToggle && (
+                <Button type="button" onClick={toggleMeta} className="w-full">
+                    {isOpen ? 'Hide Metadata' : '🖋️ Metadata'}
+                </Button>
+            )}
 
-            {showMeta && (
+            {isOpen && (
                 <div className="space-y-3">
                     <FormItem label="Alt Text">
                         <Field name={`thumbnails.${slug}.metadata.alt`} component={Input} />

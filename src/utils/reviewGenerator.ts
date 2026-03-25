@@ -138,6 +138,7 @@ const randomDateBetween = (start: Date, end: Date) => {
 const generateDates = (count: number): string[] => {
     const now = new Date()
     const daysAgo = (n: number) => new Date(now.getTime() - n * 24 * 60 * 60 * 1000)
+    const maxAgeDays = count > 5 ? 180 : 120
     const burstCount = Math.min(count, randInt(1, 2))
     const dates: Date[] = []
 
@@ -145,7 +146,7 @@ const generateDates = (count: number): string[] => {
         dates.push(randomDateBetween(daysAgo(7), now))
     }
     for (let i = burstCount; i < count; i++) {
-        dates.push(randomDateBetween(daysAgo(120), daysAgo(8)))
+        dates.push(randomDateBetween(daysAgo(maxAgeDays), daysAgo(8)))
     }
 
     return shuffle(dates).map((d) => d.toISOString())
