@@ -5,6 +5,7 @@ import HeaderLogo from '@/components/template/HeaderLogo'
 import SecondaryHeader from '@/components/template/SecondaryHeader'
 import MobileNav from '@/components/template/MobileNav'
 import View from '@/views'
+import WebsiteAdminButton from '@/components/custom/WebsiteAdminButton'
 
 const HeaderActionsStart = () => {
     return (
@@ -19,6 +20,7 @@ const HeaderActionsEnd = () => {
     return (
         <>
             <SidePanel />
+            <WebsiteAdminButton />
             <UserDropdown hoverable={false} />
         </>
     )

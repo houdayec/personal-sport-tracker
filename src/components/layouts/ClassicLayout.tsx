@@ -7,6 +7,7 @@ import SideNav from '@/components/template/SideNav'
 import View from '@/views'
 import ShortcutSelector from '../custom/ShortcutSelector'
 import IPStatusBadge from '../custom/IPStatusBadge'
+import WebsiteAdminButton from '@/components/custom/WebsiteAdminButton'
 
 const HeaderActionsStart = () => {
     return (
@@ -22,6 +23,7 @@ const HeaderActionsEnd = () => {
         <>
             {/* <SidePanel /> */}
             <ShortcutSelector />
+            <WebsiteAdminButton />
             <IPStatusBadge />
             <UserDropdown hoverable={false} />
         </>
