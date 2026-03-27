@@ -47,6 +47,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug, layout = 'stack' }: Props
     const [selectedFormat, setSelectedFormat] = useState<'png' | 'jpg' | 'webp'>('webp')
     const [selectedAspect, setSelectedAspect] = useState<'square' | 'landscape'>('square')
     const [uploadSuccess, setUploadSuccess] = useState(false) // State to track upload success
+    const [isGenerating, setIsGenerating] = useState(false)
 
     const sku = values.sku
     const main = values.mainKeyword?.toLowerCase?.() || 'main'
@@ -56,6 +57,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug, layout = 'stack' }: Props
     // Generate square & landscape image versions
     const generateThumbnails = async () => {
         if (!canvasRef.current) return
+        setIsGenerating(true)
 
         // Reset upload success state when new thumbnails are generated
         setUploadSuccess(false)
@@ -115,6 +117,7 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug, layout = 'stack' }: Props
             </Notification>,
             { placement: 'bottom-start' }
         )
+        setIsGenerating(false)
     }
 
     // Upload only JPG & WEBP versions to Firebase
@@ -183,8 +186,15 @@ const ThumbnailUploader = ({ canvasRef, bgColor, slug, layout = 'stack' }: Props
                             : "space-y-2"
                 }
             >
-                <Button onClick={generateThumbnails} className={buttonClass} type='button'>
-                    ⚙️ Generate
+                <Button onClick={generateThumbnails} className={buttonClass} type='button' disabled={isGenerating}>
+                    {isGenerating ? (
+                        <div className="flex items-center justify-center gap-2 w-full">
+                            <Spinner size={16} />
+                            Generating…
+                        </div>
+                    ) : (
+                        <>⚙️ Generate</>
+                    )}
                 </Button>
                 <Button
                     onClick={handleUpload}

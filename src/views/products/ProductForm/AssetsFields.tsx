@@ -53,6 +53,7 @@ const AssetsFields = (props: AssetsFormFields) => {
     const [glyphAssets, setGlyphAssets] = useState<GlyphAsset[]>([])
     const [isGenerating, setIsGenerating] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
+    const [generationProgress, setGenerationProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 })
     const [uploadCount, setUploadCount] = useState(0)
     const [trademarkSvgUrl, setTrademarkSvgUrl] = useState<string | null>(null)
     const [isFontLoading, setIsFontLoading] = useState(false)
@@ -252,14 +253,37 @@ const AssetsFields = (props: AssetsFormFields) => {
         if (!file) return
         const buf = await file.arrayBuffer()
         setOriginalFontBuffer(buf)
-        const parsed = opentype.parse(buf)
+        let parsed: opentype.Font
+        try {
+            parsed = opentype.parse(buf)
+        } catch (err) {
+            console.error('Failed to parse font file:', err)
+            toast.push(
+                <Notification title="Font load failed" type="danger" duration={3000}>
+                    This font cannot be parsed. Try a different TTF/OTF file.
+                </Notification>,
+                { placement: 'top-center' }
+            )
+            return
+        }
+
         const isOtf = file.name.toLowerCase().endsWith('.otf')
         let finalFile = file
         if (isOtf) {
-            const ttfBuf = parsed.toArrayBuffer()
-            const blob = new Blob([ttfBuf], { type: 'font/ttf' })
-            const newName = file.name.replace(/\.otf$/i, '.ttf')
-            finalFile = new File([blob], newName, { type: 'font/ttf' })
+            try {
+                const ttfBuf = parsed.toArrayBuffer()
+                const blob = new Blob([ttfBuf], { type: 'font/ttf' })
+                const newName = file.name.replace(/\.otf$/i, '.ttf')
+                finalFile = new File([blob], newName, { type: 'font/ttf' })
+            } catch (err) {
+                console.warn('OTF to TTF conversion failed, using original OTF:', err)
+                toast.push(
+                    <Notification title="OTF conversion skipped" type="warning" duration={3000}>
+                        This OTF uses unsupported features. Using the original OTF instead.
+                    </Notification>,
+                    { placement: 'top-center' }
+                )
+            }
         }
 
         setTtfFile(finalFile)
@@ -514,13 +538,36 @@ const AssetsFields = (props: AssetsFormFields) => {
     const generateGlyphAssets = async () => {
         if (!font) return
         setIsGenerating(true)
+        setGenerationProgress({ done: 0, total: 0 })
         setUploadCount(0)
         setFieldValue('fontData.generated.uploaded', false)
 
         applyMetadata()
         injectTrademarkIntoNotdef()
 
-        const buffer = font.toArrayBuffer()
+        let buffer: ArrayBuffer | null = null
+        try {
+            buffer = font.toArrayBuffer()
+        } catch (err) {
+            console.warn('Font export failed, falling back to original buffer:', err)
+            buffer = originalFontBuffer
+            toast.push(
+                <Notification title="Font export fallback" type="warning" duration={3500}>
+                    Some font features aren’t supported. Using the original font file for export.
+                </Notification>,
+                { placement: 'top-center' }
+            )
+        }
+        if (!buffer) {
+            setIsGenerating(false)
+            toast.push(
+                <Notification title="Export failed" type="danger" duration={3000}>
+                    Unable to build font files. Please try another font.
+                </Notification>,
+                { placement: 'top-center' }
+            )
+            return
+        }
         setFinalFontBuffer(buffer)
 
         const chars = {
@@ -531,6 +578,10 @@ const AssetsFields = (props: AssetsFormFields) => {
         }
 
         const assets: GlyphAsset[] = []
+        const allChars = Object.values(chars).join('')
+        const total = allChars.length
+        let done = 0
+        setGenerationProgress({ done, total })
 
         for (const characters of Object.values(chars)) {
             for (const char of characters) {
@@ -539,14 +590,17 @@ const AssetsFields = (props: AssetsFormFields) => {
                 // Skip missing glyphs (common fallback is glyph index 0 or empty)
                 const isMissing = !glyph || glyph.index === 0 || !glyph.path || glyph.path.commands.length === 0
 
-                if (isMissing) continue
+                if (!isMissing) {
+                    const svgBlob = new Blob(
+                        [generateScaledGlyphSVG(glyph)],
+                        { type: 'image/svg+xml' }
+                    )
+                    const pngBlob = await generateScaledGlyphPNG(glyph)
+                    assets.push({ char, svgBlob, pngBlob })
+                }
 
-                const svgBlob = new Blob(
-                    [generateScaledGlyphSVG(glyph)],
-                    { type: 'image/svg+xml' }
-                )
-                const pngBlob = await generateScaledGlyphPNG(glyph)
-                assets.push({ char, svgBlob, pngBlob })
+                done += 1
+                setGenerationProgress({ done, total })
             }
         }
 
@@ -791,7 +845,9 @@ const AssetsFields = (props: AssetsFormFields) => {
                             variant="twoTone"
                             icon={<BsGear />}
                         >
-                            Generate Font Files
+                            {isGenerating && generationProgress.total > 0
+                                ? `Generating ${generationProgress.done}/${generationProgress.total} (${Math.round((generationProgress.done / generationProgress.total) * 100)}%)`
+                                : 'Generate Font Files'}
                         </Button>
                     </div>
 
