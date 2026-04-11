@@ -7,6 +7,7 @@ export { default as Chart } from './Chart'
 export { default as ConfirmDialog } from './ConfirmDialog'
 export { default as Container } from './Container'
 export { default as DataTable } from './DataTable'
+export { default as DateRangeSelector } from './DateRangeSelector'
 export { default as DoubleSidedImage } from './DoubleSidedImage'
 export { default as EllipsisButton } from './EllipsisButton'
 export { default as FormCustomFormatInput } from './FormCustomFormatInput'
@@ -38,3 +39,4 @@ export type {
     CellContext,
 } from './DataTable'
 export type { RichTextEditorRef } from './RichTextEditor'
+export type { RangeOption, RangePreset } from './DateRangeSelector'

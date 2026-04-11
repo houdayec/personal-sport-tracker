@@ -19,6 +19,12 @@ export const protectedRoutes = [
         component: lazy(() => import("@/views/stats/Revenue")),
         authority: ['USER'],
     },
+    {
+        key: "stats.sales",
+        path: "/stats/sales",
+        component: lazy(() => import("@/views/stats/Sales")),
+        authority: ['USER'],
+    },
     // Website Section
     {
         key: "website.stats",

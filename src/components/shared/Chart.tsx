@@ -46,6 +46,13 @@ const Chart = (props: ChartProps) => {
 
     const chartRef = useRef<HTMLDivElement>(null)
 
+    // ApexCharts mutates series objects internally. Clone to avoid mutating
+    // frozen Redux objects in dev mode.
+    const mutableSeries = useMemo(
+        () => JSON.parse(JSON.stringify(series || [])),
+        [series],
+    )
+
     const chartDefaultOption = useMemo(() => {
         switch (type) {
             case 'line':
@@ -115,7 +122,7 @@ const Chart = (props: ChartProps) => {
             <ApexChart
                 options={options}
                 type={type}
-                series={series}
+                series={mutableSeries}
                 width={width}
                 height={height}
                 className={className}

@@ -2,7 +2,7 @@ import { TableQueries } from '@/@types/common'
 import ApiService from './ApiService'
 import WooCommerceApiService from './WooCommerceService'
 import { SalesOrderDetailsResponse } from '@/views/website/OrderDetails/OrderDetails'
-import { collection, CollectionReference, doc, DocumentData, getDoc, getDocs, getDocsFromCache, limit, orderBy, query, QueryConstraint, QueryFieldFilterConstraint, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore'
+import { collection, CollectionReference, doc, DocumentData, getDoc, getDocs, getDocsFromCache, limit, orderBy, query, QueryConstraint, QueryFieldFilterConstraint, serverTimestamp, setDoc, updateDoc, where, writeBatch } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { ProductFilterQueries } from '@/views/products/ProductList/store/productListSlice'
 import { Product } from '@/@types/product'
@@ -824,6 +824,162 @@ export async function apiGetSalesOrderDetails<
     };
 }
 
+type WebsiteOrdersSyncSummary = {
+    fetched: number
+    written: number
+}
+
+const websiteOrdersSyncInFlight = new Map<
+    string,
+    Promise<WebsiteOrdersSyncSummary>
+>()
+const websiteOrdersSyncRecent = new Map<
+    string,
+    { at: number; summary: WebsiteOrdersSyncSummary }
+>()
+const WEBSITE_ORDERS_SYNC_TTL_MS = 5 * 60 * 1000
+
+const buildWebsiteOrderSyncRangeKey = (startDate: number, endDate: number) =>
+    `${startDate}:${endDate}`
+
+const fetchWooOrdersForRange = async (
+    startDate: number,
+    endDate: number,
+) => {
+    const perPage = 100
+    let page = 1
+    const rawOrders: any[] = []
+
+    const afterIso = new Date(startDate * 1000).toISOString()
+    const beforeIso = new Date(endDate * 1000).toISOString()
+
+    while (true) {
+        const response = await WooCommerceApiService.fetchData<any[]>({
+            url: '/orders',
+            method: 'get',
+            params: {
+                per_page: perPage,
+                page,
+                after: afterIso,
+                before: beforeIso,
+                orderby: 'date',
+                order: 'asc',
+                consumer_key: import.meta.env.VITE_WOOCOMMERCE_CONSUMER_KEY,
+                consumer_secret: import.meta.env.VITE_WOOCOMMERCE_CONSUMER_SECRET,
+            },
+        })
+
+        const pageOrders = response.data || []
+        rawOrders.push(...pageOrders)
+
+        if (pageOrders.length < perPage) {
+            break
+        }
+        page += 1
+    }
+
+    return rawOrders
+}
+
+const removeUndefinedDeep = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+        return value.map((item) => removeUndefinedDeep(item))
+    }
+    if (value && typeof value === 'object') {
+        const entries = Object.entries(value as Record<string, unknown>)
+            .filter(([, v]) => v !== undefined)
+            .map(([k, v]) => [k, removeUndefinedDeep(v)] as const)
+        return Object.fromEntries(entries)
+    }
+    return value
+}
+
+const persistWooOrdersToFirestore = async (rawOrders: any[]) => {
+    const orders = rawOrders.map(WooOrder.fromApi)
+    if (orders.length === 0) {
+        return 0
+    }
+
+    const chunkSize = 400
+    const now = Date.now()
+
+    for (let i = 0; i < orders.length; i += chunkSize) {
+        const chunk = orders.slice(i, i + chunkSize)
+        const batch = writeBatch(db)
+
+        chunk.forEach((order) => {
+            const payload: Record<string, any> = {
+                ...order,
+                importedAt: now,
+                syncedAt: now,
+            }
+
+            // Keep existing delivery state if already handled.
+            delete payload.licenseDelivered
+
+            const cleanedPayload = removeUndefinedDeep(payload) as Record<
+                string,
+                any
+            >
+
+            batch.set(doc(db, 'website_orders', order.id), cleanedPayload, {
+                merge: true,
+            })
+        })
+
+        await batch.commit()
+    }
+
+    return orders.length
+}
+
+export async function apiSyncWebsiteOrdersFromWordPress(
+    startDate: number,
+    endDate: number,
+): Promise<WebsiteOrdersSyncSummary> {
+    const rangeKey = buildWebsiteOrderSyncRangeKey(startDate, endDate)
+    const cached = websiteOrdersSyncRecent.get(rangeKey)
+    if (cached && Date.now() - cached.at < WEBSITE_ORDERS_SYNC_TTL_MS) {
+        return cached.summary
+    }
+
+    const existingPromise = websiteOrdersSyncInFlight.get(rangeKey)
+    if (existingPromise) {
+        return existingPromise
+    }
+
+    const syncPromise = (async () => {
+        console.log('[🔄] Syncing website orders from WooCommerce for range:', {
+            startDate: new Date(startDate * 1000).toISOString(),
+            endDate: new Date(endDate * 1000).toISOString(),
+        })
+
+        const rawOrders = await fetchWooOrdersForRange(startDate, endDate)
+        const written = await persistWooOrdersToFirestore(rawOrders)
+
+        const summary = {
+            fetched: rawOrders.length,
+            written,
+        }
+
+        websiteOrdersSyncRecent.set(rangeKey, {
+            at: Date.now(),
+            summary,
+        })
+
+        console.log('[✅] WooCommerce sync complete:', summary)
+        return summary
+    })()
+
+    websiteOrdersSyncInFlight.set(rangeKey, syncPromise)
+
+    try {
+        return await syncPromise
+    } finally {
+        websiteOrdersSyncInFlight.delete(rangeKey)
+    }
+}
+
 export async function apiGetWebsiteSalesDashboardData<T extends DashboardData, U extends DashboardQuery>(params: U) {
     const { startDate, endDate } = params;
     console.log('[🔎] Fetching WooCommerce orders between:', {
@@ -840,8 +996,22 @@ export async function apiGetWebsiteSalesDashboardData<T extends DashboardData, U
     );
 
     console.log('[📤] Running Firestore query...');
-    const snapshot = await getDocs(orderItemsQuery);
+    let snapshot = await getDocs(orderItemsQuery);
     console.log(`[📥] Retrieved ${snapshot.size} documents from Firestore.`);
+
+    if (snapshot.empty) {
+        console.log('[⚠️] No Firestore website orders found for range. Triggering WooCommerce sync...')
+        try {
+            const syncSummary = await apiSyncWebsiteOrdersFromWordPress(startDate, endDate)
+            console.log('[🔁] WooCommerce range sync summary:', syncSummary)
+            if (syncSummary.written > 0) {
+                snapshot = await getDocs(orderItemsQuery)
+                console.log(`[📥] Retrieved ${snapshot.size} documents from Firestore after sync.`)
+            }
+        } catch (error) {
+            console.error('[❌] Failed to sync WooCommerce orders for dashboard:', error)
+        }
+    }
 
     const orders: WooOrder[] = snapshot.docs.map(doc => doc.data() as WooOrder);
     console.log('[📦] Parsed orders:', orders);

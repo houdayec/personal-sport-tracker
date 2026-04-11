@@ -18,6 +18,27 @@ const navigationConfig: NavigationTree[] = [
         authority: [],
         subMenu: [],
     },
+    {
+        key: 'stats',
+        path: '',
+        title: 'Stats',
+        translateKey: 'nav.stats',
+        icon: 'stats',
+        type: NAV_ITEM_TYPE_COLLAPSE,
+        authority: [],
+        subMenu: [
+            {
+                key: 'stats.sales',
+                path: '/stats/sales',
+                title: 'Sales',
+                translateKey: 'nav.stats.sales',
+                icon: '',
+                type: NAV_ITEM_TYPE_ITEM,
+                authority: [],
+                subMenu: [],
+            },
+        ],
+    },
     // Stats Section
     /*{
         key: 'stats',
