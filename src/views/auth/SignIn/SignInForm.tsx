@@ -4,13 +4,12 @@ import Checkbox from '@/components/ui/Checkbox'
 import { FormItem, FormContainer } from '@/components/ui/Form'
 import Alert from '@/components/ui/Alert'
 import PasswordInput from '@/components/shared/PasswordInput'
-import ActionLink from '@/components/shared/ActionLink'
 import useTimeOutMessage from '@/utils/hooks/useTimeOutMessage'
 import useAuth from '@/utils/hooks/useAuth'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import type { CommonProps } from '@/@types/common'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { setUser, signInSuccess, useAppDispatch } from '@/store'
 import { useNavigate } from 'react-router-dom'
 import { PhoneAuthProvider, PhoneMultiFactorGenerator } from 'firebase/auth'
@@ -18,8 +17,6 @@ import appConfig from '@/configs/app.config'
 
 interface SignInFormProps extends CommonProps {
     disableSubmit?: boolean
-    forgotPasswordUrl?: string
-    signUpUrl?: string
 }
 
 type SignInFormSchema = {
@@ -39,8 +36,6 @@ const SignInForm = (props: SignInFormProps) => {
     const {
         disableSubmit = false,
         className,
-        forgotPasswordUrl = '/forgot-password',
-        signUpUrl = '/sign-up',
     } = props
 
     const dispatch = useAppDispatch()
@@ -50,10 +45,6 @@ const SignInForm = (props: SignInFormProps) => {
     const [mfaResolver, setMfaResolver] = useState<any>(null)
     const [mfaPhoneHint, setMfaPhoneHint] = useState<string>('')
     const [verificationCode, setVerificationCode] = useState('')
-
-    useEffect(() => {
-        console.log("MFA resolver:", mfaResolver)
-    }, [mfaResolver])
 
     const { signIn } = useAuth()
 
@@ -99,11 +90,17 @@ const SignInForm = (props: SignInFormProps) => {
 
             const userCredential = await mfaResolver.resolveSignIn(multiFactorAssertion)
             const user = userCredential.user
+            const token = await user.getIdToken().catch(() => null)
 
-            dispatch(signInSuccess("mockToken")) // replace with actual token if needed
+            dispatch(
+                signInSuccess({
+                    uid: user.uid,
+                    token,
+                })
+            )
             dispatch(
                 setUser({
-                    avatar: '',
+                    avatar: user.photoURL || '',
                     userName: user.displayName || 'Anonymous',
                     authority: ['USER'],
                     email: user.email || '',

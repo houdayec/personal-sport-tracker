@@ -19,7 +19,7 @@ WooCommerceService.interceptors.request.use(
         const persistData = deepParseJson(rawPersistData)
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let accessToken = (persistData as any).auth.session.token
+        let accessToken = (persistData as any)?.auth?.session?.token
 
         if (!accessToken) {
             const { auth } = store.getState()

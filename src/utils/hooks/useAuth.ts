@@ -1,17 +1,19 @@
 import { apiSignIn, apiSignOut, apiSignUp } from '@/services/AuthService'
 import {
+    setAuthChecked,
     setUser,
     signInSuccess,
     signOutSuccess,
     useAppSelector,
     useAppDispatch,
 } from '@/store'
-import { RootState } from "@/store";
+import { RootState } from '@/store'
 import appConfig from '@/configs/app.config'
 import { REDIRECT_URL_KEY } from '@/constants/app.constant'
 import { useNavigate } from 'react-router-dom'
 import useQuery from './useQuery'
 import type { SignInCredential, SignUpCredential } from '@/@types/auth'
+import type { User as FirebaseUser } from 'firebase/auth'
 
 type Status = 'mfa-required' | 'success' | 'failed'
 
@@ -27,7 +29,29 @@ function useAuth() {
 
     const query = useQuery()
 
-    const { token, signedIn } = useAppSelector((state: RootState) => state.auth.session);
+    const { token, signedIn, uid, authChecked } = useAppSelector(
+        (state: RootState) => state.auth.session
+    )
+
+    const applyFirebaseUserSession = async (firebaseUser: FirebaseUser) => {
+        const idToken = await firebaseUser.getIdToken().catch(() => null)
+
+        dispatch(
+            signInSuccess({
+                uid: firebaseUser.uid,
+                token: idToken,
+            })
+        )
+
+        dispatch(
+            setUser({
+                avatar: firebaseUser.photoURL || '',
+                userName: firebaseUser.displayName || 'Anonymous',
+                authority: ['USER'],
+                email: firebaseUser.email || '',
+            })
+        )
+    }
 
     const signIn = async (values: SignInCredential): Promise<SignInResponse> => {
         try {
@@ -43,70 +67,57 @@ function useAuth() {
             }
 
             if (resp.success) {
-                const { user } = resp;
+                const { user } = resp
                 if (user) {
-                    dispatch(signInSuccess("mockToken")); // Firebase Auth does not return a token like JWT
-
-                    dispatch(
-                        setUser({
-                            avatar: '',
-                            userName: user.displayName || 'Anonymous',
-                            authority: ['USER'],
-                            email: user.email || '',
-                        })
-                    );
-
-                    const redirectUrl = query.get(REDIRECT_URL_KEY);
-                    navigate(redirectUrl ? redirectUrl : appConfig.authenticatedEntryPath);
+                    await applyFirebaseUserSession(user)
+                    const redirectUrl = query.get(REDIRECT_URL_KEY)
+                    navigate(
+                        redirectUrl
+                            ? redirectUrl
+                            : appConfig.authenticatedEntryPath
+                    )
                 }
 
-                return { status: 'success', message: '' };
+                return { status: 'success', message: '' }
             } else {
-                return { status: 'failed', message: resp.error || 'Unknown error' };
+                return { status: 'failed', message: resp.error || 'Unknown error' }
             }
         } catch (error: unknown) {
             if (error instanceof Error) {
-                return { status: 'failed', message: error.message };
+                return { status: 'failed', message: error.message }
             }
-            return { status: 'failed', message: 'An unknown error occurred' };
+            return { status: 'failed', message: 'An unknown error occurred' }
         }
-    };
-
+    }
 
     const signUp = async (values: SignUpCredential) => {
         try {
-            const resp = await apiSignUp(values);
+            const resp = await apiSignUp(values)
 
             if (resp.success) {
-                const { user } = resp;
+                const { user } = resp
 
                 if (user) {
-                    dispatch(signInSuccess("mockToken")); // Firebase does not return a token
-
-                    dispatch(
-                        setUser({
-                            avatar: '',
-                            userName: user.displayName || 'Anonymous',
-                            authority: ['USER'],
-                            email: user.email || '',
-                        })
-                    );
-
-                    const redirectUrl = query.get(REDIRECT_URL_KEY);
-                    navigate(redirectUrl ? redirectUrl : appConfig.authenticatedEntryPath);
+                    await applyFirebaseUserSession(user)
+                    const redirectUrl = query.get(REDIRECT_URL_KEY)
+                    navigate(
+                        redirectUrl
+                            ? redirectUrl
+                            : appConfig.authenticatedEntryPath
+                    )
                 }
 
-                return { status: 'success', message: '' };
+                return { status: 'success', message: '' }
             } else {
-                return { status: 'failed', message: resp.error || 'Unknown error' };
+                return { status: 'failed', message: resp.error || 'Unknown error' }
             }
         } catch (error: unknown) {
             if (error instanceof Error) {
-                return { status: 'failed', message: error.message };
+                return { status: 'failed', message: error.message }
             }
-            return { status: 'failed', message: 'An unknown error occurred' };
+            return { status: 'failed', message: 'An unknown error occurred' }
         }
-    };
+    }
 
     const handleSignOut = () => {
         dispatch(signOutSuccess())
@@ -118,6 +129,7 @@ function useAuth() {
                 authority: [],
             }),
         )
+        dispatch(setAuthChecked(true))
         navigate(appConfig.unAuthenticatedEntryPath)
     }
 
@@ -127,7 +139,8 @@ function useAuth() {
     }
 
     return {
-        authenticated: token && signedIn,
+        authenticated: Boolean((token || uid) && signedIn),
+        authChecked,
         signIn,
         signUp,
         signOut,

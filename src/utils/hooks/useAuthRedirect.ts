@@ -1,24 +1,17 @@
-// src/hooks/useAuthRedirect.ts
 import { useEffect } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
-import { useNavigate } from 'react-router-dom'
 import { useAppDispatch } from '@/store'
-import { signOutSuccess, setUser } from '@/store'
-import appConfig from '@/configs/app.config'
-import {
-    auth,
-} from '@/firebase';
+import { setAuthChecked, setUser, signInSuccess, signOutSuccess } from '@/store'
+import { auth } from '@/firebase'
 
 const useAuthRedirect = () => {
     const dispatch = useAppDispatch()
-    const navigate = useNavigate()
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                console.warn('🔐 No Firebase user found – redirecting to login.')
+        dispatch(setAuthChecked(false))
 
-                // Reset Redux session
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (!firebaseUser) {
                 dispatch(signOutSuccess())
                 dispatch(
                     setUser({
@@ -28,14 +21,29 @@ const useAuthRedirect = () => {
                         authority: [],
                     })
                 )
-
-                // Redirect to login
-                navigate(appConfig.unAuthenticatedEntryPath)
+                return
             }
+
+            const token = await firebaseUser.getIdToken().catch(() => null)
+
+            dispatch(
+                signInSuccess({
+                    uid: firebaseUser.uid,
+                    token,
+                })
+            )
+            dispatch(
+                setUser({
+                    avatar: firebaseUser.photoURL || '',
+                    userName: firebaseUser.displayName || 'Anonymous',
+                    authority: ['USER'],
+                    email: firebaseUser.email || '',
+                })
+            )
         })
 
         return () => unsubscribe()
-    }, [dispatch, navigate])
+    }, [dispatch])
 }
 
 export default useAuthRedirect

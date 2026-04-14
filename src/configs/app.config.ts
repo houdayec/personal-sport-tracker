@@ -9,7 +9,7 @@ export type AppConfig = {
 
 const appConfig: AppConfig = {
     apiPrefix: '/api',
-    authenticatedEntryPath: '/home',
+    authenticatedEntryPath: '/fitness',
     unAuthenticatedEntryPath: '/sign-in',
     tourPath: '/',
     locale: 'en',

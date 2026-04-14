@@ -1,6 +1,17 @@
 {
     "nav": {
         "home": "Home",
+        "fitness": {
+            "title": "Fitness",
+            "dashboard": "Dashboard",
+            "workouts": "Workouts",
+            "body": "Body"
+        },
+        "legacy": {
+            "title": "Legacy",
+            "products": "Products",
+            "tools": "Tools"
+        },
         "singleMenuItem": "Single menu item",
         "collapseMenu": {
             "collapseMenu": "Collapse menu item",
@@ -15,6 +26,26 @@
                 "item1": "Group collapse menu item 1",
                 "item2": "Group collapse menu item 2"
             }
+        }
+    },
+    "pages": {
+        "accessDenied": {
+            "title": "Access denied",
+            "description": "You do not have permission to access this page."
+        }
+    },
+    "fitness": {
+        "dashboard": {
+            "title": "Fitness dashboard",
+            "description": "Foundation route ready for workout summaries and quick actions."
+        },
+        "workouts": {
+            "title": "Workout sessions",
+            "description": "Foundation route ready for session templates, active sessions, and history."
+        },
+        "body": {
+            "title": "Body tracking",
+            "description": "Foundation route ready for body weight and measurements tracking."
         }
     }
 }

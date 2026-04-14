@@ -18,10 +18,17 @@ const environment = process.env.NODE_ENV
 if (environment !== 'production' && appConfig.enableMock) {
     mockServer({ environment })
 }
+
+function FirebaseAuthBootstrap() {
+    useAuthRedirect()
+    return null
+}
+
 function App() {
     return (
         <Provider store={store}>
             <PersistGate loading={null} persistor={persistor}>
+                <FirebaseAuthBootstrap />
                 <BrowserRouter
                     future={{
                         v7_relativeSplatPath: true,
