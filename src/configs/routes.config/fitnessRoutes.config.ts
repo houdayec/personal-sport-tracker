@@ -44,6 +44,14 @@ export const fitnessProtectedRoutes: Routes = [
         authority: ['USER'],
     },
     {
+        key: 'fitness.training.templates',
+        path: FITNESS_ROUTES.trainingTemplatesAlias,
+        component: lazy(
+            () => import('@/features/fitness/training/pages/WorkoutTemplatesPage'),
+        ),
+        authority: ['USER'],
+    },
+    {
         key: 'fitness.training.today',
         path: FITNESS_ROUTES.trainingToday,
         component: lazy(

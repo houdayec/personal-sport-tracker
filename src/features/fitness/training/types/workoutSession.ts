@@ -1,6 +1,7 @@
 import type { Timestamp } from 'firebase/firestore'
 
 export const WORKOUT_SESSION_SCHEMA_VERSION = 1 as const
+export const WORKOUT_TEMPLATE_SCHEMA_VERSION = 1 as const
 
 export type WorkoutSessionStatus = 'in_progress' | 'completed'
 
@@ -17,12 +18,20 @@ export interface WorkoutTemplateExercise {
     name: string
     muscleGroup?: string
     equipment?: string
-    plannedSets?: TemplateWorkoutSet[]
+    plannedSets: TemplateWorkoutSet[]
+}
+
+export interface WorkoutTemplateInput {
+    name: string
+    tags: string[]
+    exercises: WorkoutTemplateExercise[]
 }
 
 export interface WorkoutTemplateDocument {
     name: string
+    tags?: string[]
     exercises: WorkoutTemplateExercise[]
+    schemaVersion?: number
     createdAt?: Timestamp | null
     updatedAt?: Timestamp | null
 }

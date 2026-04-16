@@ -1,6 +1,7 @@
 import {
     addDoc,
     arrayUnion,
+    deleteDoc,
     doc,
     getDoc,
     getDocs,
@@ -13,6 +14,7 @@ import {
 import { fitnessCollections } from '@/features/fitness/common/services'
 import {
     WORKOUT_SESSION_SCHEMA_VERSION,
+    WORKOUT_TEMPLATE_SCHEMA_VERSION,
     type PerformedWorkoutExercise,
     type PlannedWorkoutExercise,
     type SavePerformedExerciseInput,
@@ -22,6 +24,7 @@ import {
     type WorkoutTemplate,
     type WorkoutTemplateDocument,
     type WorkoutTemplateExercise,
+    type WorkoutTemplateInput,
 } from '@/features/fitness/training/types/workoutSession'
 
 const getSessionSortTime = (session: {
@@ -58,6 +61,22 @@ const sortByMostRecent = <T extends { updatedAt?: any; createdAt?: any }>(
         const bTime = b.updatedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0
         return bTime - aTime
     })
+}
+
+const normalizeTemplateTags = (tags: unknown): string[] => {
+    if (!Array.isArray(tags)) {
+        return []
+    }
+
+    return Array.from(
+        new Set(
+            tags
+                .filter((tag) => typeof tag === 'string')
+                .map((tag) => tag.trim())
+                .filter(Boolean)
+                .slice(0, 12),
+        ),
+    )
 }
 
 const normalizeTemplateSet = (set: unknown, index: number): TemplateWorkoutSet => {
@@ -140,11 +159,58 @@ const templateFromSnapshot = (
             typeof data.name === 'string' && data.name.trim()
                 ? data.name.trim()
                 : 'Template sans nom',
+        tags: normalizeTemplateTags(data.tags),
         exercises: Array.isArray(data.exercises)
             ? data.exercises.map(normalizeTemplateExercise)
             : [],
         createdAt: data.createdAt ?? null,
         updatedAt: data.updatedAt ?? null,
+    }
+}
+
+const normalizeTemplateInput = (
+    input: WorkoutTemplateInput,
+): WorkoutTemplateInput => {
+    const name = input.name.trim()
+
+    if (!name) {
+        throw new Error('Le nom du template est requis.')
+    }
+
+    if (!Array.isArray(input.exercises) || input.exercises.length === 0) {
+        throw new Error('Le template doit contenir au moins un exercice.')
+    }
+
+    const exercises = input.exercises.map((exercise, exerciseIndex) => {
+        const exerciseName = exercise.name.trim()
+
+        if (!exerciseName) {
+            throw new Error(
+                `Le nom de l’exercice ${exerciseIndex + 1} est requis.`,
+            )
+        }
+
+        if (!Array.isArray(exercise.plannedSets) || exercise.plannedSets.length === 0) {
+            throw new Error(`L’exercice "${exerciseName}" doit contenir au moins un set.`)
+        }
+
+        return {
+            exerciseId: exercise.exerciseId || null,
+            name: exerciseName,
+            muscleGroup: exercise.muscleGroup?.trim() || '',
+            equipment: exercise.equipment?.trim() || '',
+            plannedSets: exercise.plannedSets.map((set, setIndex) => ({
+                setNumber: setIndex + 1,
+                targetReps: set.targetReps?.trim() || undefined,
+                targetWeight: set.targetWeight?.trim() || undefined,
+            })),
+        }
+    })
+
+    return {
+        name,
+        tags: normalizeTemplateTags(input.tags),
+        exercises,
     }
 }
 
@@ -261,7 +327,7 @@ const sanitizeKey = (value: string): string => {
     return value.replace(/[^a-zA-Z0-9_-]/g, '_')
 }
 
-const buildPlannedExercisesSnapshot = (
+export const convertTemplateToPlannedExercises = (
     template: WorkoutTemplate,
 ): PlannedWorkoutExercise[] => {
     return template.exercises.map((exercise, index) => {
@@ -274,7 +340,7 @@ const buildPlannedExercisesSnapshot = (
             muscleGroup: exercise.muscleGroup || '',
             equipment: exercise.equipment || '',
             orderIndex: index,
-            plannedSets: exercise.plannedSets || [],
+            plannedSets: exercise.plannedSets,
         }
     })
 }
@@ -310,11 +376,94 @@ export const listWorkoutTemplates = async (
     const templatesRef = fitnessCollections.workoutTemplates<WorkoutTemplateDocument>(uid)
     const snapshot = await getDocs(templatesRef)
 
-    const templates = snapshot.docs
-        .map(templateFromSnapshot)
-        .filter((template) => template.exercises.length > 0)
+    return sortByMostRecent(snapshot.docs.map(templateFromSnapshot))
+}
 
-    return sortByMostRecent(templates)
+export const getWorkoutTemplateById = async (
+    uid: string,
+    templateId: string,
+): Promise<WorkoutTemplate> => {
+    return ensureTemplateExists(uid, templateId)
+}
+
+export const createWorkoutTemplate = async (
+    uid: string,
+    input: WorkoutTemplateInput,
+): Promise<string> => {
+    const normalized = normalizeTemplateInput(input)
+    const templatesRef = fitnessCollections.workoutTemplates<WorkoutTemplateDocument>(uid)
+
+    const templateRef = await addDoc(templatesRef, {
+        name: normalized.name,
+        tags: normalized.tags,
+        exercises: normalized.exercises,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        schemaVersion: WORKOUT_TEMPLATE_SCHEMA_VERSION,
+    })
+
+    return templateRef.id
+}
+
+export const updateWorkoutTemplate = async (
+    uid: string,
+    templateId: string,
+    input: WorkoutTemplateInput,
+): Promise<void> => {
+    const normalized = normalizeTemplateInput(input)
+    const templateRef = doc(
+        fitnessCollections.workoutTemplates<WorkoutTemplateDocument>(uid),
+        templateId,
+    )
+
+    await updateDoc(templateRef, {
+        name: normalized.name,
+        tags: normalized.tags,
+        exercises: normalized.exercises,
+        updatedAt: serverTimestamp(),
+        schemaVersion: WORKOUT_TEMPLATE_SCHEMA_VERSION,
+    })
+}
+
+export const deleteWorkoutTemplate = async (
+    uid: string,
+    templateId: string,
+): Promise<void> => {
+    const templateRef = doc(
+        fitnessCollections.workoutTemplates<WorkoutTemplateDocument>(uid),
+        templateId,
+    )
+
+    await deleteDoc(templateRef)
+}
+
+export const duplicateWorkoutTemplate = async (
+    uid: string,
+    templateId: string,
+): Promise<string> => {
+    const source = await ensureTemplateExists(uid, templateId)
+    const templatesRef = fitnessCollections.workoutTemplates<WorkoutTemplateDocument>(uid)
+
+    const duplicatedTemplate = await addDoc(templatesRef, {
+        name: `${source.name} (copie)`,
+        tags: source.tags || [],
+        exercises: source.exercises.map((exercise) => ({
+            exerciseId: exercise.exerciseId || null,
+            name: exercise.name,
+            muscleGroup: exercise.muscleGroup || '',
+            equipment: exercise.equipment || '',
+            plannedSets: exercise.plannedSets.map((set, setIndex) => ({
+                setNumber: setIndex + 1,
+                targetReps: set.targetReps,
+                targetWeight: set.targetWeight,
+            })),
+        })),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        schemaVersion: WORKOUT_TEMPLATE_SCHEMA_VERSION,
+    })
+
+    return duplicatedTemplate.id
 }
 
 export const listWorkoutSessionsHistory = async (
@@ -375,7 +524,7 @@ export const startWorkoutSessionFromTemplate = async (
     }
 
     const template = await ensureTemplateExists(uid, templateId)
-    const plannedExercises = buildPlannedExercisesSnapshot(template)
+    const plannedExercises = convertTemplateToPlannedExercises(template)
 
     const sessionsRef = fitnessCollections.workoutSessions<WorkoutSessionDocument>(uid)
 

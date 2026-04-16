@@ -5,6 +5,7 @@ export const FITNESS_ROUTES = {
     trainingRoot: '/fitness/training',
     trainingLibrary: '/fitness/training/exercises',
     trainingTemplates: '/fitness/training/templates',
+    trainingTemplatesAlias: '/templates',
     trainingToday: '/fitness/training/today',
     trainingHistory: '/fitness/training/history',
     trainingHistoryDetail: '/fitness/training/history/:sessionId',
