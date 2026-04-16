@@ -60,6 +60,14 @@ export const fitnessProtectedRoutes: Routes = [
         authority: ['USER'],
     },
     {
+        key: 'fitness.training.history',
+        path: FITNESS_ROUTES.trainingHistoryDetail,
+        component: lazy(
+            () => import('@/features/fitness/training/pages/WorkoutHistoryDetailPage'),
+        ),
+        authority: ['USER'],
+    },
+    {
         key: 'fitness.body.weight',
         path: FITNESS_ROUTES.bodyRoot,
         component: lazy(() => import('@/features/fitness/body/pages/BodyWeightPage')),

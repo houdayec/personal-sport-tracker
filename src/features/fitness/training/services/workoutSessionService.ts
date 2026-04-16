@@ -24,6 +24,32 @@ import {
     type WorkoutTemplateExercise,
 } from '@/features/fitness/training/types/workoutSession'
 
+const getSessionSortTime = (session: {
+    startedAt?: any
+    completedAt?: any
+    updatedAt?: any
+    createdAt?: any
+}) => {
+    return (
+        session.startedAt?.toMillis?.() ??
+        session.completedAt?.toMillis?.() ??
+        session.updatedAt?.toMillis?.() ??
+        session.createdAt?.toMillis?.() ??
+        0
+    )
+}
+
+const sortSessionsByDateDesc = <T extends {
+    startedAt?: any
+    completedAt?: any
+    updatedAt?: any
+    createdAt?: any
+}>(
+    sessions: T[],
+): T[] => {
+    return [...sessions].sort((a, b) => getSessionSortTime(b) - getSessionSortTime(a))
+}
+
 const sortByMostRecent = <T extends { updatedAt?: any; createdAt?: any }>(
     items: T[],
 ): T[] => {
@@ -219,6 +245,7 @@ const sessionFromSnapshot = (
         id: snapshot.id,
         status: data.status,
         startedAt: data.startedAt ?? null,
+        completedAt: data.completedAt ?? null,
         plannedExercises,
         performedExercises: normalizedPerformed,
         performedExerciseIds: performedIds,
@@ -290,6 +317,17 @@ export const listWorkoutTemplates = async (
     return sortByMostRecent(templates)
 }
 
+export const listWorkoutSessionsHistory = async (
+    uid: string,
+): Promise<WorkoutSession[]> => {
+    const sessionsRef = fitnessCollections.workoutSessions<WorkoutSessionDocument>(uid)
+    const snapshot = await getDocs(sessionsRef)
+
+    const sessions = snapshot.docs.map(sessionFromSnapshot)
+
+    return sortSessionsByDateDesc(sessions)
+}
+
 export const getWorkoutSessionById = async (
     uid: string,
     sessionId: string,
@@ -321,7 +359,7 @@ export const getInProgressWorkoutSession = async (
     }
 
     const sessions = snapshot.docs.map(sessionFromSnapshot)
-    const sortedSessions = sortByMostRecent(sessions)
+    const sortedSessions = sortSessionsByDateDesc(sessions)
 
     return sortedSessions[0] || null
 }
@@ -344,6 +382,7 @@ export const startWorkoutSessionFromTemplate = async (
     const sessionDocRef = await addDoc(sessionsRef, {
         status: 'in_progress',
         startedAt: serverTimestamp(),
+        completedAt: null,
         plannedExercises,
         performedExercises: {},
         performedExerciseIds: [],
@@ -409,6 +448,7 @@ export const completeWorkoutSession = async (
 
     await updateDoc(sessionRef, {
         status: 'completed',
+        completedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     })
 }

@@ -60,6 +60,7 @@ export interface PerformedWorkoutExercise {
 export interface WorkoutSessionDocument {
     status: WorkoutSessionStatus
     startedAt: Timestamp | null
+    completedAt?: Timestamp | null
     plannedExercises: PlannedWorkoutExercise[]
     performedExercises: Record<string, PerformedWorkoutExercise>
     performedExerciseIds: string[]
