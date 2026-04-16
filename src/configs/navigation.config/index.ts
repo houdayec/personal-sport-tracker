@@ -9,7 +9,7 @@ const navigationConfig: NavigationTree[] = [
     {
         key: 'fitness.dashboard',
         path: FITNESS_ROUTES.dashboard,
-        title: 'Dashboard',
+        title: 'Tableau de bord',
         translateKey: 'nav.fitness.dashboard',
         icon: 'dashboard',
         type: NAV_ITEM_TYPE_ITEM,
@@ -38,7 +38,7 @@ const navigationConfig: NavigationTree[] = [
             {
                 key: 'fitness.training.templates',
                 path: FITNESS_ROUTES.trainingTemplates,
-                title: 'Séances templates',
+                title: 'Modèles de séances',
                 translateKey: 'nav.fitness.training.templates',
                 icon: '',
                 type: NAV_ITEM_TYPE_ITEM,

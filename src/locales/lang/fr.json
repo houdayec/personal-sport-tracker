@@ -1,11 +1,11 @@
 {
     "nav": {
         "fitness": {
-            "dashboard": "Dashboard",
+            "dashboard": "Tableau de bord",
             "training": {
                 "title": "Entraînement",
                 "library": "Bibliothèque d’exercices",
-                "templates": "Séances templates",
+                "templates": "Modèles de séances",
                 "today": "Séance du jour",
                 "history": "Historique"
             },
