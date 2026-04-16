@@ -1,0 +1,54 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Root user document: users/{uid}
+    match /users/{uid} {
+      // Profile / account doc
+      allow read, create, update, delete: if isOwner(uid);
+
+      // Exercises
+      match /exercises/{exerciseId} {
+        allow read, create, update, delete: if isOwner(uid);
+      }
+
+      // Workout templates
+      match /workout_templates/{templateId} {
+        allow read, create, update, delete: if isOwner(uid);
+      }
+
+      // Workout sessions
+      match /workout_sessions/{sessionId} {
+        allow read, create, update, delete: if isOwner(uid);
+      }
+
+      // Body weight entries
+      match /body_weight_entries/{entryId} {
+        allow read, create, update, delete: if isOwner(uid);
+      }
+
+      // Body measurement entries
+      match /body_measurement_entries/{entryId} {
+        allow read, create, update, delete: if isOwner(uid);
+      }
+
+      // Deny any other unknown subcollection under users/{uid}
+      match /{subCollection}/{docId} {
+        allow read, write: if false;
+      }
+    }
+
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
