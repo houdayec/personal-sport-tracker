@@ -102,6 +102,14 @@ export const fitnessProtectedRoutes: Routes = [
         authority: ['USER'],
     },
     {
+        key: 'fitness.progress.exercise',
+        path: FITNESS_ROUTES.progressExercise,
+        component: lazy(
+            () => import('@/features/fitness/progress/pages/ExerciseProgressPage'),
+        ),
+        authority: ['USER'],
+    },
+    {
         key: 'fitness.account',
         path: FITNESS_ROUTES.account,
         component: lazy(() => import('@/features/fitness/account/pages/AccountPage')),

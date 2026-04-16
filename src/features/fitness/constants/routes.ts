@@ -15,5 +15,6 @@ export const FITNESS_ROUTES = {
     bodyMeasurements: '/fitness/body/measurements',
 
     progress: '/fitness/progress',
+    progressExercise: '/fitness/progress/exercise',
     account: '/fitness/account',
 } as const

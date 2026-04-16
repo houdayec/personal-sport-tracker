@@ -1,8 +1,10 @@
+import { Link } from 'react-router-dom'
 import { Alert, Button, Card, Input, Segment, Spinner } from '@/components/ui'
 import useProgressTracking from '@/features/fitness/progress/hooks/useProgressTracking'
 import ProgressLineCard from '@/features/fitness/progress/components/ProgressLineCard'
 import { BODY_MEASUREMENT_FIELDS } from '@/features/fitness/body/types/bodyMeasurement'
 import type { ProgressTimeRange } from '@/features/fitness/progress/types/progress'
+import { FITNESS_ROUTES } from '@/features/fitness/constants/routes'
 import { HiOutlineRefresh } from 'react-icons/hi'
 
 const ProgressPage = () => {
@@ -54,6 +56,13 @@ const ProgressPage = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                            size="sm"
+                            asElement={Link}
+                            to={FITNESS_ROUTES.progressExercise}
+                        >
+                            Exercise Progress
+                        </Button>
                         <Segment
                             size="sm"
                             value={timeRange}

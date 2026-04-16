@@ -599,9 +599,14 @@ export const updatePerformedExercise = async (
         notes: input.notes,
     }
 
+    const trackedIds = [
+        input.plannedExerciseId,
+        input.exerciseId || undefined,
+    ].filter((value): value is string => Boolean(value))
+
     const payload: Record<string, unknown> = {
         [`performedExercises.${input.plannedExerciseId}`]: nextPerformed,
-        performedExerciseIds: arrayUnion(input.plannedExerciseId),
+        performedExerciseIds: arrayUnion(...trackedIds),
         updatedAt: serverTimestamp(),
     }
 
