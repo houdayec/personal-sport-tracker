@@ -1,4 +1,4 @@
-# FontMaze Studio
+# Sport Tracker
 
 Start: npm start
 

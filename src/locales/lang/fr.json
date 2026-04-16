@@ -1,0 +1,27 @@
+{
+    "nav": {
+        "fitness": {
+            "dashboard": "Dashboard",
+            "training": {
+                "title": "Entraînement",
+                "library": "Bibliothèque d’exercices",
+                "templates": "Séances templates",
+                "today": "Séance du jour",
+                "history": "Historique"
+            },
+            "body": {
+                "title": "Corps",
+                "weight": "Poids",
+                "measurements": "Mensurations"
+            },
+            "progress": "Progression",
+            "account": "Compte"
+        }
+    },
+    "pages": {
+        "accessDenied": {
+            "title": "Accès refusé",
+            "description": "Vous n'avez pas la permission d'accéder à cette page."
+        }
+    }
+}

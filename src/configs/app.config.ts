@@ -12,7 +12,7 @@ const appConfig: AppConfig = {
     authenticatedEntryPath: '/fitness',
     unAuthenticatedEntryPath: '/sign-in',
     tourPath: '/',
-    locale: 'en',
+    locale: 'fr',
     enableMock: false,
 }
 

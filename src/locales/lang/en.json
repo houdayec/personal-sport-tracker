@@ -3,19 +3,19 @@
         "fitness": {
             "dashboard": "Dashboard",
             "training": {
-                "title": "Entraînement",
-                "library": "Bibliothèque d’exercices",
-                "templates": "Séances templates",
-                "today": "Séance du jour",
-                "history": "Historique"
+                "title": "Training",
+                "library": "Exercise Library",
+                "templates": "Workout Templates",
+                "today": "Today's Workout",
+                "history": "History"
             },
             "body": {
-                "title": "Corps",
-                "weight": "Poids",
-                "measurements": "Mensurations"
+                "title": "Body",
+                "weight": "Weight",
+                "measurements": "Measurements"
             },
-            "progress": "Progression",
-            "account": "Compte"
+            "progress": "Progress",
+            "account": "Account"
         }
     },
     "pages": {
