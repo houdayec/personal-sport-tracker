@@ -22,6 +22,7 @@ const getSessionDurationMs = (session: WorkoutSession): number | null => {
     }
 
     const endMs =
+        session.endedAt?.toMillis?.() ??
         session.completedAt?.toMillis?.() ??
         (session.status === 'completed' ? session.updatedAt?.toMillis?.() : null)
 

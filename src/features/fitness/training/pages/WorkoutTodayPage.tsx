@@ -181,9 +181,12 @@ const WorkoutTodayPage = () => {
                                     {completedExerciseCount}/{totalExercises} terminé
                                     {totalExercises > 1 ? 's' : ''}
                                 </Tag>
-                                {activeSession.templateName && (
+                                {(activeSession.sourceTemplate?.name ||
+                                    activeSession.templateName) && (
                                     <Tag className="bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-100">
-                                        Template: {activeSession.templateName}
+                                        Template:{' '}
+                                        {activeSession.sourceTemplate?.name ||
+                                            activeSession.templateName}
                                     </Tag>
                                 )}
                             </div>

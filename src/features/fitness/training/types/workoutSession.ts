@@ -66,16 +66,25 @@ export interface PerformedWorkoutExercise {
     notes: string
 }
 
+export interface WorkoutSessionSourceTemplate {
+    id: string
+    name: string
+    version: number
+}
+
 export interface WorkoutSessionDocument {
     status: WorkoutSessionStatus
     startedAt: Timestamp | null
+    endedAt?: Timestamp | null
     completedAt?: Timestamp | null
     plannedExercises: PlannedWorkoutExercise[]
     performedExercises: Record<string, PerformedWorkoutExercise>
     performedExerciseIds: string[]
+    sourceTemplate?: WorkoutSessionSourceTemplate | null
     createdAt: Timestamp | null
     updatedAt: Timestamp | null
     schemaVersion: number
+    // Backward compatibility with previous session docs
     templateId?: string
     templateName?: string
 }

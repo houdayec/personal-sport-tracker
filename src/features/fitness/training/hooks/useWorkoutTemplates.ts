@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAppSelector } from '@/store'
 import {
     createWorkoutTemplate,
+    createWorkoutSessionFromTemplate,
     deleteWorkoutTemplate,
     duplicateWorkoutTemplate,
     listWorkoutTemplates,
-    startWorkoutSessionFromTemplate,
     updateWorkoutTemplate,
 } from '@/features/fitness/training/services/workoutSessionService'
 import type {
@@ -131,7 +131,7 @@ const useWorkoutTemplates = () => {
 
             try {
                 const currentUid = assertUid()
-                return await startWorkoutSessionFromTemplate(currentUid, templateId)
+                return await createWorkoutSessionFromTemplate(currentUid, templateId)
             } catch (startError) {
                 setError(getErrorMessage(startError))
                 throw startError

@@ -64,13 +64,19 @@ const WorkoutHistoryDetailPage = () => {
                                         ? dayjs(session.startedAt.toDate()).format(
                                               'DD/MM/YYYY HH:mm',
                                           )
+                                        : session.endedAt
+                                          ? dayjs(session.endedAt.toDate()).format(
+                                                'DD/MM/YYYY HH:mm',
+                                            )
                                         : 'Date indisponible'}
                                 </p>
                             </Card>
                             <Card>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Template</p>
                                 <p className="mt-2 font-semibold">
-                                    {session.templateName || 'Non renseigné'}
+                                    {session.sourceTemplate?.name ||
+                                        session.templateName ||
+                                        'Non renseigné'}
                                 </p>
                             </Card>
                             <Card>

@@ -29,12 +29,14 @@ import {
 
 const getSessionSortTime = (session: {
     startedAt?: any
+    endedAt?: any
     completedAt?: any
     updatedAt?: any
     createdAt?: any
 }) => {
     return (
         session.startedAt?.toMillis?.() ??
+        session.endedAt?.toMillis?.() ??
         session.completedAt?.toMillis?.() ??
         session.updatedAt?.toMillis?.() ??
         session.createdAt?.toMillis?.() ??
@@ -44,6 +46,7 @@ const getSessionSortTime = (session: {
 
 const sortSessionsByDateDesc = <T extends {
     startedAt?: any
+    endedAt?: any
     completedAt?: any
     updatedAt?: any
     createdAt?: any
@@ -163,6 +166,7 @@ const templateFromSnapshot = (
         exercises: Array.isArray(data.exercises)
             ? data.exercises.map(normalizeTemplateExercise)
             : [],
+        schemaVersion: data.schemaVersion ?? WORKOUT_TEMPLATE_SCHEMA_VERSION,
         createdAt: data.createdAt ?? null,
         updatedAt: data.updatedAt ?? null,
     }
@@ -307,14 +311,37 @@ const sessionFromSnapshot = (
         ? data.performedExerciseIds.filter((id) => typeof id === 'string')
         : []
 
+    const sourceTemplate =
+        data.sourceTemplate &&
+        typeof data.sourceTemplate === 'object' &&
+        typeof data.sourceTemplate.id === 'string' &&
+        typeof data.sourceTemplate.name === 'string'
+            ? {
+                  id: data.sourceTemplate.id,
+                  name: data.sourceTemplate.name,
+                  version:
+                      typeof data.sourceTemplate.version === 'number'
+                          ? data.sourceTemplate.version
+                          : WORKOUT_TEMPLATE_SCHEMA_VERSION,
+              }
+            : data.templateId && data.templateName
+              ? {
+                    id: data.templateId,
+                    name: data.templateName,
+                    version: WORKOUT_TEMPLATE_SCHEMA_VERSION,
+                }
+              : null
+
     return {
         id: snapshot.id,
         status: data.status,
         startedAt: data.startedAt ?? null,
+        endedAt: data.endedAt ?? data.completedAt ?? null,
         completedAt: data.completedAt ?? null,
         plannedExercises,
         performedExercises: normalizedPerformed,
         performedExerciseIds: performedIds,
+        sourceTemplate,
         createdAt: data.createdAt ?? null,
         updatedAt: data.updatedAt ?? null,
         schemaVersion: data.schemaVersion ?? WORKOUT_SESSION_SCHEMA_VERSION,
@@ -531,10 +558,16 @@ export const startWorkoutSessionFromTemplate = async (
     const sessionDocRef = await addDoc(sessionsRef, {
         status: 'in_progress',
         startedAt: serverTimestamp(),
+        endedAt: null,
         completedAt: null,
         plannedExercises,
         performedExercises: {},
         performedExerciseIds: [],
+        sourceTemplate: {
+            id: template.id,
+            name: template.name,
+            version: template.schemaVersion ?? WORKOUT_TEMPLATE_SCHEMA_VERSION,
+        },
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         schemaVersion: WORKOUT_SESSION_SCHEMA_VERSION,
@@ -578,8 +611,30 @@ export const updatePerformedExercise = async (
 export const markExerciseCompleted = async (
     uid: string,
     sessionId: string,
-    input: SavePerformedExerciseInput,
+    input: SavePerformedExerciseInput | string,
 ): Promise<void> => {
+    if (typeof input === 'string') {
+        const currentSession = await getWorkoutSessionById(uid, sessionId)
+        const existingPerformed = currentSession.performedExercises[input]
+        const plannedExercise = currentSession.plannedExercises.find(
+            (exercise) => exercise.plannedExerciseId === input,
+        )
+
+        if (!plannedExercise) {
+            throw new Error('Exercice introuvable dans la séance.')
+        }
+
+        await updatePerformedExercise(uid, sessionId, {
+            plannedExerciseId: plannedExercise.plannedExerciseId,
+            exerciseId: plannedExercise.exerciseId,
+            name: plannedExercise.name,
+            sets: existingPerformed?.sets || [],
+            notes: existingPerformed?.notes || '',
+            status: 'completed',
+        })
+        return
+    }
+
     await updatePerformedExercise(uid, sessionId, {
         ...input,
         status: 'completed',
@@ -597,7 +652,13 @@ export const completeWorkoutSession = async (
 
     await updateDoc(sessionRef, {
         status: 'completed',
+        endedAt: serverTimestamp(),
         completedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     })
 }
+
+// Aliases aligned with product naming
+export const createWorkoutSessionFromTemplate = startWorkoutSessionFromTemplate
+export const getCurrentWorkoutSession = getInProgressWorkoutSession
+export const finishWorkoutSession = completeWorkoutSession

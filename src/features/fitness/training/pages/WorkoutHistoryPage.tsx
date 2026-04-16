@@ -64,6 +64,7 @@ const WorkoutHistoryPage = () => {
                         {sessionSummaries.map((session) => {
                             const sessionDate =
                                 session.startedAt ||
+                                session.endedAt ||
                                 session.completedAt ||
                                 session.createdAt ||
                                 session.updatedAt
@@ -84,7 +85,9 @@ const WorkoutHistoryPage = () => {
                                             </p>
                                             <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                                                 Template:{' '}
-                                                {session.templateName || 'Non renseigné'}
+                                                {session.sourceTemplate?.name ||
+                                                    session.templateName ||
+                                                    'Non renseigné'}
                                             </p>
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 <Tag

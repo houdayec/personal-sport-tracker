@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppSelector } from '@/store'
 import {
-    completeWorkoutSession,
-    getInProgressWorkoutSession,
+    finishWorkoutSession,
+    getCurrentWorkoutSession,
     listWorkoutTemplates,
     markExerciseCompleted,
-    startWorkoutSessionFromTemplate,
+    createWorkoutSessionFromTemplate,
     updatePerformedExercise,
 } from '@/features/fitness/training/services/workoutSessionService'
 import type {
@@ -53,7 +53,7 @@ const useWorkoutTodaySession = () => {
         try {
             const currentUid = assertUid()
             const [inProgressSession, templateList] = await Promise.all([
-                getInProgressWorkoutSession(currentUid),
+                getCurrentWorkoutSession(currentUid),
                 listWorkoutTemplates(currentUid),
             ])
 
@@ -114,7 +114,7 @@ const useWorkoutTodaySession = () => {
 
             try {
                 const currentUid = assertUid()
-                const session = await startWorkoutSessionFromTemplate(
+                const session = await createWorkoutSessionFromTemplate(
                     currentUid,
                     templateId,
                 )
@@ -191,7 +191,7 @@ const useWorkoutTodaySession = () => {
 
         try {
             const currentUid = assertUid()
-            await completeWorkoutSession(currentUid, activeSession.id)
+            await finishWorkoutSession(currentUid, activeSession.id)
             setActiveSession(null)
             setSuccessMessage('Séance terminée. Elle est maintenant dans l’historique.')
         } catch (finishError) {
