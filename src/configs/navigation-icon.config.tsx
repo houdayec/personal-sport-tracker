@@ -1,6 +1,8 @@
 import type { JSX } from 'react'
 import {
     HiOutlineHome,
+    HiOutlineClipboardList,
+    HiOutlineUserCircle,
     HiOutlineChartBar,
     HiOutlineCog,
 } from 'react-icons/hi'
@@ -8,9 +10,11 @@ import {
 export type NavigationIcons = Record<string, JSX.Element>
 
 const navigationIcon: NavigationIcons = {
-    home: <HiOutlineHome />,
-    fitness: <HiOutlineChartBar />,
-    legacy: <HiOutlineCog />,
+    dashboard: <HiOutlineHome />,
+    training: <HiOutlineClipboardList />,
+    body: <HiOutlineUserCircle />,
+    progress: <HiOutlineChartBar />,
+    account: <HiOutlineCog />,
 }
 
 export default navigationIcon

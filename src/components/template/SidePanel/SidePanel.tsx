@@ -5,8 +5,6 @@ import SidePanelContent, { SidePanelContentProps } from './SidePanelContent'
 import withHeaderItem from '@/utils/hoc/withHeaderItem'
 import { setPanelExpand, useAppSelector, useAppDispatch } from '@/store'
 import type { CommonProps } from '@/@types/common'
-import ShortcutSelector from '@/components/custom/ShortcutSelector'
-import IPStatusBadge from '@/components/custom/IPStatusBadge'
 
 type SidePanelProps = SidePanelContentProps & CommonProps
 
@@ -33,15 +31,13 @@ const _SidePanel = (props: SidePanelProps) => {
 
     return (
         <>
-            {/* <div
+            <div
                 className={classNames('text-2xl', className)}
                 onClick={openPanel}
                 {...rest}
             >
                 <HiOutlineCog />
-            </div> */}
-            <ShortcutSelector />
-            <IPStatusBadge />
+            </div>
             <Drawer
                 title="Side Panel"
                 isOpen={panelExpand}

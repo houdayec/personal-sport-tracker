@@ -1,23 +1,94 @@
 import { lazy } from 'react'
 import type { Routes } from '@/@types/routes'
+import { FITNESS_ROUTES } from '@/features/fitness/constants/routes'
 
 export const fitnessProtectedRoutes: Routes = [
     {
         key: 'fitness.dashboard',
-        path: '/fitness',
-        component: lazy(() => import('@/features/fitness/dashboard/pages/FitnessDashboardPage')),
+        path: FITNESS_ROUTES.dashboard,
+        component: lazy(
+            () => import('@/features/fitness/dashboard/pages/FitnessDashboardPage'),
+        ),
         authority: ['USER'],
     },
     {
-        key: 'fitness.workouts',
-        path: '/fitness/workouts',
-        component: lazy(() => import('@/features/fitness/workouts/pages/WorkoutSessionsPage')),
+        key: 'fitness.dashboard',
+        path: FITNESS_ROUTES.dashboardAlias,
+        component: lazy(
+            () => import('@/features/fitness/dashboard/pages/FitnessDashboardPage'),
+        ),
         authority: ['USER'],
     },
     {
-        key: 'fitness.body',
-        path: '/fitness/body',
-        component: lazy(() => import('@/features/fitness/body/pages/BodyTrackingPage')),
+        key: 'fitness.training.library',
+        path: FITNESS_ROUTES.trainingRoot,
+        component: lazy(
+            () => import('@/features/fitness/training/pages/ExerciseLibraryPage'),
+        ),
+        authority: ['USER'],
+    },
+    {
+        key: 'fitness.training.library',
+        path: FITNESS_ROUTES.trainingLibrary,
+        component: lazy(
+            () => import('@/features/fitness/training/pages/ExerciseLibraryPage'),
+        ),
+        authority: ['USER'],
+    },
+    {
+        key: 'fitness.training.templates',
+        path: FITNESS_ROUTES.trainingTemplates,
+        component: lazy(
+            () => import('@/features/fitness/training/pages/WorkoutTemplatesPage'),
+        ),
+        authority: ['USER'],
+    },
+    {
+        key: 'fitness.training.today',
+        path: FITNESS_ROUTES.trainingToday,
+        component: lazy(
+            () => import('@/features/fitness/training/pages/WorkoutTodayPage'),
+        ),
+        authority: ['USER'],
+    },
+    {
+        key: 'fitness.training.history',
+        path: FITNESS_ROUTES.trainingHistory,
+        component: lazy(
+            () => import('@/features/fitness/training/pages/WorkoutHistoryPage'),
+        ),
+        authority: ['USER'],
+    },
+    {
+        key: 'fitness.body.weight',
+        path: FITNESS_ROUTES.bodyRoot,
+        component: lazy(() => import('@/features/fitness/body/pages/BodyWeightPage')),
+        authority: ['USER'],
+    },
+    {
+        key: 'fitness.body.weight',
+        path: FITNESS_ROUTES.bodyWeight,
+        component: lazy(() => import('@/features/fitness/body/pages/BodyWeightPage')),
+        authority: ['USER'],
+    },
+    {
+        key: 'fitness.body.measurements',
+        path: FITNESS_ROUTES.bodyMeasurements,
+        component: lazy(
+            () => import('@/features/fitness/body/pages/BodyMeasurementsPage'),
+        ),
+        authority: ['USER'],
+    },
+    {
+        key: 'fitness.progress',
+        path: FITNESS_ROUTES.progress,
+        component: lazy(() => import('@/features/fitness/progress/pages/ProgressPage')),
+        authority: ['USER'],
+    },
+    {
+        key: 'fitness.account',
+        path: FITNESS_ROUTES.account,
+        component: lazy(() => import('@/features/fitness/account/pages/AccountPage')),
         authority: ['USER'],
     },
 ]

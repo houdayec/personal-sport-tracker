@@ -4,7 +4,6 @@ import UserDropdown from '@/components/template/UserDropdown'
 import MobileNav from '@/components/template/MobileNav'
 import StackedSideNav from '@/components/template/StackedSideNav'
 import View from '@/views'
-import WebsiteAdminButton from '@/components/custom/WebsiteAdminButton'
 
 const HeaderActionsStart = () => {
     return (
@@ -18,7 +17,6 @@ const HeaderActionsEnd = () => {
     return (
         <>
             <SidePanel />
-            <WebsiteAdminButton />
             <UserDropdown hoverable={false} />
         </>
     )

@@ -9,8 +9,6 @@ interface LogoProps extends CommonProps {
     logoWidth?: number | string
 }
 
-const LOGO_SRC_PATH = '/img/logo/'
-
 const Logo = (props: LogoProps) => {
     const {
         type = 'full',
@@ -23,19 +21,39 @@ const Logo = (props: LogoProps) => {
 
     return (
         <div
-            className={classNames('logo my-4', className)} // Adds top and bottom margin
+            className={classNames('logo my-4', className)}
             style={{
                 ...style,
                 ...{ width: logoWidth },
             }}
         >
-            <img
-                className={`rounded-full object-cover ${imgClass}`} // Makes image circular
-                src={`${LOGO_SRC_PATH}logo-${mode}-${type}.svg`}
-                alt={`${APP_NAME} logo`}
-            />
+            <div className="flex items-center gap-2">
+                <div
+                    className={classNames(
+                        'flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold',
+                        mode === 'dark'
+                            ? 'bg-white/15 text-white'
+                            : 'bg-orange-100 text-orange-600',
+                        imgClass,
+                    )}
+                    aria-label={`${APP_NAME} logo`}
+                >
+                    ST
+                </div>
+                {type === 'full' && (
+                    <span
+                        className={classNames(
+                            'text-sm font-semibold',
+                            mode === 'dark'
+                                ? 'text-white'
+                                : 'text-gray-900 dark:text-white',
+                        )}
+                    >
+                        {APP_NAME}
+                    </span>
+                )}
+            </div>
         </div>
-
     )
 }
 

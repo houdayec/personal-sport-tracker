@@ -1,13 +1,9 @@
 import Header from '@/components/template/Header'
 import SideNavToggle from '@/components/template/SideNavToggle'
-import SidePanel from '@/components/template/SidePanel'
 import MobileNav from '@/components/template/MobileNav'
 import UserDropdown from '@/components/template/UserDropdown'
 import SideNav from '@/components/template/SideNav'
 import View from '@/views'
-import ShortcutSelector from '../custom/ShortcutSelector'
-import IPStatusBadge from '../custom/IPStatusBadge'
-import WebsiteAdminButton from '@/components/custom/WebsiteAdminButton'
 
 const HeaderActionsStart = () => {
     return (
@@ -21,10 +17,6 @@ const HeaderActionsStart = () => {
 const HeaderActionsEnd = () => {
     return (
         <>
-            {/* <SidePanel /> */}
-            <ShortcutSelector />
-            <WebsiteAdminButton />
-            <IPStatusBadge />
             <UserDropdown hoverable={false} />
         </>
     )
