@@ -20,3 +20,5 @@ export const FITNESS_ROUTES = {
     adminRoot: '/fitness/admin',
     adminDev: '/fitness/admin/dev',
 } as const
+
+export const FITNESS_ADMIN_UID = 'CKz2MS0kdaWLbBIaAAVsJGKJqFL2' as const

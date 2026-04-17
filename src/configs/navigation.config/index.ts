@@ -3,7 +3,10 @@ import {
     NAV_ITEM_TYPE_COLLAPSE,
 } from '@/constants/navigation.constant'
 import type { NavigationTree } from '@/@types/navigation'
-import { FITNESS_ROUTES } from '@/features/fitness/constants/routes'
+import {
+    FITNESS_ADMIN_UID,
+    FITNESS_ROUTES,
+} from '@/features/fitness/constants/routes'
 
 const navigationConfig: NavigationTree[] = [
     {
@@ -125,7 +128,7 @@ const navigationConfig: NavigationTree[] = [
         translateKey: 'nav.fitness.admin.title',
         icon: 'admin',
         type: NAV_ITEM_TYPE_COLLAPSE,
-        authority: [],
+        authority: [FITNESS_ADMIN_UID],
         subMenu: [
             {
                 key: 'fitness.admin.dev',
@@ -134,7 +137,7 @@ const navigationConfig: NavigationTree[] = [
                 translateKey: 'nav.fitness.admin.dev',
                 icon: '',
                 type: NAV_ITEM_TYPE_ITEM,
-                authority: [],
+                authority: [FITNESS_ADMIN_UID],
                 subMenu: [],
             },
         ],

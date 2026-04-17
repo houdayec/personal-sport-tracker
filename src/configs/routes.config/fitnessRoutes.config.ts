@@ -1,6 +1,9 @@
 import { lazy } from 'react'
 import type { Routes } from '@/@types/routes'
-import { FITNESS_ROUTES } from '@/features/fitness/constants/routes'
+import {
+    FITNESS_ADMIN_UID,
+    FITNESS_ROUTES,
+} from '@/features/fitness/constants/routes'
 
 export const fitnessProtectedRoutes: Routes = [
     {
@@ -119,12 +122,12 @@ export const fitnessProtectedRoutes: Routes = [
         key: 'fitness.admin.dev',
         path: FITNESS_ROUTES.adminRoot,
         component: lazy(() => import('@/features/fitness/admin/pages/AdminDevPage')),
-        authority: ['USER'],
+        authority: [FITNESS_ADMIN_UID],
     },
     {
         key: 'fitness.admin.dev',
         path: FITNESS_ROUTES.adminDev,
         component: lazy(() => import('@/features/fitness/admin/pages/AdminDevPage')),
-        authority: ['USER'],
+        authority: [FITNESS_ADMIN_UID],
     },
 ]

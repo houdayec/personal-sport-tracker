@@ -205,7 +205,7 @@ const BodyWeightPage = () => {
     return (
         <div className="space-y-6">
             <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-300">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
                     Corps
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Suivi du poids</h3>

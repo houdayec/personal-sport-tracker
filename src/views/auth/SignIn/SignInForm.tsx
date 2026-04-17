@@ -102,7 +102,7 @@ const SignInForm = (props: SignInFormProps) => {
                 setUser({
                     avatar: user.photoURL || '',
                     userName: user.displayName || 'Anonymous',
-                    authority: ['USER'],
+                    authority: ['USER', user.uid],
                     email: user.email || '',
                 })
             )

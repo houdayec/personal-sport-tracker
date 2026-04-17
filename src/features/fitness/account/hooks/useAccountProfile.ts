@@ -54,7 +54,13 @@ const useAccountProfile = () => {
                 setUser({
                     avatar: avatarUrl,
                     userName: displayName,
-                    authority: authAuthority || ['USER'],
+                    authority: Array.from(
+                        new Set([
+                            'USER',
+                            ...(authAuthority || []),
+                            auth.currentUser?.uid || '',
+                        ].filter(Boolean)),
+                    ),
                     email: auth.currentUser?.email || authEmail || '',
                 }),
             )

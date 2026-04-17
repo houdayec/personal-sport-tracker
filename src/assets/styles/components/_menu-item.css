@@ -14,14 +14,14 @@
   }
 
   &.menu-item-dark {
-    @apply text-gray-400 dark:text-gray-400;
+    @apply text-[#9CA3AF] dark:text-[#9CA3AF];
 
     &.menu-item-hoverable {
-      @apply hover:text-gray-100 hover:bg-gray-700;
+      @apply hover:text-[#F9FAFB] hover:bg-[#374151];
     }
 
     &.menu-item-active {
-      @apply text-gray-100 bg-gray-600 hover:bg-gray-600;
+      @apply text-[#F9FAFB] bg-[#374151] hover:bg-[#374151];
     }
   }
 
@@ -58,7 +58,7 @@
   }
 
   &.menu-collapse-item-dark {
-    @apply text-gray-400 dark:text-gray-400 hover:text-gray-100 dark:hover:text-gray-100 hover:bg-gray-700;
+    @apply text-[#9CA3AF] dark:text-[#9CA3AF] hover:text-[#F9FAFB] dark:hover:text-[#F9FAFB] hover:bg-[#374151];
   }
 
   &.menu-collapse-item-themed {
@@ -71,7 +71,7 @@
 }
 
 .menu-item-divider {
-  @apply border-b border-gray-200 dark:border-gray-600 my-2;
+  @apply border-b border-gray-200 dark:border-[#374151] my-2;
 }
 
 .menu-item-disabled {

@@ -1,17 +1,17 @@
 .card {
-  @apply bg-white rounded-lg dark:bg-gray-800;
+  @apply bg-white rounded-lg dark:bg-[#1F2937];
 }
 
 .card-border {
-  @apply border border-gray-200 dark:border-gray-600;
+  @apply border border-[#E5E7EB] dark:border-[#374151];
 }
 
 .card-shadow {
-  @apply shadow border-b border-gray-200 dark:border-gray-600 dark:border-none;
+  @apply shadow border-b border-[#E5E7EB] dark:border-[#374151] dark:border-none;
 }
 
 .card-header-border {
-  @apply border-b border-gray-200 dark:border-gray-600;
+  @apply border-b border-[#E5E7EB] dark:border-[#374151];
 }
 
 .card-header-extra {
@@ -23,7 +23,7 @@
 }
 
 .card-footer-border {
-  @apply border-t border-gray-200 dark:border-gray-600;
+  @apply border-t border-[#E5E7EB] dark:border-[#374151];
 }
 
 .card-header,

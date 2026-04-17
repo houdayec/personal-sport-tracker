@@ -26,8 +26,6 @@ type ColorLevelList = {
 
 const colorList: ColorList[] = [
     { label: 'Red', value: 'red' },
-    { label: 'Orange', value: 'orange' },
-    { label: 'Amber', value: 'amber' },
     { label: 'Yellow', value: 'yellow' },
     { label: 'Lime', value: 'lime' },
     { label: 'Green', value: 'green' },

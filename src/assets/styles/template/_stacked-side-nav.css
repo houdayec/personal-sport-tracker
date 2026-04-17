@@ -16,17 +16,17 @@
 }
 
 .stacked-side-nav-mini-light {
-  @apply bg-white border-r border-gray-200;
+  @apply bg-white border-r border-[#E5E7EB];
 }
 
 .stacked-side-nav-mini-dark {
-  @apply bg-gray-800 border-r border-gray-700;
+  @apply bg-[#111827] border-r border-[#374151];
 }
 
 .stacked-side-nav-secondary-light {
-  @apply bg-white border-r border-gray-200;
+  @apply bg-white border-r border-[#E5E7EB];
 }
 
 .stacked-side-nav-secondary-dark {
-  @apply bg-gray-800 border-r border-gray-700;
+  @apply bg-[#111827] border-r border-[#374151];
 }

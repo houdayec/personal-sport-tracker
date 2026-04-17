@@ -214,7 +214,7 @@ const ExerciseLibraryPage = () => {
                                             : 'Custom'}
                                     </Tag>
                                     {exercise.isArchived && (
-                                        <Tag className="bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-100">
+                                        <Tag className="bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-100">
                                             Archivé
                                         </Tag>
                                     )}
@@ -270,7 +270,7 @@ const ExerciseLibraryPage = () => {
     return (
         <div className="space-y-6">
             <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-300">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
                     Entraînement
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Bibliothèque d’exercices</h3>

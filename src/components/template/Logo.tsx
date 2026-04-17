@@ -33,7 +33,7 @@ const Logo = (props: LogoProps) => {
                         'flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold',
                         mode === 'dark'
                             ? 'bg-white/15 text-white'
-                            : 'bg-orange-100 text-orange-600',
+                            : 'bg-blue-100 text-blue-600',
                         imgClass,
                     )}
                     aria-label={`${APP_NAME} logo`}

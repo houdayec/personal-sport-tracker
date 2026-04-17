@@ -58,9 +58,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
     const buttonColor = splitedColor[0] || themeColor
     const buttonColorLevel = splitedColor[1] || primaryColorLevel
 
-    const [increaseLevel, decreaseLevel] = useColorLevel(
-        buttonColorLevel as ColorLevel,
-    )
+    const [increaseLevel] = useColorLevel(buttonColorLevel as ColorLevel)
 
     const getButtonSize = () => {
         let sizeClass = ''
@@ -111,7 +109,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
             textColor: 'text-white',
             hoverColor: active
                 ? ''
-                : `hover:bg-${buttonColor}-${decreaseLevel}`,
+                : `hover:bg-${buttonColor}-${increaseLevel}`,
             activeColor: `active:bg-${buttonColor}-${increaseLevel}`,
         }
         return getBtnColor(btn)
@@ -134,11 +132,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
     const defaultColor = () => {
         const btn = {
             bgColor: active
-                ? `bg-gray-100 border border-gray-300 dark:bg-gray-500 dark:border-gray-500`
-                : `bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-700`,
-            textColor: `text-gray-600 dark:text-gray-100`,
-            hoverColor: active ? '' : `hover:bg-gray-50 dark:hover:bg-gray-600`,
-            activeColor: `active:bg-gray-100 dark:active:bg-gray-500 dark:active:border-gray-500`,
+                ? `bg-gray-100 border border-gray-300 dark:bg-[#374151] dark:border-[#374151]`
+                : `bg-white border border-gray-300 dark:bg-[#1F2937] dark:border-[#374151]`,
+            textColor: `text-gray-600 dark:text-[#F9FAFB]`,
+            hoverColor: active ? '' : `hover:bg-gray-50 dark:hover:bg-[#374151]`,
+            activeColor: `active:bg-gray-100 dark:active:bg-[#374151] dark:active:border-[#374151]`,
         }
         return getBtnColor(btn)
     }
@@ -146,11 +144,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
     const plainColor = () => {
         const btn = {
             bgColor: active
-                ? `bg-gray-100 dark:bg-gray-500`
+                ? `bg-gray-100 dark:bg-[#374151]`
                 : 'bg-transparent border border-transparent',
-            textColor: `text-gray-600 dark:text-gray-100`,
-            hoverColor: active ? '' : `hover:bg-gray-50 dark:hover:bg-gray-600`,
-            activeColor: `active:bg-gray-100 dark:active:bg-gray-500 dark:active:border-gray-500`,
+            textColor: `text-gray-600 dark:text-[#F9FAFB]`,
+            hoverColor: active ? '' : `hover:bg-gray-50 dark:hover:bg-[#374151]`,
+            activeColor: `active:bg-gray-100 dark:active:bg-[#374151] dark:active:border-[#374151]`,
         }
         return getBtnColor(btn)
     }

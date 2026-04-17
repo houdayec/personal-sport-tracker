@@ -52,7 +52,7 @@ const FitnessDashboardPage = () => {
     return (
         <div className="space-y-6">
             <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-300">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
                     Dashboard
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Vue d’ensemble fitness</h3>
@@ -82,7 +82,7 @@ const FitnessDashboardPage = () => {
                         <Link
                             key={link.title}
                             to={link.to}
-                            className="rounded-xl border border-gray-200 p-4 transition hover:border-orange-300 hover:bg-orange-50/60 dark:border-gray-700 dark:hover:border-orange-400/60 dark:hover:bg-orange-500/5"
+                            className="rounded-xl border border-gray-200 p-4 transition hover:border-blue-300 hover:bg-blue-50/60 dark:border-gray-700 dark:hover:border-blue-400/60 dark:hover:bg-blue-500/5"
                         >
                             <p className="font-semibold">{link.title}</p>
                             <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">

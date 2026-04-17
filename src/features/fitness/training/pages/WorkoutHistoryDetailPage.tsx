@@ -17,7 +17,7 @@ const WorkoutHistoryDetailPage = () => {
         <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-300">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
                         Historique
                     </p>
                     <h3 className="mt-1 text-2xl font-semibold">Détail de séance</h3>

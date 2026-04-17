@@ -16,7 +16,7 @@ const FitnessPlaceholderPage = ({
     return (
         <div className="space-y-6">
             <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-300">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
                     {section}
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">{title}</h3>
@@ -40,7 +40,7 @@ const FitnessPlaceholderPage = ({
                                 key={block}
                                 className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300"
                             >
-                                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-orange-500" />
+                                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500" />
                                 <span>{block}</span>
                             </li>
                         ))}

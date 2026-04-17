@@ -36,7 +36,7 @@ const useAuthRedirect = () => {
                 setUser({
                     avatar: firebaseUser.photoURL || '',
                     userName: firebaseUser.displayName || 'Anonymous',
-                    authority: ['USER'],
+                    authority: ['USER', firebaseUser.uid],
                     email: firebaseUser.email || '',
                 })
             )

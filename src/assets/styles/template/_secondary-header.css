@@ -1,9 +1,9 @@
 .secondary-header-light {
-  @apply bg-white border-b border-gray-200 print:hidden;
+  @apply bg-white border-b border-[#E5E7EB] print:hidden;
 }
 
 .secondary-header-dark {
-  @apply bg-gray-800 border-b border-gray-700 print:hidden;
+  @apply bg-[#111827] border-b border-[#374151] print:hidden;
 }
 
 .secondary-header-themed {

@@ -1,6 +1,7 @@
 import Header from '@/components/template/Header'
 import SideNavToggle from '@/components/template/SideNavToggle'
 import MobileNav from '@/components/template/MobileNav'
+import ModeToggle from '@/components/template/ModeToggle'
 import UserDropdown from '@/components/template/UserDropdown'
 import SideNav from '@/components/template/SideNav'
 import View from '@/views'
@@ -17,6 +18,7 @@ const HeaderActionsStart = () => {
 const HeaderActionsEnd = () => {
     return (
         <>
+            <ModeToggle />
             <UserDropdown hoverable={false} />
         </>
     )
