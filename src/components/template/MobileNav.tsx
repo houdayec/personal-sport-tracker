@@ -70,7 +70,7 @@ const MobileNav = () => {
                         <MobileNavToggle toggled={isOpen} />
                     </div>
                     <Drawer
-                        title="Navigation"
+                        title="Sport Tracker"
                         isOpen={isOpen}
                         bodyClass={classNames(navColor(), 'p-0')}
                         width={330}

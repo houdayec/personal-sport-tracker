@@ -90,7 +90,9 @@ const useWorkoutTodaySession = () => {
                     ...previous.performedExercises,
                     [input.plannedExerciseId]: {
                         plannedExerciseId: input.plannedExerciseId,
+                        exerciseSource: input.exerciseSource,
                         exerciseId: input.exerciseId,
+                        exerciseSnapshot: input.exerciseSnapshot,
                         name: input.name,
                         status: nextStatus,
                         sets: input.sets,
@@ -100,6 +102,12 @@ const useWorkoutTodaySession = () => {
                 performedExerciseIds: uniq([
                     ...previous.performedExerciseIds,
                     input.plannedExerciseId,
+                    ...(input.exerciseId
+                        ? [
+                              input.exerciseId,
+                              `${input.exerciseSource}:${input.exerciseId}`,
+                          ]
+                        : []),
                 ]),
             }
         },

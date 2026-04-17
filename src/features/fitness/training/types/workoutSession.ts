@@ -1,4 +1,8 @@
 import type { Timestamp } from 'firebase/firestore'
+import type {
+    ExerciseReference,
+    ExerciseSource,
+} from '@/features/fitness/training/types/exercise'
 
 export const WORKOUT_SESSION_SCHEMA_VERSION = 1 as const
 export const WORKOUT_TEMPLATE_SCHEMA_VERSION = 1 as const
@@ -14,7 +18,9 @@ export interface TemplateWorkoutSet {
 }
 
 export interface WorkoutTemplateExercise {
+    exerciseSource?: ExerciseSource
     exerciseId?: string | null
+    exerciseSnapshot?: ExerciseReference['exerciseSnapshot']
     name: string
     muscleGroup?: string
     equipment?: string
@@ -42,7 +48,9 @@ export interface WorkoutTemplate extends WorkoutTemplateDocument {
 
 export interface PlannedWorkoutExercise {
     plannedExerciseId: string
+    exerciseSource: ExerciseSource
     exerciseId: string | null
+    exerciseSnapshot: ExerciseReference['exerciseSnapshot']
     name: string
     muscleGroup: string
     equipment: string
@@ -59,7 +67,9 @@ export interface PerformedWorkoutSet {
 
 export interface PerformedWorkoutExercise {
     plannedExerciseId: string
+    exerciseSource: ExerciseSource
     exerciseId: string | null
+    exerciseSnapshot: ExerciseReference['exerciseSnapshot']
     name: string
     status: Exclude<PerformedExerciseStatus, 'not_started'>
     sets: PerformedWorkoutSet[]
@@ -95,7 +105,9 @@ export interface WorkoutSession extends WorkoutSessionDocument {
 
 export interface SavePerformedExerciseInput {
     plannedExerciseId: string
+    exerciseSource: ExerciseSource
     exerciseId: string | null
+    exerciseSnapshot: ExerciseReference['exerciseSnapshot']
     name: string
     sets: PerformedWorkoutSet[]
     notes: string

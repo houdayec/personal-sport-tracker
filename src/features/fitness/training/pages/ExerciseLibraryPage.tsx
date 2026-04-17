@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import dayjs from 'dayjs'
+import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import {
     Alert,
     Button,
@@ -51,6 +52,10 @@ const matchExerciseSearch = (exercise: Exercise, term: string) => {
         .includes(normalized)
 }
 
+const getExerciseKey = (exercise: Exercise) => {
+    return `${exercise.exerciseSource}:${exercise.id}`
+}
+
 const ExerciseLibraryPage = () => {
     const {
         activeExercises,
@@ -73,6 +78,9 @@ const ExerciseLibraryPage = () => {
     const [isFormOpen, setIsFormOpen] = useState(false)
     const [formMode, setFormMode] = useState<ExerciseFormMode>('create')
     const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
+    const [exerciseToArchive, setExerciseToArchive] = useState<Exercise | null>(
+        null,
+    )
 
     const filteredActiveExercises = useMemo(() => {
         return activeExercises.filter((exercise) =>
@@ -131,21 +139,30 @@ const ExerciseLibraryPage = () => {
             throw new Error('Exercice introuvable pour la modification.')
         }
 
-        await updateExercise(selectedExercise.id, values)
+        await updateExercise(selectedExercise, values)
         closeFormDialog()
     }
 
-    const handleArchiveExercise = async (exerciseId: string) => {
+    const handleArchiveExercise = async (exercise: Exercise) => {
         try {
-            await archiveExercise(exerciseId)
+            await archiveExercise(exercise)
         } catch {
             // Error already managed in hook state.
         }
     }
 
-    const handleUnarchiveExercise = async (exerciseId: string) => {
+    const handleConfirmArchiveExercise = async () => {
+        if (!exerciseToArchive) {
+            return
+        }
+
+        await handleArchiveExercise(exerciseToArchive)
+        setExerciseToArchive(null)
+    }
+
+    const handleUnarchiveExercise = async (exercise: Exercise) => {
         try {
-            await unarchiveExercise(exerciseId)
+            await unarchiveExercise(exercise)
         } catch {
             // Error already managed in hook state.
         }
@@ -169,7 +186,7 @@ const ExerciseLibraryPage = () => {
             <div className="space-y-3">
                 {exercises.map((exercise) => (
                     <div
-                        key={exercise.id}
+                        key={getExerciseKey(exercise)}
                         className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
                     >
                         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -185,6 +202,17 @@ const ExerciseLibraryPage = () => {
                                     <Tag className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
                                         {exercise.equipment}
                                     </Tag>
+                                    <Tag
+                                        className={
+                                            exercise.exerciseSource === 'global'
+                                                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-100'
+                                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-100'
+                                        }
+                                    >
+                                        {exercise.exerciseSource === 'global'
+                                            ? 'Global'
+                                            : 'Custom'}
+                                    </Tag>
                                     {exercise.isArchived && (
                                         <Tag className="bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-100">
                                             Archivé
@@ -194,36 +222,42 @@ const ExerciseLibraryPage = () => {
                             </div>
 
                             <div className="flex flex-wrap gap-2">
-                                <Button
-                                    size="xs"
-                                    icon={<HiOutlinePencil />}
-                                    onClick={() => openEditDialog(exercise)}
-                                    disabled={isMutating}
-                                >
-                                    Modifier
-                                </Button>
-                                {archived ? (
-                                    <Button
-                                        size="xs"
-                                        variant="twoTone"
-                                        icon={<HiOutlineCheckCircle />}
-                                        onClick={() =>
-                                            handleUnarchiveExercise(exercise.id)
-                                        }
-                                        disabled={isMutating}
-                                    >
-                                        Désarchiver
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        size="xs"
-                                        variant="twoTone"
-                                        icon={<HiOutlineBan />}
-                                        onClick={() => handleArchiveExercise(exercise.id)}
-                                        disabled={isMutating}
-                                    >
-                                        Archiver
-                                    </Button>
+                                {exercise.exerciseSource === 'user' && (
+                                    <>
+                                        <Button
+                                            size="xs"
+                                            icon={<HiOutlinePencil />}
+                                            onClick={() => openEditDialog(exercise)}
+                                            disabled={isMutating}
+                                        >
+                                            Modifier
+                                        </Button>
+                                        {archived ? (
+                                            <Button
+                                                size="xs"
+                                                variant="twoTone"
+                                                icon={<HiOutlineCheckCircle />}
+                                                onClick={() =>
+                                                    handleUnarchiveExercise(exercise)
+                                                }
+                                                disabled={isMutating}
+                                            >
+                                                Désarchiver
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                size="xs"
+                                                variant="twoTone"
+                                                icon={<HiOutlineBan />}
+                                                onClick={() =>
+                                                    setExerciseToArchive(exercise)
+                                                }
+                                                disabled={isMutating}
+                                            >
+                                                Archiver
+                                            </Button>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -241,7 +275,11 @@ const ExerciseLibraryPage = () => {
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Bibliothèque d’exercices</h3>
                 <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                    Référentiel personnel d’exercices stocké dans Firestore sous
+                    Bibliothèque fusionnée avec exercices partagés
+                    <code className="mx-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700">
+                        global_exercises
+                    </code>
+                    et exercices personnalisés
                     <code className="mx-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700">
                         users/{'{uid}'}/exercises
                     </code>
@@ -347,6 +385,24 @@ const ExerciseLibraryPage = () => {
                 onClose={closeFormDialog}
                 onSubmit={handleSubmitExerciseForm}
             />
+
+            <ConfirmDialog
+                isOpen={Boolean(exerciseToArchive)}
+                type="warning"
+                title="Archiver cet exercice ?"
+                confirmText="Archiver"
+                cancelText="Annuler"
+                onClose={() => setExerciseToArchive(null)}
+                onRequestClose={() => setExerciseToArchive(null)}
+                onCancel={() => setExerciseToArchive(null)}
+                onConfirm={handleConfirmArchiveExercise}
+            >
+                <p>
+                    {exerciseToArchive
+                        ? `L’exercice "${exerciseToArchive.name}" sera masqué des actifs et déplacé dans la section archivés.`
+                        : 'Cet exercice sera déplacé dans la section archivés.'}
+                </p>
+            </ConfirmDialog>
         </div>
     )
 }

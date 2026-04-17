@@ -82,9 +82,12 @@ const userProfileFromSnapshot = (
 }
 
 const buildCreatePayload = (data: CreateUserProfileInput): CreateUserProfileInput => {
+    const displayName = normalizeDisplayName(data.displayName)
+    const photoUrl = data.photoUrl?.trim()
+
     return {
-        displayName: normalizeDisplayName(data.displayName),
-        photoUrl: data.photoUrl?.trim() || undefined,
+        displayName,
+        ...(photoUrl ? { photoUrl } : {}),
         preferredWeightUnit: isPreferredWeightUnit(data.preferredWeightUnit)
             ? data.preferredWeightUnit
             : DEFAULT_WEIGHT_UNIT,

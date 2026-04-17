@@ -8,6 +8,7 @@ import {
 import { db } from '@/firebase'
 
 export const USERS_COLLECTION = 'users' as const
+export const GLOBAL_EXERCISES_COLLECTION = 'global_exercises' as const
 
 export const FITNESS_USER_SUBCOLLECTIONS = {
     exercises: 'exercises',
@@ -47,7 +48,15 @@ export const userSubcollectionRef = <T extends DocumentData = DocumentData>(
     return collection(db, USERS_COLLECTION, uid, subcollection) as CollectionReference<T>
 }
 
+export const globalExercisesCollectionRef = <
+    T extends DocumentData = DocumentData,
+>(): CollectionReference<T> => {
+    return collection(db, GLOBAL_EXERCISES_COLLECTION) as CollectionReference<T>
+}
+
 export const fitnessCollections = {
+    globalExercises: <T extends DocumentData = DocumentData>() =>
+        globalExercisesCollectionRef<T>(),
     exercises: <T extends DocumentData = DocumentData>(uid: string) =>
         userSubcollectionRef<T>(uid, FITNESS_USER_SUBCOLLECTIONS.exercises),
     workoutTemplates: <T extends DocumentData = DocumentData>(uid: string) =>

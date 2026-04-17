@@ -32,7 +32,13 @@ const DEFAULT_TEMPLATE_INPUT: WorkoutTemplateInput = {
     tags: [],
     exercises: [
         {
+            exerciseSource: 'user',
             exerciseId: null,
+            exerciseSnapshot: {
+                name: 'Exercice 1',
+                muscleGroup: '',
+                equipment: '',
+            },
             name: 'Exercice 1',
             muscleGroup: '',
             equipment: '',
@@ -52,7 +58,13 @@ const cloneTemplateAsInput = (template: WorkoutTemplate): WorkoutTemplateInput =
         name: template.name,
         tags: template.tags || [],
         exercises: template.exercises.map((exercise) => ({
+            exerciseSource: exercise.exerciseSource || 'user',
             exerciseId: exercise.exerciseId || null,
+            exerciseSnapshot: exercise.exerciseSnapshot || {
+                name: exercise.name,
+                muscleGroup: exercise.muscleGroup || '',
+                equipment: exercise.equipment || '',
+            },
             name: exercise.name,
             muscleGroup: exercise.muscleGroup || '',
             equipment: exercise.equipment || '',
@@ -80,6 +92,7 @@ const WorkoutTemplatesPage = () => {
 
     const {
         templates,
+        exerciseOptions,
         isLoading,
         isMutating,
         isStarting,
@@ -308,6 +321,7 @@ const WorkoutTemplatesPage = () => {
                 mode={formMode}
                 isSubmitting={isMutating}
                 initialValues={formInitialValues}
+                exerciseOptions={exerciseOptions}
                 onClose={closeFormDialog}
                 onSubmit={handleSubmitTemplate}
             />

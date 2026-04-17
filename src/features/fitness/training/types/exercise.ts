@@ -2,11 +2,15 @@ import type { Timestamp } from 'firebase/firestore'
 
 export const EXERCISE_SCHEMA_VERSION = 1 as const
 
+export type ExerciseSource = 'global' | 'user'
+
 export interface ExerciseInput {
     name: string
     muscleGroup: string
     equipment: string
 }
+
+export interface ExerciseSnapshot extends ExerciseInput {}
 
 export interface ExerciseFirestoreDocument extends ExerciseInput {
     isArchived: boolean
@@ -17,6 +21,13 @@ export interface ExerciseFirestoreDocument extends ExerciseInput {
 
 export interface Exercise extends ExerciseFirestoreDocument {
     id: string
+    exerciseSource: ExerciseSource
+}
+
+export interface ExerciseReference {
+    exerciseSource: ExerciseSource
+    exerciseId: string | null
+    exerciseSnapshot: ExerciseSnapshot
 }
 
 export const EXERCISE_MUSCLE_GROUP_OPTIONS = [

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Dialog, FormContainer, FormItem, Input } from '@/components/ui'
+import type { Exercise } from '@/features/fitness/training/types/exercise'
 import type {
     TemplateWorkoutSet,
     WorkoutTemplateExercise,
@@ -17,6 +18,7 @@ interface WorkoutTemplateFormDialogProps {
     mode: WorkoutTemplateFormMode
     isSubmitting: boolean
     initialValues: WorkoutTemplateInput
+    exerciseOptions: Exercise[]
     onClose: () => void
     onSubmit: (values: WorkoutTemplateInput) => Promise<void>
 }
@@ -35,12 +37,21 @@ const createDefaultSet = (index: number): TemplateWorkoutSet => ({
 })
 
 const createDefaultExercise = (index: number): WorkoutTemplateExercise => ({
+    exerciseSource: 'user',
     exerciseId: null,
+    exerciseSnapshot: {
+        name: `Exercice ${index + 1}`,
+        muscleGroup: '',
+        equipment: '',
+    },
     name: `Exercice ${index + 1}`,
     muscleGroup: '',
     equipment: '',
     plannedSets: [createDefaultSet(0)],
 })
+
+const exerciseOptionValue = (exercise: Exercise) =>
+    `${exercise.exerciseSource}:${exercise.id}`
 
 const getDialogTitle = (mode: WorkoutTemplateFormMode) => {
     return mode === 'create' ? 'Nouveau template' : 'Modifier le template'
@@ -87,6 +98,7 @@ const WorkoutTemplateFormDialog = ({
     mode,
     isSubmitting,
     initialValues,
+    exerciseOptions,
     onClose,
     onSubmit,
 }: WorkoutTemplateFormDialogProps) => {
@@ -137,6 +149,11 @@ const WorkoutTemplateFormDialog = ({
                 return {
                     ...exercise,
                     name,
+                    exerciseSnapshot: {
+                        name,
+                        muscleGroup: exercise.muscleGroup || '',
+                        equipment: exercise.equipment || '',
+                    },
                 }
             }),
         }))
@@ -144,6 +161,71 @@ const WorkoutTemplateFormDialog = ({
         setErrors((prev) => ({
             ...prev,
             exercises: undefined,
+        }))
+    }
+
+    const getExerciseSelectionValue = (exercise: WorkoutTemplateExercise) => {
+        if (!exercise.exerciseId) {
+            return ''
+        }
+
+        const source = exercise.exerciseSource || 'user'
+        return `${source}:${exercise.exerciseId}`
+    }
+
+    const setExerciseFromLibrary = (exerciseIndex: number, value: string) => {
+        if (!value) {
+            setValues((prev) => ({
+                ...prev,
+                exercises: prev.exercises.map((exercise, index) => {
+                    if (index !== exerciseIndex) {
+                        return exercise
+                    }
+
+                    return {
+                        ...exercise,
+                        exerciseSource: 'user',
+                        exerciseId: null,
+                        exerciseSnapshot: {
+                            name: exercise.name,
+                            muscleGroup: exercise.muscleGroup || '',
+                            equipment: exercise.equipment || '',
+                        },
+                    }
+                }),
+            }))
+            return
+        }
+
+        const selected = exerciseOptions.find(
+            (exercise) => exerciseOptionValue(exercise) === value,
+        )
+
+        if (!selected) {
+            return
+        }
+
+        setValues((prev) => ({
+            ...prev,
+            exercises: prev.exercises.map((exercise, index) => {
+                if (index !== exerciseIndex) {
+                    return exercise
+                }
+
+                return {
+                    ...exercise,
+                    exerciseSource: selected.exerciseSource,
+                    exerciseId: selected.id,
+                    name: selected.name,
+                    muscleGroup: selected.muscleGroup,
+                    equipment: selected.equipment,
+                    exerciseSnapshot: {
+                        name: selected.name,
+                        muscleGroup: selected.muscleGroup,
+                        equipment: selected.equipment,
+                    },
+                }
+            }),
         }))
     }
 
@@ -274,7 +356,14 @@ const WorkoutTemplateFormDialog = ({
                 tags: values.tags,
                 exercises: values.exercises.map((exercise) => ({
                     ...exercise,
+                    exerciseSource: exercise.exerciseSource || 'user',
+                    exerciseId: exercise.exerciseId || null,
                     name: exercise.name.trim(),
+                    exerciseSnapshot: {
+                        name: exercise.name.trim(),
+                        muscleGroup: exercise.muscleGroup?.trim() || '',
+                        equipment: exercise.equipment?.trim() || '',
+                    },
                     plannedSets: exercise.plannedSets.map((set, index) => ({
                         setNumber: index + 1,
                         targetReps: set.targetReps?.trim() || undefined,
@@ -402,6 +491,32 @@ const WorkoutTemplateFormDialog = ({
                                     </div>
 
                                     <div className="grid gap-3 lg:grid-cols-2">
+                                        <FormItem label="Bibliothèque (optionnel)">
+                                            <select
+                                                className="input"
+                                                value={getExerciseSelectionValue(exercise)}
+                                                onChange={(event) =>
+                                                    setExerciseFromLibrary(
+                                                        exerciseIndex,
+                                                        event.target.value,
+                                                    )
+                                                }
+                                            >
+                                                <option value="">Exercice libre</option>
+                                                {exerciseOptions.map((option) => (
+                                                    <option
+                                                        key={exerciseOptionValue(option)}
+                                                        value={exerciseOptionValue(option)}
+                                                    >
+                                                        {option.name} (
+                                                        {option.exerciseSource === 'global'
+                                                            ? 'Global'
+                                                            : 'Custom'}
+                                                        )
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </FormItem>
                                         <FormItem label="Nom" asterisk>
                                             <Input
                                                 value={exercise.name}

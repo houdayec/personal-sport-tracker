@@ -12,6 +12,8 @@ import type { Exercise, ExerciseInput } from '@/features/fitness/training/types/
 
 const uidRequiredErrorMessage =
     'Utilisateur non connecté. Impossible d’accéder à la bibliothèque d’exercices.'
+const globalExerciseMutationError =
+    'Les exercices globaux sont en lecture seule.'
 
 const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error && error.message) {
@@ -110,10 +112,13 @@ const useExerciseLibrary = () => {
     )
 
     const handleUpdateExercise = useCallback(
-        async (exerciseId: string, input: ExerciseInput) => {
+        async (exercise: Exercise, input: ExerciseInput) => {
             await runMutation(async () => {
+                if (exercise.exerciseSource !== 'user') {
+                    throw new Error(globalExerciseMutationError)
+                }
                 const currentUid = assertUid()
-                await updateExercise(currentUid, exerciseId, input)
+                await updateExercise(currentUid, exercise.id, input)
                 await refreshActiveExercises()
 
                 if (isArchivedLoaded) {
@@ -131,10 +136,13 @@ const useExerciseLibrary = () => {
     )
 
     const handleArchiveExercise = useCallback(
-        async (exerciseId: string) => {
+        async (exercise: Exercise) => {
             await runMutation(async () => {
+                if (exercise.exerciseSource !== 'user') {
+                    throw new Error(globalExerciseMutationError)
+                }
                 const currentUid = assertUid()
-                await archiveExercise(currentUid, exerciseId)
+                await archiveExercise(currentUid, exercise.id)
                 await refreshActiveExercises()
 
                 if (isArchivedLoaded) {
@@ -152,10 +160,13 @@ const useExerciseLibrary = () => {
     )
 
     const handleUnarchiveExercise = useCallback(
-        async (exerciseId: string) => {
+        async (exercise: Exercise) => {
             await runMutation(async () => {
+                if (exercise.exerciseSource !== 'user') {
+                    throw new Error(globalExerciseMutationError)
+                }
                 const currentUid = assertUid()
-                await unarchiveExercise(currentUid, exerciseId)
+                await unarchiveExercise(currentUid, exercise.id)
                 await refreshActiveExercises()
 
                 if (isArchivedLoaded) {

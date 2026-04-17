@@ -12,6 +12,10 @@ import {
     type QueryDocumentSnapshot,
 } from 'firebase/firestore'
 import { fitnessCollections } from '@/features/fitness/common/services'
+import type {
+    ExerciseSnapshot,
+    ExerciseSource,
+} from '@/features/fitness/training/types/exercise'
 import {
     WORKOUT_SESSION_SCHEMA_VERSION,
     WORKOUT_TEMPLATE_SCHEMA_VERSION,
@@ -66,6 +70,38 @@ const sortByMostRecent = <T extends { updatedAt?: any; createdAt?: any }>(
     })
 }
 
+const normalizeExerciseSource = (
+    value: unknown,
+    fallback: ExerciseSource = 'user',
+): ExerciseSource => {
+    return value === 'global' || value === 'user' ? value : fallback
+}
+
+const normalizeString = (value: unknown): string => {
+    return typeof value === 'string' ? value.trim() : ''
+}
+
+const buildExerciseSnapshot = (record: Record<string, unknown>): ExerciseSnapshot => {
+    const rawSnapshot =
+        typeof record.exerciseSnapshot === 'object' && record.exerciseSnapshot
+            ? (record.exerciseSnapshot as Record<string, unknown>)
+            : null
+
+    const name = normalizeString(rawSnapshot?.name ?? record.name)
+    const muscleGroup = normalizeString(rawSnapshot?.muscleGroup ?? record.muscleGroup)
+    const equipment = normalizeString(rawSnapshot?.equipment ?? record.equipment)
+
+    return {
+        name,
+        muscleGroup,
+        equipment,
+    }
+}
+
+const getExerciseRefKey = (source: ExerciseSource, exerciseId: string) => {
+    return `${source}:${exerciseId}`
+}
+
 const normalizeTemplateTags = (tags: unknown): string[] => {
     if (!Array.isArray(tags)) {
         return []
@@ -91,23 +127,45 @@ const normalizeTemplateSet = (set: unknown, index: number): TemplateWorkoutSet =
 
     const record = set as Record<string, unknown>
 
+    const setNumber =
+        typeof record.setNumber === 'number'
+            ? record.setNumber
+            : index + 1
+    const targetRepsRaw =
+        typeof record.targetReps === 'string'
+            ? record.targetReps
+            : typeof record.reps === 'string'
+              ? record.reps
+              : ''
+    const targetWeightRaw =
+        typeof record.targetWeight === 'string'
+            ? record.targetWeight
+            : typeof record.weight === 'string'
+              ? record.weight
+              : ''
+
+    const targetReps = targetRepsRaw.trim()
+    const targetWeight = targetWeightRaw.trim()
+
     return {
-        setNumber:
-            typeof record.setNumber === 'number'
-                ? record.setNumber
-                : index + 1,
-        targetReps:
-            typeof record.targetReps === 'string'
-                ? record.targetReps
-                : typeof record.reps === 'string'
-                  ? record.reps
-                  : undefined,
-        targetWeight:
-            typeof record.targetWeight === 'string'
-                ? record.targetWeight
-                : typeof record.weight === 'string'
-                  ? record.weight
-                  : undefined,
+        setNumber,
+        ...(targetReps ? { targetReps } : {}),
+        ...(targetWeight ? { targetWeight } : {}),
+    }
+}
+
+const toFirestoreTemplateSet = (
+    set: TemplateWorkoutSet,
+    index: number,
+): TemplateWorkoutSet => {
+    const setNumber = Number.isFinite(set.setNumber) ? set.setNumber : index + 1
+    const targetReps = (set.targetReps || '').trim()
+    const targetWeight = (set.targetWeight || '').trim()
+
+    return {
+        setNumber,
+        ...(targetReps ? { targetReps } : {}),
+        ...(targetWeight ? { targetWeight } : {}),
     }
 }
 
@@ -118,7 +176,13 @@ const normalizeTemplateExercise = (
     if (typeof exercise !== 'object' || !exercise) {
         return {
             name: `Exercice ${index + 1}`,
+            exerciseSource: 'user',
             exerciseId: null,
+            exerciseSnapshot: {
+                name: `Exercice ${index + 1}`,
+                muscleGroup: '',
+                equipment: '',
+            },
             muscleGroup: '',
             equipment: '',
             plannedSets: [],
@@ -133,20 +197,30 @@ const normalizeTemplateExercise = (
           ? record.sets
           : []
 
+    const exerciseId =
+        typeof record.exerciseId === 'string'
+            ? record.exerciseId
+            : typeof record.id === 'string'
+              ? record.id
+              : null
+
+    const snapshot = buildExerciseSnapshot(record)
+    const fallbackName = `Exercice ${index + 1}`
+    const name = snapshot.name || fallbackName
+    const muscleGroup = snapshot.muscleGroup
+    const equipment = snapshot.equipment
+
     return {
-        name:
-            typeof record.name === 'string' && record.name.trim()
-                ? record.name.trim()
-                : `Exercice ${index + 1}`,
-        exerciseId:
-            typeof record.exerciseId === 'string'
-                ? record.exerciseId
-                : typeof record.id === 'string'
-                  ? record.id
-                  : null,
-        muscleGroup:
-            typeof record.muscleGroup === 'string' ? record.muscleGroup : '',
-        equipment: typeof record.equipment === 'string' ? record.equipment : '',
+        name,
+        exerciseSource: normalizeExerciseSource(record.exerciseSource),
+        exerciseId,
+        exerciseSnapshot: {
+            name,
+            muscleGroup,
+            equipment,
+        },
+        muscleGroup,
+        equipment,
         plannedSets: rawSets.map(normalizeTemplateSet),
     }
 }
@@ -198,16 +272,35 @@ const normalizeTemplateInput = (
             throw new Error(`L’exercice "${exerciseName}" doit contenir au moins un set.`)
         }
 
-        return {
-            exerciseId: exercise.exerciseId || null,
+        const muscleGroup = exercise.muscleGroup?.trim() || ''
+        const equipment = exercise.equipment?.trim() || ''
+        const exerciseId = exercise.exerciseId || null
+        const exerciseSource = normalizeExerciseSource(
+            exercise.exerciseSource,
+            'user',
+        )
+        const exerciseSnapshot = {
             name: exerciseName,
-            muscleGroup: exercise.muscleGroup?.trim() || '',
-            equipment: exercise.equipment?.trim() || '',
-            plannedSets: exercise.plannedSets.map((set, setIndex) => ({
-                setNumber: setIndex + 1,
-                targetReps: set.targetReps?.trim() || undefined,
-                targetWeight: set.targetWeight?.trim() || undefined,
-            })),
+            muscleGroup,
+            equipment,
+        }
+
+        return {
+            exerciseSource,
+            exerciseId,
+            exerciseSnapshot,
+            name: exerciseName,
+            muscleGroup,
+            equipment,
+            plannedSets: exercise.plannedSets.map((set, setIndex) =>
+                toFirestoreTemplateSet(
+                    {
+                        ...set,
+                        setNumber: setIndex + 1,
+                    },
+                    setIndex,
+                ),
+            ),
         }
     })
 
@@ -228,17 +321,27 @@ const normalizePerformedExercise = (
 
     const record = value as Record<string, unknown>
     const rawSets = Array.isArray(record.sets) ? record.sets : []
+    const snapshot = buildExerciseSnapshot(record)
+    const recordName =
+        typeof record.name === 'string' ? record.name.trim() : ''
+    const name = recordName || snapshot.name || plannedExercise.name
 
     return {
         plannedExerciseId: plannedExercise.plannedExerciseId,
+        exerciseSource: normalizeExerciseSource(
+            record.exerciseSource,
+            plannedExercise.exerciseSource,
+        ),
         exerciseId:
             typeof record.exerciseId === 'string'
                 ? record.exerciseId
                 : plannedExercise.exerciseId,
-        name:
-            typeof record.name === 'string' && record.name.trim()
-                ? record.name
-                : plannedExercise.name,
+        exerciseSnapshot: {
+            name,
+            muscleGroup: snapshot.muscleGroup || plannedExercise.muscleGroup,
+            equipment: snapshot.equipment || plannedExercise.equipment,
+        },
+        name,
         status:
             record.status === 'completed' ? 'completed' : 'in_progress',
         sets: rawSets
@@ -278,13 +381,49 @@ const normalizePerformedExercise = (
     }
 }
 
+const normalizePlannedExercise = (
+    exercise: unknown,
+    index: number,
+): PlannedWorkoutExercise => {
+    const normalized = normalizeTemplateExercise(exercise, index)
+    const plannedExerciseId =
+        typeof exercise === 'object' &&
+        exercise &&
+        typeof (exercise as Record<string, unknown>).plannedExerciseId === 'string'
+            ? ((exercise as Record<string, unknown>).plannedExerciseId as string)
+            : `planned_${index + 1}_${sanitizeKey(normalized.exerciseId || normalized.name)}`
+
+    const orderIndex =
+        typeof exercise === 'object' &&
+        exercise &&
+        typeof (exercise as Record<string, unknown>).orderIndex === 'number'
+            ? ((exercise as Record<string, unknown>).orderIndex as number)
+            : index
+
+    return {
+        plannedExerciseId,
+        exerciseSource: normalizeExerciseSource(normalized.exerciseSource, 'user'),
+        exerciseId: normalized.exerciseId || null,
+        exerciseSnapshot: normalized.exerciseSnapshot || {
+            name: normalized.name,
+            muscleGroup: normalized.muscleGroup || '',
+            equipment: normalized.equipment || '',
+        },
+        name: normalized.name,
+        muscleGroup: normalized.muscleGroup || '',
+        equipment: normalized.equipment || '',
+        orderIndex,
+        plannedSets: normalized.plannedSets,
+    }
+}
+
 const sessionFromSnapshot = (
     snapshot: QueryDocumentSnapshot<WorkoutSessionDocument>,
 ): WorkoutSession => {
     const data = snapshot.data()
 
     const plannedExercises = Array.isArray(data.plannedExercises)
-        ? data.plannedExercises
+        ? data.plannedExercises.map(normalizePlannedExercise)
         : []
 
     const performedMap =
@@ -359,10 +498,21 @@ export const convertTemplateToPlannedExercises = (
 ): PlannedWorkoutExercise[] => {
     return template.exercises.map((exercise, index) => {
         const baseId = exercise.exerciseId || `exercise_${index + 1}`
+        const exerciseSource = normalizeExerciseSource(
+            exercise.exerciseSource,
+            'user',
+        )
+        const exerciseSnapshot = exercise.exerciseSnapshot || {
+            name: exercise.name,
+            muscleGroup: exercise.muscleGroup || '',
+            equipment: exercise.equipment || '',
+        }
 
         return {
             plannedExerciseId: `planned_${index + 1}_${sanitizeKey(baseId)}`,
+            exerciseSource,
             exerciseId: exercise.exerciseId || null,
+            exerciseSnapshot,
             name: exercise.name,
             muscleGroup: exercise.muscleGroup || '',
             equipment: exercise.equipment || '',
@@ -475,15 +625,25 @@ export const duplicateWorkoutTemplate = async (
         name: `${source.name} (copie)`,
         tags: source.tags || [],
         exercises: source.exercises.map((exercise) => ({
+            exerciseSource: normalizeExerciseSource(exercise.exerciseSource, 'user'),
             exerciseId: exercise.exerciseId || null,
+            exerciseSnapshot: exercise.exerciseSnapshot || {
+                name: exercise.name,
+                muscleGroup: exercise.muscleGroup || '',
+                equipment: exercise.equipment || '',
+            },
             name: exercise.name,
             muscleGroup: exercise.muscleGroup || '',
             equipment: exercise.equipment || '',
-            plannedSets: exercise.plannedSets.map((set, setIndex) => ({
-                setNumber: setIndex + 1,
-                targetReps: set.targetReps,
-                targetWeight: set.targetWeight,
-            })),
+            plannedSets: exercise.plannedSets.map((set, setIndex) =>
+                toFirestoreTemplateSet(
+                    {
+                        ...set,
+                        setNumber: setIndex + 1,
+                    },
+                    setIndex,
+                ),
+            ),
         })),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -592,7 +752,9 @@ export const updatePerformedExercise = async (
 
     const nextPerformed: PerformedWorkoutExercise = {
         plannedExerciseId: input.plannedExerciseId,
+        exerciseSource: input.exerciseSource,
         exerciseId: input.exerciseId,
+        exerciseSnapshot: input.exerciseSnapshot,
         name: input.name,
         status,
         sets: input.sets,
@@ -601,6 +763,9 @@ export const updatePerformedExercise = async (
 
     const trackedIds = [
         input.plannedExerciseId,
+        input.exerciseId
+            ? getExerciseRefKey(input.exerciseSource, input.exerciseId)
+            : undefined,
         input.exerciseId || undefined,
     ].filter((value): value is string => Boolean(value))
 
@@ -631,7 +796,9 @@ export const markExerciseCompleted = async (
 
         await updatePerformedExercise(uid, sessionId, {
             plannedExerciseId: plannedExercise.plannedExerciseId,
+            exerciseSource: plannedExercise.exerciseSource,
             exerciseId: plannedExercise.exerciseId,
+            exerciseSnapshot: plannedExercise.exerciseSnapshot,
             name: plannedExercise.name,
             sets: existingPerformed?.sets || [],
             notes: existingPerformed?.notes || '',

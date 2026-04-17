@@ -4,7 +4,7 @@ Use this guide to produce clean, reviewable, low-risk commits.
 
 ## 1. Golden Rules
 
-- Make atomic commits: one intent per commit.
+- Only one commit
 - Keep diffs focused: avoid unrelated file changes.
 - Explain why, not only what.
 - Verify before commit.

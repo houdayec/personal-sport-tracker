@@ -10,6 +10,14 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    // Shared exercise catalog
+    match /global_exercises/{exerciseId} {
+      // All authenticated users can read global exercises.
+      allow read: if isSignedIn();
+      // Writes should be restricted to admin/owner flows only.
+      allow create, update, delete: if false;
+    }
+
     // Root user document: users/{uid}
     match /users/{uid} {
       // Profile / account doc

@@ -132,7 +132,9 @@ const WorkoutExerciseDetailDialog = ({
 
         return {
             plannedExerciseId: plannedExercise.plannedExerciseId,
+            exerciseSource: plannedExercise.exerciseSource,
             exerciseId: plannedExercise.exerciseId,
+            exerciseSnapshot: plannedExercise.exerciseSnapshot,
             name: plannedExercise.name,
             sets: toPerformedSets(sets),
             notes,

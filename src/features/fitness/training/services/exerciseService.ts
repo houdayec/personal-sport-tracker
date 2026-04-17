@@ -14,6 +14,7 @@ import {
     type Exercise,
     type ExerciseFirestoreDocument,
     type ExerciseInput,
+    type ExerciseSource,
 } from '@/features/fitness/training/types/exercise'
 
 const normalizeExerciseInput = (input: ExerciseInput): ExerciseInput => {
@@ -40,6 +41,7 @@ const normalizeExerciseInput = (input: ExerciseInput): ExerciseInput => {
 
 const exerciseFromSnapshot = (
     snapshot: QueryDocumentSnapshot<ExerciseFirestoreDocument>,
+    exerciseSource: ExerciseSource,
 ): Exercise => {
     const data = snapshot.data()
 
@@ -52,6 +54,7 @@ const exerciseFromSnapshot = (
         createdAt: data.createdAt ?? null,
         updatedAt: data.updatedAt ?? null,
         schemaVersion: data.schemaVersion ?? EXERCISE_SCHEMA_VERSION,
+        exerciseSource,
     }
 }
 
@@ -71,13 +74,74 @@ const listExercisesByArchiveState = async (
     const exercisesQuery = query(exercisesRef, where('isArchived', '==', isArchived))
     const snapshot = await getDocs(exercisesQuery)
 
-    const exercises = snapshot.docs.map(exerciseFromSnapshot)
+    const exercises = snapshot.docs.map((exercise) =>
+        exerciseFromSnapshot(exercise, 'user'),
+    )
 
     return sortByUpdatedAtDesc(exercises)
 }
 
-export const listActiveExercises = async (uid: string): Promise<Exercise[]> => {
+export const listGlobalExercises = async (): Promise<Exercise[]> => {
+    const exercisesRef = fitnessCollections.globalExercises<ExerciseFirestoreDocument>()
+    const snapshot = await getDocs(exercisesRef)
+
+    const exercises = snapshot.docs
+        .map((exercise) => exerciseFromSnapshot(exercise, 'global'))
+        .filter((exercise) => !exercise.isArchived)
+
+    return sortByUpdatedAtDesc(exercises)
+}
+
+const sortMergedExercises = (exercises: Exercise[]): Exercise[] => {
+    return [...exercises].sort((a, b) => {
+        if (a.exerciseSource !== b.exerciseSource) {
+            return a.exerciseSource === 'global' ? -1 : 1
+        }
+
+        return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' })
+    })
+}
+
+const isPermissionDeniedError = (error: unknown): boolean => {
+    if (!error || typeof error !== 'object') {
+        return false
+    }
+
+    const maybeCode = (error as { code?: unknown }).code
+    const maybeMessage = (error as { message?: unknown }).message
+
+    return (
+        maybeCode === 'permission-denied' ||
+        (typeof maybeMessage === 'string' &&
+            maybeMessage.toLowerCase().includes('insufficient permissions'))
+    )
+}
+
+export const listUserActiveExercises = async (uid: string): Promise<Exercise[]> => {
     return listExercisesByArchiveState(uid, false)
+}
+
+export const listMergedActiveExercises = async (
+    uid: string,
+): Promise<Exercise[]> => {
+    const userExercises = await listUserActiveExercises(uid)
+    let globalExercises: Exercise[] = []
+
+    try {
+        globalExercises = await listGlobalExercises()
+    } catch (error) {
+        if (!isPermissionDeniedError(error)) {
+            throw error
+        }
+        // Rules for global_exercises might not be deployed yet in some envs.
+        globalExercises = []
+    }
+
+    return sortMergedExercises([...globalExercises, ...userExercises])
+}
+
+export const listActiveExercises = async (uid: string): Promise<Exercise[]> => {
+    return listMergedActiveExercises(uid)
 }
 
 export const listArchivedExercises = async (uid: string): Promise<Exercise[]> => {

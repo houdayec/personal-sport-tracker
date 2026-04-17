@@ -8,11 +8,13 @@ import {
     listWorkoutTemplates,
     updateWorkoutTemplate,
 } from '@/features/fitness/training/services/workoutSessionService'
+import { listActiveExercises } from '@/features/fitness/training/services/exerciseService'
 import type {
     WorkoutSession,
     WorkoutTemplate,
     WorkoutTemplateInput,
 } from '@/features/fitness/training/types/workoutSession'
+import type { Exercise } from '@/features/fitness/training/types/exercise'
 
 const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error && error.message) {
@@ -26,6 +28,7 @@ const useWorkoutTemplates = () => {
     const uid = useAppSelector((state) => state.auth.session.uid)
 
     const [templates, setTemplates] = useState<WorkoutTemplate[]>([])
+    const [exerciseOptions, setExerciseOptions] = useState<Exercise[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isMutating, setIsMutating] = useState(false)
     const [isStarting, setIsStarting] = useState(false)
@@ -45,11 +48,16 @@ const useWorkoutTemplates = () => {
 
         try {
             const currentUid = assertUid()
-            const items = await listWorkoutTemplates(currentUid)
+            const [items, exercises] = await Promise.all([
+                listWorkoutTemplates(currentUid),
+                listActiveExercises(currentUid),
+            ])
             setTemplates(items)
+            setExerciseOptions(exercises)
         } catch (loadError) {
             setError(getErrorMessage(loadError))
             setTemplates([])
+            setExerciseOptions([])
         } finally {
             setIsLoading(false)
         }
@@ -144,6 +152,7 @@ const useWorkoutTemplates = () => {
 
     return {
         templates,
+        exerciseOptions,
         isLoading,
         isMutating,
         isStarting,
