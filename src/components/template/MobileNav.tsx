@@ -74,10 +74,10 @@ const MobileNav = () => {
                             <div className="flex items-center gap-2">
                                 <img
                                     src="/img/logo/logo-light-streamline-squircle.png"
-                                    alt="Sport Tracker"
+                                    alt="Wellness"
                                     className="h-6 w-6 rounded object-contain"
                                 />
-                                <span className="font-semibold">Sport Tracker</span>
+                                <span className="font-semibold">Wellness</span>
                             </div>
                         }
                         isOpen={isOpen}

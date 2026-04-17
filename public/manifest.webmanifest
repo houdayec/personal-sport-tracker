@@ -1,7 +1,7 @@
 {
   "id": "/fitness",
-  "name": "Sport Tracker",
-  "short_name": "Sport Tracker",
+  "name": "Wellness",
+  "short_name": "Wellness",
   "description": "Application personnelle de suivi fitness.",
   "start_url": "/fitness",
   "scope": "/",

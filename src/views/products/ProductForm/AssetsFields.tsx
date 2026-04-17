@@ -208,7 +208,7 @@ const AssetsFields = (props: AssetsFormFields) => {
             // Footer
             ctx.font = 'italic 12px sans-serif'
             ctx.textAlign = 'right'
-            ctx.fillText('© Sport Tracker – All rights reserved', width - padding, height - 10)
+            ctx.fillText('© Wellness – All rights reserved', width - padding, height - 10)
 
             canvas.toBlob(blob => resolve(blob!), 'image/png')
         })
@@ -307,7 +307,7 @@ const AssetsFields = (props: AssetsFormFields) => {
         font.names.manufacturer = { en: 'FontMaze' }
         font.names.manufacturerURL = { en: 'https://www.fontmaze.com' }
         font.names.copyright = { en: 'All rights reserved to FontMaze' }
-        font.names.description = { en: `${fullName} designed by Sport Tracker` }
+        font.names.description = { en: `${fullName} designed by Wellness` }
         font.names.license = { en: 'Personal Use Only.' }
         font.names.licenseURL = { en: 'https://www.fontmaze.com/licenses/font-license/' }
         font.names.trademark = { en: 'All rights reserved to FontMaze' }

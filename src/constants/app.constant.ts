@@ -1,3 +1,3 @@
-export const APP_NAME = 'Sport Tracker'
+export const APP_NAME = 'Wellness'
 export const PERSIST_STORE_NAME = 'admin'
 export const REDIRECT_URL_KEY = 'redirectUrl'

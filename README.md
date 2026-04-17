@@ -1,4 +1,4 @@
-# Sport Tracker
+# Wellness
 
 Start: npm start
 

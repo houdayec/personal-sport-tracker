@@ -276,7 +276,7 @@ const useWorkoutTodaySession = () => {
     )
 
     const saveHiitProgress = useCallback(
-        async (input: UpdateHiitSessionInput) => {
+        async (input: UpdateHiitSessionInput, options?: { silent?: boolean }) => {
             if (!activeSession) {
                 throw new Error('Aucune séance en cours.')
             }
@@ -314,9 +314,13 @@ const useWorkoutTodaySession = () => {
                         },
                     }
                 })
-                showFitnessSuccessToast('Progression HIIT sauvegardée.')
+                if (!options?.silent) {
+                    showFitnessSuccessToast('Progression HIIT sauvegardée.')
+                }
             } catch (saveError) {
-                showFitnessErrorToast(getErrorMessage(saveError))
+                if (!options?.silent) {
+                    showFitnessErrorToast(getErrorMessage(saveError))
+                }
                 throw saveError
             } finally {
                 setIsSavingExercise(false)

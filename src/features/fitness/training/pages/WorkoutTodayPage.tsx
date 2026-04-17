@@ -13,6 +13,7 @@ import {
     Tag,
 } from '@/components/ui'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import HiitActiveSessionScreen from '@/features/fitness/training/components/HiitActiveSessionScreen'
 import WorkoutExerciseDetailDialog from '@/features/fitness/training/components/WorkoutExerciseDetailDialog'
 import useWorkoutTodaySession from '@/features/fitness/training/hooks/useWorkoutTodaySession'
 import type { Exercise } from '@/features/fitness/training/types/exercise'
@@ -22,6 +23,7 @@ import type {
     PerformedExerciseStatus,
     SavePerformedExerciseInput,
     TemplateWorkoutSet,
+    UpdateHiitSessionInput,
 } from '@/features/fitness/training/types/workoutSession'
 import { isCardioNoSetsExercise } from '@/features/fitness/training/utils/exerciseKind'
 import { formatRunningTypeLabel } from '@/features/fitness/training/utils/runningType'
@@ -183,13 +185,13 @@ const WorkoutTodayPage = () => {
     const [addExerciseDialogError, setAddExerciseDialogError] = useState<string | null>(
         null,
     )
-    const [hiitCompletedRounds, setHiitCompletedRounds] = useState('')
-    const [hiitNotes, setHiitNotes] = useState('')
+    const [isHiitActiveOpen, setIsHiitActiveOpen] = useState(false)
     const [runningDistanceKm, setRunningDistanceKm] = useState('')
     const [runningDurationSec, setRunningDurationSec] = useState('')
     const [runningAvgPaceSecPerKm, setRunningAvgPaceSecPerKm] = useState('')
     const [runningNotes, setRunningNotes] = useState('')
     const runningGpxInputRef = useRef<HTMLInputElement | null>(null)
+    const autoOpenedHiitSessionIdRef = useRef<string | null>(null)
 
     const selectedPlannedExercise = useMemo(() => {
         if (!activeSession || !selectedExerciseId) {
@@ -227,33 +229,46 @@ const WorkoutTodayPage = () => {
     }, [exerciseOptions])
 
     useEffect(() => {
-        if (!activeSession) {
+        if (!activeSession || activeSession.sessionType !== 'hiit') {
+            setIsHiitActiveOpen(false)
+            autoOpenedHiitSessionIdRef.current = null
             return
         }
 
-        if (activeSession.sessionType === 'hiit') {
-            setHiitCompletedRounds(String(activeSession.hiitData?.completedRounds || 0))
-            setHiitNotes(activeSession.hiitData?.notes || '')
+        if (autoOpenedHiitSessionIdRef.current !== activeSession.id) {
+            autoOpenedHiitSessionIdRef.current = activeSession.id
+            setIsHiitActiveOpen(true)
+        }
+    }, [activeSession])
+
+    useEffect(() => {
+        if (!activeSession || activeSession.sessionType !== 'running') {
+            return
         }
 
-        if (activeSession.sessionType === 'running') {
-            setRunningDistanceKm(
-                activeSession.runningData?.distanceKm
-                    ? String(activeSession.runningData.distanceKm)
-                    : '',
-            )
-            setRunningDurationSec(
-                activeSession.runningData?.durationSec
-                    ? String(activeSession.runningData.durationSec)
-                    : '',
-            )
-            setRunningAvgPaceSecPerKm(
-                activeSession.runningData?.avgPaceSecPerKm
-                    ? String(activeSession.runningData.avgPaceSecPerKm)
-                    : '',
-            )
-            setRunningNotes(activeSession.runningData?.notes || '')
+        setRunningDistanceKm(
+            activeSession.runningData?.distanceKm
+                ? String(activeSession.runningData.distanceKm)
+                : '',
+        )
+        setRunningDurationSec(
+            activeSession.runningData?.durationSec
+                ? String(activeSession.runningData.durationSec)
+                : '',
+        )
+        setRunningAvgPaceSecPerKm(
+            activeSession.runningData?.avgPaceSecPerKm
+                ? String(activeSession.runningData.avgPaceSecPerKm)
+                : '',
+        )
+        setRunningNotes(activeSession.runningData?.notes || '')
+    }, [activeSession])
+
+    useEffect(() => {
+        if (activeSession?.sessionType === 'strength') {
+            return
         }
+        setSelectedExerciseId(null)
     }, [activeSession])
 
     const openExercise = (exercise: PlannedWorkoutExercise) => {
@@ -307,16 +322,32 @@ const WorkoutTodayPage = () => {
         }
     }
 
-    const handleSaveHiitProgress = async () => {
+    const handleHiitProgressUpdate = async (input: UpdateHiitSessionInput) => {
         if (!activeSession || activeSession.sessionType !== 'hiit') {
             return
         }
 
         try {
-            await saveHiitProgress({
-                completedRounds: Number(hiitCompletedRounds || 0),
-                notes: hiitNotes,
-            })
+            await saveHiitProgress(input, { silent: true })
+        } catch {
+            // Error managed in hook state.
+        }
+    }
+
+    const handleOpenHiitActiveScreen = () => {
+        setIsHiitActiveOpen(true)
+    }
+
+    const handleCloseHiitActiveScreen = () => {
+        setIsHiitActiveOpen(false)
+    }
+
+    const handleFinalizeHiitSession = async () => {
+        try {
+            await finishSession()
+            triggerSessionFinishedConfetti()
+            setIsHiitActiveOpen(false)
+            setIsFinishConfirmOpen(false)
         } catch {
             // Error managed in hook state.
         }
@@ -501,45 +532,43 @@ const WorkoutTodayPage = () => {
                                     /{activeSession.hiitData?.rounds || 0}
                                 </p>
                             </div>
-                            <Button
-                                size="sm"
-                                variant="solid"
-                                icon={<HiOutlineCheckCircle />}
-                                loading={isFinishingSession}
-                                onClick={() => setIsFinishConfirmOpen(true)}
-                            >
-                                Terminer la séance
-                            </Button>
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="solid"
+                                    icon={<HiOutlinePlay />}
+                                    onClick={handleOpenHiitActiveScreen}
+                                >
+                                    Ouvrir l’écran actif
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="twoTone"
+                                    icon={<HiOutlineCheckCircle />}
+                                    loading={isFinishingSession}
+                                    onClick={() => setIsFinishConfirmOpen(true)}
+                                >
+                                    Terminer la séance
+                                </Button>
+                            </div>
                         </div>
                     </Card>
 
-                    <Card header="Progression HIIT">
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <Input
-                                type="number"
-                                min={0}
-                                value={hiitCompletedRounds}
-                                placeholder="Tours complétés"
-                                onChange={(event) =>
-                                    setHiitCompletedRounds(event.target.value)
-                                }
-                            />
-                            <Input
-                                textArea
-                                rows={3}
-                                value={hiitNotes}
-                                placeholder="Notes HIIT"
-                                onChange={(event) => setHiitNotes(event.target.value)}
-                            />
-                        </div>
-                        <div className="mt-3 flex justify-end">
+                    <Card>
+                        <div className="flex flex-col gap-3 text-sm text-gray-600 dark:text-gray-300">
+                            <p>
+                                Mode immersif mobile avec timer circulaire, audio et gestion automatique des phases.
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Si tu fermes l’écran actif, la séance reste en cours et peut être reprise.
+                            </p>
                             <Button
                                 size="sm"
                                 variant="solid"
-                                loading={isSavingExercise}
-                                onClick={handleSaveHiitProgress}
+                                icon={<HiOutlinePlay />}
+                                onClick={handleOpenHiitActiveScreen}
                             >
-                                Sauvegarder progression
+                                Reprendre la séance HIIT active
                             </Button>
                         </div>
                     </Card>
@@ -1011,6 +1040,18 @@ const WorkoutTodayPage = () => {
                     </Dialog>
                 </>
             )}
+
+            {activeSession?.sessionType === 'hiit' &&
+                activeSession.hiitData &&
+                isHiitActiveOpen && (
+                    <HiitActiveSessionScreen
+                        hiitData={activeSession.hiitData}
+                        isFinishingSession={isFinishingSession}
+                        onProgressUpdate={handleHiitProgressUpdate}
+                        onFinalizeSession={handleFinalizeHiitSession}
+                        onExit={handleCloseHiitActiveScreen}
+                    />
+                )}
 
             <ConfirmDialog
                 isOpen={isFinishConfirmOpen}

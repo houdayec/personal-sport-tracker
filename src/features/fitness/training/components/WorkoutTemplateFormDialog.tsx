@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type DragEvent } from 'react'
 import {
     Alert,
     Button,
@@ -232,6 +232,7 @@ const WorkoutTemplateFormDialog = ({
         FALLBACK_RUNNING_TYPE_OPTIONS,
     )
     const [isRunningTypesLoading, setIsRunningTypesLoading] = useState(false)
+    const [draggedHiitIndex, setDraggedHiitIndex] = useState<number | null>(null)
 
     const exerciseLibraryOptions = useMemo<ExerciseLibraryOption[]>(() => {
         return exerciseOptions
@@ -622,6 +623,67 @@ const WorkoutTemplateFormDialog = ({
             },
         }))
         setErrors((prev) => ({ ...prev, exercises: undefined }))
+    }
+
+    const setOrderedHiitExercises = (nextExercises: string[]) => {
+        const normalized = Array.from(
+            new Set(
+                nextExercises.map((exercise) => exercise.trim()).filter(Boolean),
+            ),
+        )
+        setHiitField('exercises', normalized)
+    }
+
+    const moveHiitExercise = (fromIndex: number, toIndex: number) => {
+        const currentExercises = values.hiitConfig?.exercises || []
+
+        if (
+            fromIndex < 0 ||
+            toIndex < 0 ||
+            fromIndex >= currentExercises.length ||
+            toIndex >= currentExercises.length ||
+            fromIndex === toIndex
+        ) {
+            return
+        }
+
+        const reordered = [...currentExercises]
+        const [moved] = reordered.splice(fromIndex, 1)
+        reordered.splice(toIndex, 0, moved)
+        setOrderedHiitExercises(reordered)
+    }
+
+    const removeHiitExercise = (exerciseIndex: number) => {
+        const currentExercises = values.hiitConfig?.exercises || []
+
+        if (exerciseIndex < 0 || exerciseIndex >= currentExercises.length) {
+            return
+        }
+
+        setOrderedHiitExercises(
+            currentExercises.filter((_, index) => index !== exerciseIndex),
+        )
+    }
+
+    const onHiitDragStart = (exerciseIndex: number) => {
+        setDraggedHiitIndex(exerciseIndex)
+    }
+
+    const onHiitDragOver = (event: DragEvent<HTMLDivElement>) => {
+        event.preventDefault()
+    }
+
+    const onHiitDrop = (targetIndex: number) => {
+        if (draggedHiitIndex === null) {
+            return
+        }
+
+        moveHiitExercise(draggedHiitIndex, targetIndex)
+        setDraggedHiitIndex(null)
+    }
+
+    const onHiitDragEnd = () => {
+        setDraggedHiitIndex(null)
     }
 
     const setRunningField = (
@@ -1105,8 +1167,7 @@ const WorkoutTemplateFormDialog = ({
                                                 : 'Aucun exercice disponible'
                                         }
                                         onChange={(selected) =>
-                                            setHiitField(
-                                                'exercises',
+                                            setOrderedHiitExercises(
                                                 (selected || []).map((option) =>
                                                     option.value.trim(),
                                                 ),
@@ -1115,6 +1176,88 @@ const WorkoutTemplateFormDialog = ({
                                     />
                                 </FormItem>
                             </div>
+
+                            {(values.hiitConfig?.exercises || []).length > 0 && (
+                                <div className="mt-2">
+                                    <p className="mb-2 text-sm font-semibold">
+                                        Ordre des exercices HIIT
+                                    </p>
+                                    <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                                        Glisse-dépose pour réordonner, ou utilise ↑ / ↓.
+                                    </p>
+                                    <div className="space-y-2">
+                                        {(values.hiitConfig?.exercises || []).map(
+                                            (exerciseName, exerciseIndex) => (
+                                                <div
+                                                    key={`${exerciseName}_${exerciseIndex}`}
+                                                    draggable
+                                                    onDragStart={() =>
+                                                        onHiitDragStart(exerciseIndex)
+                                                    }
+                                                    onDragOver={onHiitDragOver}
+                                                    onDrop={() => onHiitDrop(exerciseIndex)}
+                                                    onDragEnd={onHiitDragEnd}
+                                                    className={`flex items-center justify-between gap-3 rounded-xl border bg-gray-50 px-3 py-2 dark:bg-gray-800/60 ${
+                                                        draggedHiitIndex === exerciseIndex
+                                                            ? 'border-blue-400 dark:border-blue-400'
+                                                            : 'border-gray-200 dark:border-gray-700'
+                                                    }`}
+                                                >
+                                                    <div className="flex min-w-0 items-center gap-3">
+                                                        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700 dark:bg-blue-500/20 dark:text-blue-100">
+                                                            {exerciseIndex + 1}
+                                                        </span>
+                                                        <span className="truncate text-sm font-medium">
+                                                            {exerciseName}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <Button
+                                                            size="xs"
+                                                            disabled={exerciseIndex === 0}
+                                                            onClick={() =>
+                                                                moveHiitExercise(
+                                                                    exerciseIndex,
+                                                                    exerciseIndex - 1,
+                                                                )
+                                                            }
+                                                        >
+                                                            ↑
+                                                        </Button>
+                                                        <Button
+                                                            size="xs"
+                                                            disabled={
+                                                                exerciseIndex ===
+                                                                (values.hiitConfig?.exercises
+                                                                    ?.length || 1) -
+                                                                    1
+                                                            }
+                                                            onClick={() =>
+                                                                moveHiitExercise(
+                                                                    exerciseIndex,
+                                                                    exerciseIndex + 1,
+                                                                )
+                                                            }
+                                                        >
+                                                            ↓
+                                                        </Button>
+                                                        <Button
+                                                            size="xs"
+                                                            variant="twoTone"
+                                                            icon={<HiOutlineTrash />}
+                                                            onClick={() =>
+                                                                removeHiitExercise(
+                                                                    exerciseIndex,
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ),
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
