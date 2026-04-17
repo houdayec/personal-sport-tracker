@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { FITNESS_ROUTES } from '@/features/fitness/constants/routes'
 import { useAppSelector } from '@/store'
 import { getCurrentWorkoutSession } from '@/features/fitness/training/services/workoutSessionService'
+import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import type { WorkoutSession } from '@/features/fitness/training/types/workoutSession'
 import { HiOutlinePlay, HiOutlineRefresh } from 'react-icons/hi'
 
@@ -62,6 +63,8 @@ const quickLinks = [
 ]
 
 const getErrorMessage = (error: unknown): string => {
+    logFitnessErrorDev('FitnessDashboardPage', error)
+
     if (error instanceof Error && error.message) {
         return error.message
     }

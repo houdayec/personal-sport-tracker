@@ -80,6 +80,16 @@ const navigationConfig: NavigationTree[] = [
         authority: [],
         subMenu: [
             {
+                key: 'fitness.body.checkins',
+                path: FITNESS_ROUTES.bodyCheckins,
+                title: 'Body Check-ins',
+                translateKey: 'nav.fitness.body.checkins',
+                icon: '',
+                type: NAV_ITEM_TYPE_ITEM,
+                authority: [],
+                subMenu: [],
+            },
+            {
                 key: 'fitness.body.weight',
                 path: FITNESS_ROUTES.bodyWeight,
                 title: 'Poids',

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppSelector } from '@/store'
+import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import {
     BODY_MEASUREMENT_FIELDS,
     type BodyMeasurementFieldKey,
@@ -15,6 +16,8 @@ import type {
 } from '@/features/fitness/progress/types/progress'
 
 const getErrorMessage = (error: unknown): string => {
+    logFitnessErrorDev('useProgressTracking', error)
+
     if (error instanceof Error && error.message) {
         return error.message
     }

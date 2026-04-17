@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAppSelector } from '@/store'
+import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import {
     archiveExercise,
     createExercise,
@@ -17,6 +18,8 @@ const globalExerciseMutationError =
     'Les exercices globaux sont en lecture seule.'
 
 const getErrorMessage = (error: unknown): string => {
+    logFitnessErrorDev('useExerciseLibrary', error)
+
     if (error instanceof Error && error.message) {
         return error.message
     }

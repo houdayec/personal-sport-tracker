@@ -10,6 +10,7 @@ import {
     getCurrentUserProfile,
     updateUserProfile,
 } from '@/features/fitness/account/services/accountProfileService'
+import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import { showFitnessErrorToast, showFitnessSuccessToast } from '@/features/fitness/common/utils/feedbackToast'
 import type {
     PreferredLengthUnit,
@@ -21,6 +22,8 @@ import { setMode, setUser, useAppDispatch, useAppSelector } from '@/store'
 import { buildUiAvatarUrl } from '@/utils/uiAvatar'
 
 const getErrorMessage = (error: unknown): string => {
+    logFitnessErrorDev('useAccountProfile', error)
+
     if (error instanceof Error && error.message) {
         return error.message
     }

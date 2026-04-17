@@ -91,6 +91,12 @@ export const fitnessProtectedRoutes: Routes = [
         authority: ['USER'],
     },
     {
+        key: 'fitness.body.checkins',
+        path: FITNESS_ROUTES.bodyCheckins,
+        component: lazy(() => import('@/features/fitness/body/pages/BodyCheckinsPage')),
+        authority: ['USER'],
+    },
+    {
         key: 'fitness.body.measurements',
         path: FITNESS_ROUTES.bodyMeasurements,
         component: lazy(

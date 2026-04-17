@@ -17,6 +17,7 @@ export const FITNESS_USER_SUBCOLLECTIONS = {
     workoutSessions: 'workout_sessions',
     bodyWeightEntries: 'body_weight_entries',
     bodyMeasurementEntries: 'body_measurement_entries',
+    bodyCheckins: 'body_checkins',
 } as const
 
 export type FitnessUserSubcollectionName =
@@ -76,4 +77,6 @@ export const fitnessCollections = {
         userSubcollectionRef<T>(uid, FITNESS_USER_SUBCOLLECTIONS.bodyWeightEntries),
     bodyMeasurementEntries: <T extends DocumentData = DocumentData>(uid: string) =>
         userSubcollectionRef<T>(uid, FITNESS_USER_SUBCOLLECTIONS.bodyMeasurementEntries),
+    bodyCheckins: <T extends DocumentData = DocumentData>(uid: string) =>
+        userSubcollectionRef<T>(uid, FITNESS_USER_SUBCOLLECTIONS.bodyCheckins),
 }

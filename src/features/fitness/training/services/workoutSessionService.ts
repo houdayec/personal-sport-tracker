@@ -5,6 +5,7 @@ import {
     doc,
     getDoc,
     getDocs,
+    getDocsFromServer,
     query,
     serverTimestamp,
     updateDoc,
@@ -1216,13 +1217,25 @@ export const getInProgressWorkoutSession = async (
 ): Promise<WorkoutSession | null> => {
     const sessionsRef = fitnessCollections.workoutSessions<WorkoutSessionDocument>(uid)
     const inProgressQuery = query(sessionsRef, where('status', '==', 'in_progress'))
-    const snapshot = await getDocs(inProgressQuery)
+    let snapshot
+    try {
+        snapshot = await getDocsFromServer(inProgressQuery)
+    } catch {
+        // Fallback when network/server read is temporarily unavailable.
+        snapshot = await getDocs(inProgressQuery)
+    }
 
     if (!snapshot.docs.length) {
         return null
     }
 
-    const sessions = snapshot.docs.map(sessionFromSnapshot)
+    const sessions = snapshot.docs
+        .map(sessionFromSnapshot)
+        .filter((session) => session.status === 'in_progress')
+    if (!sessions.length) {
+        return null
+    }
+
     const sortedSessions = sortSessionsByDateDesc(sessions)
 
     return sortedSessions[0] || null

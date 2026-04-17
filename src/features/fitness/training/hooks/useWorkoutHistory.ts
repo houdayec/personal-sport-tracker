@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppSelector } from '@/store'
+import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import {
     getWorkoutSessionById,
     listWorkoutSessionsHistory,
@@ -7,6 +8,8 @@ import {
 import type { WorkoutSession } from '@/features/fitness/training/types/workoutSession'
 
 const getErrorMessage = (error: unknown): string => {
+    logFitnessErrorDev('useWorkoutHistory', error)
+
     if (error instanceof Error && error.message) {
         return error.message
     }

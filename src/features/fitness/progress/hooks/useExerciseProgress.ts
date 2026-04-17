@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { listActiveExercises } from '@/features/fitness/training/services/exerciseService'
 import { getExerciseProgress } from '@/features/fitness/progress/services/exerciseProgressService'
+import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import type { Exercise } from '@/features/fitness/training/types/exercise'
 import type {
     ExerciseProgressMetric,
@@ -9,6 +10,8 @@ import type {
 import { useAppSelector } from '@/store'
 
 const getErrorMessage = (error: unknown): string => {
+    logFitnessErrorDev('useExerciseProgress', error)
+
     if (error instanceof Error && error.message) {
         return error.message
     }

@@ -6,6 +6,7 @@ import {
     listBodyWeightEntries,
     updateBodyWeightEntry,
 } from '@/features/fitness/body/services/bodyWeightService'
+import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import { showFitnessErrorToast, showFitnessSuccessToast } from '@/features/fitness/common/utils/feedbackToast'
 import type {
     BodyWeightEntry,
@@ -16,6 +17,8 @@ const uidRequiredErrorMessage =
     'Utilisateur non connecté. Impossible d’accéder au suivi du poids.'
 
 const getErrorMessage = (error: unknown): string => {
+    logFitnessErrorDev('useBodyWeightEntries', error)
+
     if (error instanceof Error && error.message) {
         return error.message
     }

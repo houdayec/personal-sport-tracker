@@ -468,7 +468,7 @@ const WorkoutTodayPage = () => {
                                     loading={isStarting}
                                     onClick={() => handleStartTemplate(template.id)}
                                 >
-                                    Lancer ce template
+                                    Lancer cette séance
                                 </Button>
                             </div>
                         </div>

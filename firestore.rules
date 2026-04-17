@@ -61,6 +61,11 @@ service cloud.firestore {
         allow read, create, update, delete: if isOwner(uid);
       }
 
+      // Body check-ins
+      match /body_checkins/{checkinId} {
+        allow read, create, update, delete: if isOwner(uid);
+      }
+
       // Deny any other unknown subcollection under users/{uid}
       match /{subCollection}/{docId} {
         allow read, write: if false;

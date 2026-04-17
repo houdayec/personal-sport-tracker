@@ -11,6 +11,7 @@ export const FITNESS_ROUTES = {
     trainingHistoryDetail: '/fitness/training/history/:sessionId',
 
     bodyRoot: '/fitness/body',
+    bodyCheckins: '/fitness/body/checkins',
     bodyWeight: '/fitness/body/weight',
     bodyMeasurements: '/fitness/body/measurements',
 

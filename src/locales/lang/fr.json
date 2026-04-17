@@ -11,6 +11,7 @@
             },
             "body": {
                 "title": "Corps",
+                "checkins": "Body Check-ins",
                 "weight": "Poids",
                 "measurements": "Mensurations"
             },

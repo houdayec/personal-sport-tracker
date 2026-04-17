@@ -5,10 +5,13 @@ import {
     seedGlobalHiitExercises,
     seedGlobalRunningTypes,
 } from '@/features/fitness/admin/services/adminDevService'
+import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import { showFitnessErrorToast, showFitnessSuccessToast } from '@/features/fitness/common/utils/feedbackToast'
 import { HiOutlineDatabase } from 'react-icons/hi'
 
 const getErrorMessage = (error: unknown): string => {
+    logFitnessErrorDev('AdminDevPage', error)
+
     if (
         error &&
         typeof error === 'object' &&

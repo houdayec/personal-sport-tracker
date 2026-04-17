@@ -1,4 +1,5 @@
 import { Notification, toast } from '@/components/ui'
+import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 
 type FitnessToastType = 'success' | 'danger' | 'warning' | 'info'
 
@@ -23,5 +24,6 @@ export const showFitnessSuccessToast = (message: string, title = 'Succès') => {
 }
 
 export const showFitnessErrorToast = (message: string, title = 'Erreur') => {
+    logFitnessErrorDev('toast', message, title)
     pushToast('danger', title, message, 4200)
 }

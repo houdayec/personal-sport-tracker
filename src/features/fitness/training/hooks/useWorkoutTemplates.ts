@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAppSelector } from '@/store'
+import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import {
     createWorkoutTemplate,
     createWorkoutSessionFromTemplate,
@@ -18,6 +19,8 @@ import type {
 import type { Exercise } from '@/features/fitness/training/types/exercise'
 
 const getErrorMessage = (error: unknown): string => {
+    logFitnessErrorDev('useWorkoutTemplates', error)
+
     if (error instanceof Error && error.message) {
         return error.message
     }

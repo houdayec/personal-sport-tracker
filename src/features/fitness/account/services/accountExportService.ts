@@ -48,6 +48,7 @@ export const buildUserDataExportBundle = async (uid: string) => {
         sessionsSnapshot,
         weightSnapshot,
         measurementSnapshot,
+        checkinsSnapshot,
     ] = await Promise.all([
         getCurrentUserProfile(uid),
         getDocs(fitnessCollections.exercises(uid)),
@@ -55,6 +56,7 @@ export const buildUserDataExportBundle = async (uid: string) => {
         getDocs(fitnessCollections.workoutSessions(uid)),
         getDocs(fitnessCollections.bodyWeightEntries(uid)),
         getDocs(fitnessCollections.bodyMeasurementEntries(uid)),
+        getDocs(fitnessCollections.bodyCheckins(uid)),
     ])
 
     return {
@@ -67,6 +69,7 @@ export const buildUserDataExportBundle = async (uid: string) => {
             workoutSessions: serializeDocs(sessionsSnapshot.docs),
             bodyWeightEntries: serializeDocs(weightSnapshot.docs),
             bodyMeasurementEntries: serializeDocs(measurementSnapshot.docs),
+            bodyCheckins: serializeDocs(checkinsSnapshot.docs),
         },
     }
 }
