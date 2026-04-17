@@ -51,7 +51,6 @@ const useBodyMeasurementEntries = () => {
             const data = await listBodyMeasurementEntries(currentUid)
             setEntries(data)
         } catch (loadError) {
-            setEntries([])
             setError(getErrorMessage(loadError))
         } finally {
             setIsLoading(false)

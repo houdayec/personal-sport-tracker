@@ -52,7 +52,6 @@ const useBodyWeightEntries = () => {
             setEntries(data)
         } catch (loadError) {
             setError(getErrorMessage(loadError))
-            setEntries([])
         } finally {
             setIsLoading(false)
         }

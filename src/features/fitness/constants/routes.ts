@@ -16,6 +16,7 @@ export const FITNESS_ROUTES = {
     bodyMeasurements: '/fitness/body/measurements',
 
     progress: '/fitness/progress',
+    progressPhotos: '/fitness/progress/photos',
     progressExercise: '/fitness/progress/exercise',
     account: '/fitness/account',
     adminRoot: '/fitness/admin',

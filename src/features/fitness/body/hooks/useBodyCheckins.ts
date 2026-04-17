@@ -19,6 +19,8 @@ import type {
 
 const uidRequiredErrorMessage =
     'Utilisateur non connecté. Impossible d’accéder aux body check-ins.'
+const photoUploadRequiresNetworkError =
+    'Hors ligne: l’ajout ou la suppression de photos nécessite une connexion. Tu peux enregistrer le check-in sans photo, puis les ajouter après reconnexion.'
 
 const getErrorMessage = (error: unknown): string => {
     logFitnessErrorDev('useBodyCheckins', error)
@@ -54,6 +56,12 @@ const useBodyCheckins = () => {
         return uid
     }, [uid])
 
+    const assertOnlineForPhotoOperations = useCallback(() => {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            throw new Error(photoUploadRequiresNetworkError)
+        }
+    }, [])
+
     const loadCheckins = useCallback(async () => {
         setIsLoading(true)
         setError(null)
@@ -64,7 +72,6 @@ const useBodyCheckins = () => {
             setCheckins(items)
         } catch (loadError) {
             setError(getErrorMessage(loadError))
-            setCheckins([])
         } finally {
             setIsLoading(false)
         }
@@ -98,6 +105,9 @@ const useBodyCheckins = () => {
         ) => {
             await runMutation(async () => {
                 const currentUid = assertUid()
+                if (photosToUpload.length > 0) {
+                    assertOnlineForPhotoOperations()
+                }
                 const photoPlaceholders = photosToUpload.map((photo) => ({
                     type: photo.type,
                     url: 'pending-upload',
@@ -121,13 +131,19 @@ const useBodyCheckins = () => {
                 showFitnessSuccessToast('Body check-in enregistré.')
             })
         },
-        [assertUid, runMutation],
+        [assertOnlineForPhotoOperations, assertUid, runMutation],
     )
 
     const editCheckin = useCallback(
         async (payload: EditBodyCheckinPayload) => {
             await runMutation(async () => {
                 const currentUid = assertUid()
+                if (
+                    payload.newPhotos.length > 0 ||
+                    payload.removedPhotoPaths.length > 0
+                ) {
+                    assertOnlineForPhotoOperations()
+                }
                 const newPhotoTypes = new Set(payload.newPhotos.map((photo) => photo.type))
                 const remainingPhotos = payload.existingPhotos.filter((photo) => {
                     if (!photo.path) {
@@ -166,7 +182,7 @@ const useBodyCheckins = () => {
                 showFitnessSuccessToast('Body check-in mis à jour.')
             })
         },
-        [assertUid, runMutation],
+        [assertOnlineForPhotoOperations, assertUid, runMutation],
     )
 
     const removeCheckin = useCallback(

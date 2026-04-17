@@ -111,6 +111,14 @@ export const fitnessProtectedRoutes: Routes = [
         authority: ['USER'],
     },
     {
+        key: 'fitness.progress.photos',
+        path: FITNESS_ROUTES.progressPhotos,
+        component: lazy(
+            () => import('@/features/fitness/progress/pages/ProgressPhotosPage'),
+        ),
+        authority: ['USER'],
+    },
+    {
         key: 'fitness.progress.exercise',
         path: FITNESS_ROUTES.progressExercise,
         component: lazy(

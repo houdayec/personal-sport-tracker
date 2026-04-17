@@ -1,5 +1,11 @@
 import { initializeApp } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
+import {
+    getFirestore,
+    initializeFirestore,
+    persistentLocalCache,
+    persistentMultipleTabManager,
+    type Firestore,
+} from 'firebase/firestore'
 import { getAnalytics, isSupported, type Analytics } from 'firebase/analytics'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 //import { setLogLevel } from "firebase/firestore"
@@ -36,7 +42,19 @@ if (hasValidMeasurementId) {
         })
 }
 
-const db = getFirestore(firebaseApp)
+const createFirestore = (): Firestore => {
+    try {
+        return initializeFirestore(firebaseApp, {
+            localCache: persistentLocalCache({
+                tabManager: persistentMultipleTabManager(),
+            }),
+        })
+    } catch {
+        return getFirestore(firebaseApp)
+    }
+}
+
+const db = createFirestore()
 const auth = getAuth(firebaseApp)
 
 export const storage = getStorage(firebaseApp)

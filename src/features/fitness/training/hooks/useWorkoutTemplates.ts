@@ -60,8 +60,6 @@ const useWorkoutTemplates = () => {
             setExerciseOptions(exercises)
         } catch (loadError) {
             setError(getErrorMessage(loadError))
-            setTemplates([])
-            setExerciseOptions([])
         } finally {
             setIsLoading(false)
         }

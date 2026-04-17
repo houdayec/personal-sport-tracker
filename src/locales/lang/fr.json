@@ -15,7 +15,12 @@
                 "weight": "Poids",
                 "measurements": "Mensurations"
             },
-            "progress": "Progression",
+            "progress": {
+                "title": "Progression",
+                "body": "Suivi du corps",
+                "photos": "Comparaison photos",
+                "exercise": "Progression d’exercice"
+            },
             "account": "Compte",
             "admin": {
                 "title": "Admin",

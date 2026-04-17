@@ -12,6 +12,7 @@ import {
 import useAuth from '@/utils/hooks/useAuth'
 import useDirection from '@/utils/hooks/useDirection'
 import useLocale from '@/utils/hooks/useLocale'
+import NetworkStatusBanner from '@/features/fitness/common/components/NetworkStatusBanner'
 
 const layouts = {
     [LAYOUT_TYPE_CLASSIC]: lazy(() => import('./ClassicLayout')),
@@ -39,15 +40,18 @@ const Layout = () => {
     }, [layoutType, authenticated])
 
     return (
-        <Suspense
-            fallback={
-                <div className="flex flex-auto flex-col h-[100vh]">
-                    <Loading loading={true} />
-                </div>
-            }
-        >
-            <AppLayout />
-        </Suspense>
+        <div className="relative min-h-screen">
+            <NetworkStatusBanner />
+            <Suspense
+                fallback={
+                    <div className="flex flex-auto flex-col h-[100vh]">
+                        <Loading loading={true} />
+                    </div>
+                }
+            >
+                <AppLayout />
+            </Suspense>
+        </div>
     )
 }
 

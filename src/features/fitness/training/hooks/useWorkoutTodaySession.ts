@@ -78,9 +78,6 @@ const useWorkoutTodaySession = () => {
             setExerciseOptions(exerciseList)
         } catch (loadError) {
             setError(getErrorMessage(loadError))
-            setExerciseOptions([])
-            setTemplates([])
-            setActiveSession(null)
         } finally {
             setIsLoading(false)
         }

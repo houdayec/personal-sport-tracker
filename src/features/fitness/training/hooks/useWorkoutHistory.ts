@@ -72,7 +72,6 @@ export const useWorkoutHistoryList = () => {
             setSessions(history)
         } catch (loadError) {
             setError(getErrorMessage(loadError))
-            setSessions([])
         } finally {
             setIsLoading(false)
         }
@@ -128,7 +127,6 @@ export const useWorkoutHistoryDetail = (sessionId?: string) => {
             setSession(detail)
         } catch (loadError) {
             setError(getErrorMessage(loadError))
-            setSession(null)
         } finally {
             setIsLoading(false)
         }

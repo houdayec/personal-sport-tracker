@@ -67,7 +67,6 @@ const useExerciseLibrary = () => {
             await refreshActiveExercises()
         } catch (loadError) {
             setError(getErrorMessage(loadError))
-            setActiveExercises([])
         } finally {
             setIsInitialLoading(false)
         }
@@ -81,7 +80,6 @@ const useExerciseLibrary = () => {
             await refreshArchivedExercises()
         } catch (loadError) {
             setError(getErrorMessage(loadError))
-            setArchivedExercises([])
         } finally {
             setIsArchivedLoading(false)
         }

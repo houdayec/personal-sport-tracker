@@ -5,6 +5,7 @@ import {
     HiOutlineUserCircle,
     HiOutlineChartBar,
     HiOutlineCog,
+    HiOutlineKey,
 } from 'react-icons/hi'
 
 export type NavigationIcons = Record<string, JSX.Element>
@@ -15,7 +16,7 @@ const navigationIcon: NavigationIcons = {
     body: <HiOutlineUserCircle />,
     progress: <HiOutlineChartBar />,
     account: <HiOutlineCog />,
-    admin: <HiOutlineCog />,
+    admin: <HiOutlineKey />,
 }
 
 export default navigationIcon
