@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
+import { updateProfile } from 'firebase/auth'
+import { auth } from '@/firebase'
 import {
     buildUserDataExportBundle,
     downloadUserDataExport,
@@ -13,7 +15,8 @@ import type {
     PreferredWeightUnit,
     UserProfile,
 } from '@/features/fitness/account/types/accountProfile'
-import { useAppSelector } from '@/store'
+import { setUser, useAppDispatch, useAppSelector } from '@/store'
+import { buildUiAvatarUrl } from '@/utils/uiAvatar'
 
 const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error && error.message) {
@@ -24,10 +27,42 @@ const getErrorMessage = (error: unknown): string => {
 }
 
 const useAccountProfile = () => {
+    const dispatch = useAppDispatch()
     const uid = useAppSelector((state) => state.auth.session.uid)
     const authEmail = useAppSelector((state) => state.auth.user.email)
     const authDisplayName = useAppSelector((state) => state.auth.user.userName)
-    const authAvatar = useAppSelector((state) => state.auth.user.avatar)
+    const authAuthority = useAppSelector((state) => state.auth.user.authority)
+
+    const syncAuthIdentity = useCallback(
+        async (displayName: string) => {
+            const avatarUrl = buildUiAvatarUrl(displayName)
+
+            if (auth.currentUser) {
+                const shouldUpdateAuthProfile =
+                    auth.currentUser.displayName !== displayName ||
+                    auth.currentUser.photoURL !== avatarUrl
+
+                if (shouldUpdateAuthProfile) {
+                    await updateProfile(auth.currentUser, {
+                        displayName,
+                        photoURL: avatarUrl,
+                    })
+                }
+            }
+
+            dispatch(
+                setUser({
+                    avatar: avatarUrl,
+                    userName: displayName,
+                    authority: authAuthority || ['USER'],
+                    email: auth.currentUser?.email || authEmail || '',
+                }),
+            )
+
+            return avatarUrl
+        },
+        [dispatch, authAuthority, authEmail],
+    )
 
     const [profile, setProfile] = useState<UserProfile | null>(null)
     const [isLoading, setIsLoading] = useState(true)
@@ -56,10 +91,11 @@ const useAccountProfile = () => {
                 authDisplayName?.trim() ||
                 authEmail?.split('@')[0] ||
                 'Utilisateur'
+            const defaultAvatarUrl = buildUiAvatarUrl(defaultDisplayName)
 
             await createUserProfileIfMissing(currentUid, {
                 displayName: defaultDisplayName,
-                photoUrl: authAvatar || undefined,
+                photoUrl: defaultAvatarUrl,
                 preferredWeightUnit: 'kg',
                 preferredLengthUnit: 'cm',
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
@@ -67,6 +103,10 @@ const useAccountProfile = () => {
             })
 
             const currentProfile = await getCurrentUserProfile(currentUid)
+            if (currentProfile?.displayName) {
+                const avatarUrl = await syncAuthIdentity(currentProfile.displayName)
+                currentProfile.photoUrl = avatarUrl
+            }
             setProfile(currentProfile)
         } catch (loadError) {
             setError(getErrorMessage(loadError))
@@ -74,7 +114,7 @@ const useAccountProfile = () => {
         } finally {
             setIsLoading(false)
         }
-    }, [assertUid, authDisplayName, authEmail, authAvatar])
+    }, [assertUid, authDisplayName, authEmail, syncAuthIdentity])
 
     useEffect(() => {
         loadProfile()
@@ -101,14 +141,17 @@ const useAccountProfile = () => {
 
             try {
                 const currentUid = assertUid()
+                const normalizedDisplayName = input.displayName.trim()
+                const avatarUrl = await syncAuthIdentity(normalizedDisplayName)
+
                 await updateUserProfile(currentUid, {
-                    displayName: input.displayName,
-                    photoUrl: input.photoUrl || '',
+                    displayName: normalizedDisplayName,
+                    photoUrl: avatarUrl,
                 })
 
                 patchLocalProfile({
-                    displayName: input.displayName.trim(),
-                    photoUrl: input.photoUrl?.trim() || undefined,
+                    displayName: normalizedDisplayName,
+                    photoUrl: avatarUrl,
                 })
                 setSuccessMessage('Profil mis à jour.')
             } catch (saveError) {
@@ -118,7 +161,7 @@ const useAccountProfile = () => {
                 setIsSavingProfile(false)
             }
         },
-        [assertUid, patchLocalProfile],
+        [assertUid, patchLocalProfile, syncAuthIdentity],
     )
 
     const savePreferences = useCallback(

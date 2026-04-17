@@ -15,6 +15,7 @@ const navigationIcon: NavigationIcons = {
     body: <HiOutlineUserCircle />,
     progress: <HiOutlineChartBar />,
     account: <HiOutlineCog />,
+    admin: <HiOutlineCog />,
 }
 
 export default navigationIcon

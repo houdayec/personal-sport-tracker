@@ -3,7 +3,9 @@ import { onCall, CallableRequest, HttpsError } from "firebase-functions/v2/https
 import { Dub } from "dub";
 import { defineSecret } from "firebase-functions/params";
 
-admin.initializeApp();
+if (admin.apps.length === 0) {
+    admin.initializeApp();
+}
 
 // Define secrets
 const DUB_API_KEY = defineSecret("DUB_API_KEY");

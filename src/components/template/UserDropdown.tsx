@@ -4,13 +4,11 @@ import withHeaderItem from '@/utils/hoc/withHeaderItem'
 import useAuth from '@/utils/hooks/useAuth'
 import { Link } from 'react-router-dom'
 import classNames from 'classnames'
-import { HiOutlineCog, HiOutlineLogout, HiOutlineUser } from 'react-icons/hi'
-import { useEffect, useState } from 'react'
-import { auth } from '@/firebase' // Import Firebase auth
+import { HiOutlineLogout } from 'react-icons/hi'
+import { useAppSelector } from '@/store'
+import { buildUiAvatarUrl } from '@/utils/uiAvatar'
 import type { CommonProps } from '@/@types/common'
 import type { JSX } from 'react'
-import type { User } from 'firebase/auth'
-import { FiActivity } from 'react-icons/fi'
 
 type DropdownList = {
     label: string
@@ -19,37 +17,27 @@ type DropdownList = {
 }
 
 const dropdownItemList: DropdownList[] = [
-
     // {
     //     label: 'Settings',
     //     path: '/app/account/settings/profile',
     //     icon: <HiOutlineCog />,
     // },
-
 ]
 const _UserDropdown = ({ className }: CommonProps) => {
     const { signOut } = useAuth()
-    const [user, setUser] = useState<User | null>(null)
+    const userName = useAppSelector((state) => state.auth.user.userName)
+    const userEmail = useAppSelector((state) => state.auth.user.email)
 
-    // Listen to Firebase user state
-    useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
-            setUser(firebaseUser)
-        })
-        return () => unsubscribe()
-    }, [])
+    const resolvedUserName = userName?.trim() || 'User'
+    const resolvedUserEmail = userEmail?.trim() || 'No Email'
+    const avatarSrc = buildUiAvatarUrl(resolvedUserName)
 
     const UserAvatar = (
         <div className={classNames(className, 'flex items-center gap-2')}>
-            <Avatar
-                size={32}
-                shape="circle"
-                src={user?.photoURL || undefined} // Use Firebase photo or default
-                icon={!user?.photoURL ? <HiOutlineUser /> : undefined}
-            />
+            <Avatar size={32} shape="circle" src={avatarSrc} />
             <div className="hidden md:block">
-                <div className="text-xs capitalize">{user?.displayName || 'User'}</div>
-                <div className="font-bold">{user?.email || 'No Email'}</div>
+                <div className="text-xs capitalize">{resolvedUserName}</div>
+                <div className="font-bold">{resolvedUserEmail}</div>
             </div>
         </div>
     )
@@ -59,16 +47,12 @@ const _UserDropdown = ({ className }: CommonProps) => {
             <Dropdown menuStyle={{ minWidth: 240 }} renderTitle={UserAvatar} placement="bottom-end">
                 <Dropdown.Item variant="header">
                     <div className="py-2 px-3 flex items-center gap-2">
-                        <Avatar
-                            shape="circle"
-                            src={user?.photoURL || undefined}
-                            icon={!user?.photoURL ? <HiOutlineUser /> : undefined}
-                        />
+                        <Avatar shape="circle" src={avatarSrc} />
                         <div>
                             <div className="font-bold text-gray-900 dark:text-gray-100">
-                                {user?.displayName || 'User'}
+                                {resolvedUserName}
                             </div>
-                            <div className="text-xs">{user?.email || 'No Email'}</div>
+                            <div className="text-xs">{resolvedUserEmail}</div>
                         </div>
                     </div>
                 </Dropdown.Item>

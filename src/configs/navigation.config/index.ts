@@ -118,6 +118,27 @@ const navigationConfig: NavigationTree[] = [
         authority: [],
         subMenu: [],
     },
+    {
+        key: 'fitness.admin',
+        path: FITNESS_ROUTES.adminRoot,
+        title: 'Admin',
+        translateKey: 'nav.fitness.admin.title',
+        icon: 'admin',
+        type: NAV_ITEM_TYPE_COLLAPSE,
+        authority: [],
+        subMenu: [
+            {
+                key: 'fitness.admin.dev',
+                path: FITNESS_ROUTES.adminDev,
+                title: 'Dev',
+                translateKey: 'nav.fitness.admin.dev',
+                icon: '',
+                type: NAV_ITEM_TYPE_ITEM,
+                authority: [],
+                subMenu: [],
+            },
+        ],
+    },
 ]
 
 export default navigationConfig

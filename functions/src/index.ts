@@ -16,3 +16,4 @@ export { importWooOrdersDaily } from "./importWooOrders";
 export { refreshWooOrders } from "./importWooOrders";
 export { fetchEtsyProductsRankings } from "./rankingsAnalyser";
 export { fetchVarsityHtml } from "./rankingsAnalyser";
+export { seedGlobalExercisesCallable } from "./seedGlobalExercisesCallable";

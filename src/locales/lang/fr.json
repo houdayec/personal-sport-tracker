@@ -15,7 +15,11 @@
                 "measurements": "Mensurations"
             },
             "progress": "Progression",
-            "account": "Compte"
+            "account": "Compte",
+            "admin": {
+                "title": "Admin",
+                "dev": "Dev"
+            }
         }
     },
     "pages": {

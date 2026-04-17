@@ -115,4 +115,16 @@ export const fitnessProtectedRoutes: Routes = [
         component: lazy(() => import('@/features/fitness/account/pages/AccountPage')),
         authority: ['USER'],
     },
+    {
+        key: 'fitness.admin.dev',
+        path: FITNESS_ROUTES.adminRoot,
+        component: lazy(() => import('@/features/fitness/admin/pages/AdminDevPage')),
+        authority: ['USER'],
+    },
+    {
+        key: 'fitness.admin.dev',
+        path: FITNESS_ROUTES.adminDev,
+        component: lazy(() => import('@/features/fitness/admin/pages/AdminDevPage')),
+        authority: ['USER'],
+    },
 ]
