@@ -19,7 +19,6 @@ const AccountPage = () => {
         isSavingPreferences,
         isExporting,
         error,
-        successMessage,
         saveProfile,
         savePreferences,
         exportData,
@@ -71,12 +70,6 @@ const AccountPage = () => {
             {error && (
                 <Alert type="danger" showIcon>
                     {error}
-                </Alert>
-            )}
-
-            {successMessage && (
-                <Alert type="success" showIcon>
-                    {successMessage}
                 </Alert>
             )}
 

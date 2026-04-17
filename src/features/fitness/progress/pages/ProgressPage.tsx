@@ -34,7 +34,7 @@ const ProgressPage = () => {
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
                     Progression
                 </p>
-                <h3 className="mt-1 text-2xl font-semibold">Body Tracking</h3>
+                <h3 className="mt-1 text-2xl font-semibold">Suivi du corps</h3>
                 <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
                     Visualise simplement l’évolution de ton poids et de tes
                     mensurations sur la période choisie.
@@ -62,7 +62,7 @@ const ProgressPage = () => {
                             asElement={Link}
                             to={FITNESS_ROUTES.progressExercise}
                         >
-                            Exercise Progress
+                            Progression d’exercice
                         </Button>
                         <Segment
                             size="sm"

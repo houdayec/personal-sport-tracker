@@ -1,0 +1,113 @@
+{
+  "global_running_types": [
+    {
+      "category": "endurance",
+      "types": [
+        {
+          "name": "Footing",
+          "name_en": "Easy Run",
+          "description": "Course à allure facile, conversationnelle",
+          "defaultGoal": "time",
+          "muscleGroup": "cardio"
+        },
+        {
+          "name": "Sortie longue",
+          "name_en": "Long Run",
+          "description": "Sortie longue à allure modérée",
+          "defaultGoal": "distance",
+          "muscleGroup": "cardio"
+        },
+        {
+          "name": "Récupération",
+          "name_en": "Recovery Run",
+          "description": "Course très facile pour récupération",
+          "defaultGoal": "time",
+          "muscleGroup": "cardio"
+        }
+      ]
+    },
+    {
+      "category": "performance",
+      "types": [
+        {
+          "name": "Tempo",
+          "name_en": "Tempo Run",
+          "description": "Allure soutenue mais contrôlée",
+          "defaultGoal": "time",
+          "muscleGroup": "cardio"
+        },
+        {
+          "name": "Seuil",
+          "name_en": "Threshold Run",
+          "description": "Travail proche du seuil anaérobie",
+          "defaultGoal": "time",
+          "muscleGroup": "cardio"
+        }
+      ]
+    },
+    {
+      "category": "interval",
+      "types": [
+        {
+          "name": "Fractionné court",
+          "name_en": "Short Intervals",
+          "description": "Efforts courts type 30s / 30s",
+          "defaultGoal": "interval",
+          "muscleGroup": "cardio"
+        },
+        {
+          "name": "Fractionné long",
+          "name_en": "Long Intervals",
+          "description": "Efforts longs type 800m / 1000m",
+          "defaultGoal": "interval",
+          "muscleGroup": "cardio"
+        },
+        {
+          "name": "Fartlek",
+          "name_en": "Fartlek",
+          "description": "Alternance libre d’allures",
+          "defaultGoal": "interval",
+          "muscleGroup": "cardio"
+        }
+      ]
+    },
+    {
+      "category": "explosive",
+      "types": [
+        {
+          "name": "Sprints",
+          "name_en": "Sprints",
+          "description": "Efforts très courts et intenses",
+          "defaultGoal": "interval",
+          "muscleGroup": "cardio"
+        },
+        {
+          "name": "Côtes",
+          "name_en": "Hill Repeats",
+          "description": "Montées répétées",
+          "defaultGoal": "interval",
+          "muscleGroup": "cardio"
+        }
+      ]
+    },
+    {
+      "category": "terrain",
+      "types": [
+        {
+          "name": "Trail",
+          "name_en": "Trail Run",
+          "description": "Course en terrain naturel",
+          "defaultGoal": "distance",
+          "muscleGroup": "cardio"
+        },
+        {
+          "name": "Course sur route",
+          "name_en": "Road Run",
+          "description": "Course sur route classique",
+          "defaultGoal": "distance",
+          "muscleGroup": "cardio"
+        }
+      ]
+    }
+  ]
+}

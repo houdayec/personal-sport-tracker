@@ -212,8 +212,8 @@ const ExerciseLibraryPage = () => {
                                         }
                                     >
                                         {exercise.exerciseSource === 'global'
-                                            ? 'Global'
-                                            : 'Custom'}
+                                            ? 'Commun'
+                                            : 'Perso'}
                                     </Tag>
                                     {exercise.isArchived && (
                                         <Tag className="bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-100">

@@ -83,7 +83,12 @@ export const useWorkoutHistoryList = () => {
         return sessions.map((session) => ({
             ...session,
             durationMs: getSessionDurationMs(session),
-            plannedExerciseCount: session.plannedExercises.length,
+            plannedExerciseCount:
+                session.sessionType === 'strength'
+                    ? session.plannedExercises.length
+                    : session.sessionType === 'hiit'
+                      ? session.hiitData?.exercises?.length || 0
+                      : 0,
         }))
     }, [sessions])
 

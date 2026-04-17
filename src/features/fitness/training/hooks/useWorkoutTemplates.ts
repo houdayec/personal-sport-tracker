@@ -8,6 +8,7 @@ import {
     listWorkoutTemplates,
     updateWorkoutTemplate,
 } from '@/features/fitness/training/services/workoutSessionService'
+import { showFitnessErrorToast, showFitnessSuccessToast } from '@/features/fitness/common/utils/feedbackToast'
 import { listActiveExercises } from '@/features/fitness/training/services/exerciseService'
 import type {
     WorkoutSession,
@@ -75,7 +76,7 @@ const useWorkoutTemplates = () => {
             try {
                 await operation()
             } catch (mutationError) {
-                setError(getErrorMessage(mutationError))
+                showFitnessErrorToast(getErrorMessage(mutationError))
                 throw mutationError
             } finally {
                 setIsMutating(false)
@@ -91,6 +92,7 @@ const useWorkoutTemplates = () => {
                 await createWorkoutTemplate(currentUid, input)
                 const items = await listWorkoutTemplates(currentUid)
                 setTemplates(items)
+                showFitnessSuccessToast('Template créé.')
             })
         },
         [assertUid, runMutation],
@@ -103,6 +105,7 @@ const useWorkoutTemplates = () => {
                 await updateWorkoutTemplate(currentUid, templateId, input)
                 const items = await listWorkoutTemplates(currentUid)
                 setTemplates(items)
+                showFitnessSuccessToast('Template mis à jour.')
             })
         },
         [assertUid, runMutation],
@@ -115,6 +118,7 @@ const useWorkoutTemplates = () => {
                 await deleteWorkoutTemplate(currentUid, templateId)
                 const items = await listWorkoutTemplates(currentUid)
                 setTemplates(items)
+                showFitnessSuccessToast('Template supprimé.')
             })
         },
         [assertUid, runMutation],
@@ -127,6 +131,7 @@ const useWorkoutTemplates = () => {
                 await duplicateWorkoutTemplate(currentUid, templateId)
                 const items = await listWorkoutTemplates(currentUid)
                 setTemplates(items)
+                showFitnessSuccessToast('Template dupliqué.')
             })
         },
         [assertUid, runMutation],
@@ -139,9 +144,11 @@ const useWorkoutTemplates = () => {
 
             try {
                 const currentUid = assertUid()
-                return await createWorkoutSessionFromTemplate(currentUid, templateId)
+                const session = await createWorkoutSessionFromTemplate(currentUid, templateId)
+                showFitnessSuccessToast('Séance lancée depuis le template.')
+                return session
             } catch (startError) {
-                setError(getErrorMessage(startError))
+                showFitnessErrorToast(getErrorMessage(startError))
                 throw startError
             } finally {
                 setIsStarting(false)

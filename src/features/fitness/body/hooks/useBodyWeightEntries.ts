@@ -6,6 +6,7 @@ import {
     listBodyWeightEntries,
     updateBodyWeightEntry,
 } from '@/features/fitness/body/services/bodyWeightService'
+import { showFitnessErrorToast, showFitnessSuccessToast } from '@/features/fitness/common/utils/feedbackToast'
 import type {
     BodyWeightEntry,
     BodyWeightEntryInput,
@@ -66,7 +67,7 @@ const useBodyWeightEntries = () => {
             try {
                 await operation()
             } catch (mutationError) {
-                setError(getErrorMessage(mutationError))
+                showFitnessErrorToast(getErrorMessage(mutationError))
                 throw mutationError
             } finally {
                 setIsMutating(false)
@@ -82,6 +83,7 @@ const useBodyWeightEntries = () => {
                 await createBodyWeightEntry(currentUid, input)
                 const data = await listBodyWeightEntries(currentUid)
                 setEntries(data)
+                showFitnessSuccessToast('Entrée de poids ajoutée.')
             })
         },
         [assertUid, runMutation],
@@ -94,6 +96,7 @@ const useBodyWeightEntries = () => {
                 await updateBodyWeightEntry(currentUid, entryId, input)
                 const data = await listBodyWeightEntries(currentUid)
                 setEntries(data)
+                showFitnessSuccessToast('Entrée de poids mise à jour.')
             })
         },
         [assertUid, runMutation],
@@ -106,6 +109,7 @@ const useBodyWeightEntries = () => {
                 await deleteBodyWeightEntry(currentUid, entryId)
                 const data = await listBodyWeightEntries(currentUid)
                 setEntries(data)
+                showFitnessSuccessToast('Entrée de poids supprimée.')
             })
         },
         [assertUid, runMutation],

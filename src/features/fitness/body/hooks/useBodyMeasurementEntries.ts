@@ -6,6 +6,7 @@ import {
     listBodyMeasurementEntries,
     updateBodyMeasurementEntry,
 } from '@/features/fitness/body/services/bodyMeasurementService'
+import { showFitnessErrorToast, showFitnessSuccessToast } from '@/features/fitness/common/utils/feedbackToast'
 import type {
     BodyMeasurementEntry,
     BodyMeasurementEntryInput,
@@ -66,7 +67,7 @@ const useBodyMeasurementEntries = () => {
             try {
                 await operation()
             } catch (mutationError) {
-                setError(getErrorMessage(mutationError))
+                showFitnessErrorToast(getErrorMessage(mutationError))
                 throw mutationError
             } finally {
                 setIsMutating(false)
@@ -82,6 +83,7 @@ const useBodyMeasurementEntries = () => {
                 await createBodyMeasurementEntry(currentUid, input)
                 const data = await listBodyMeasurementEntries(currentUid)
                 setEntries(data)
+                showFitnessSuccessToast('Snapshot de mensurations enregistré.')
             })
         },
         [assertUid, runMutation],
@@ -94,6 +96,7 @@ const useBodyMeasurementEntries = () => {
                 await updateBodyMeasurementEntry(currentUid, entryId, input)
                 const data = await listBodyMeasurementEntries(currentUid)
                 setEntries(data)
+                showFitnessSuccessToast('Snapshot de mensurations mis à jour.')
             })
         },
         [assertUid, runMutation],
@@ -106,6 +109,7 @@ const useBodyMeasurementEntries = () => {
                 await deleteBodyMeasurementEntry(currentUid, entryId)
                 const data = await listBodyMeasurementEntries(currentUid)
                 setEntries(data)
+                showFitnessSuccessToast('Snapshot de mensurations supprimé.')
             })
         },
         [assertUid, runMutation],

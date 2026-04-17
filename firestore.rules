@@ -10,12 +10,25 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    // Single admin UID for dev seed actions
+    function isAdmin() {
+      return isSignedIn() && request.auth.uid == "CKz2MS0kdaWLbBIaAAVsJGKJqFL2";
+    }
+
     // Shared exercise catalog
     match /global_exercises/{exerciseId} {
       // All authenticated users can read global exercises.
       allow read: if isSignedIn();
-      // Writes should be restricted to admin/owner flows only.
-      allow create, update, delete: if false;
+      // Writes restricted to admin-only seed flows.
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Shared running types catalog
+    match /global_running_types/{runningTypeId} {
+      // All authenticated users can read running types.
+      allow read: if isSignedIn();
+      // Writes restricted to admin-only seed flows.
+      allow create, update, delete: if isAdmin();
     }
 
     // Root user document: users/{uid}

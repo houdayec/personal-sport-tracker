@@ -6,7 +6,14 @@ import {
     formatDuration,
     useWorkoutHistoryList,
 } from '@/features/fitness/training/hooks/useWorkoutHistory'
+import { formatRunningTypeLabel } from '@/features/fitness/training/utils/runningType'
 import { HiOutlineClock, HiOutlineRefresh, HiOutlineClipboardList } from 'react-icons/hi'
+
+const sessionTypeLabel: Record<'strength' | 'hiit' | 'running', string> = {
+    strength: 'FORCE',
+    hiit: 'HIIT',
+    running: 'COURSE',
+}
 
 const WorkoutHistoryPage = () => {
     const { sessionSummaries, isLoading, error, loadHistory } =
@@ -84,12 +91,15 @@ const WorkoutHistoryPage = () => {
                                                     : 'Date indisponible'}
                                             </p>
                                             <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                                                Template:{' '}
+                                                Modèle:{' '}
                                                 {session.sourceTemplate?.name ||
                                                     session.templateName ||
                                                     'Non renseigné'}
                                             </p>
                                             <div className="mt-3 flex flex-wrap gap-2">
+                                                <Tag className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                                                    {sessionTypeLabel[session.sessionType || 'strength']}
+                                                </Tag>
                                                 <Tag
                                                     className={
                                                         session.status === 'completed'
@@ -102,8 +112,13 @@ const WorkoutHistoryPage = () => {
                                                         : 'En cours'}
                                                 </Tag>
                                                 <Tag className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
-                                                    {session.plannedExerciseCount} exercice
-                                                    {session.plannedExerciseCount > 1 ? 's' : ''}
+                                                    {session.sessionType === 'strength'
+                                                        ? `${session.plannedExerciseCount} exercice${session.plannedExerciseCount > 1 ? 's' : ''}`
+                                                        : session.sessionType === 'hiit'
+                                                          ? `${session.hiitData?.rounds || 0} tours`
+                                                          : formatRunningTypeLabel(
+                                                                session.runningData?.runType,
+                                                            )}
                                                 </Tag>
                                                 <Tag className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
                                                     <span className="inline-flex items-center gap-1">

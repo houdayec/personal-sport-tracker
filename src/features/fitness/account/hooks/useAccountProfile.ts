@@ -10,6 +10,7 @@ import {
     getCurrentUserProfile,
     updateUserProfile,
 } from '@/features/fitness/account/services/accountProfileService'
+import { showFitnessErrorToast, showFitnessSuccessToast } from '@/features/fitness/common/utils/feedbackToast'
 import type {
     PreferredLengthUnit,
     PreferredThemeMode,
@@ -77,7 +78,6 @@ const useAccountProfile = () => {
     const [isSavingPreferences, setIsSavingPreferences] = useState(false)
     const [isExporting, setIsExporting] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
     const assertUid = useCallback(() => {
         if (!uid) {
@@ -148,7 +148,6 @@ const useAccountProfile = () => {
         async (input: { displayName: string; photoUrl?: string }) => {
             setIsSavingProfile(true)
             setError(null)
-            setSuccessMessage(null)
 
             try {
                 const currentUid = assertUid()
@@ -164,10 +163,9 @@ const useAccountProfile = () => {
                     displayName: normalizedDisplayName,
                     photoUrl: avatarUrl,
                 })
-                setSuccessMessage('Profil mis à jour.')
+                showFitnessSuccessToast('Profil mis à jour.')
             } catch (saveError) {
-                setError(getErrorMessage(saveError))
-                throw saveError
+                showFitnessErrorToast(getErrorMessage(saveError))
             } finally {
                 setIsSavingProfile(false)
             }
@@ -184,7 +182,6 @@ const useAccountProfile = () => {
         }) => {
             setIsSavingPreferences(true)
             setError(null)
-            setSuccessMessage(null)
 
             try {
                 const currentUid = assertUid()
@@ -202,10 +199,9 @@ const useAccountProfile = () => {
                     timezone: input.timezone.trim(),
                 })
                 dispatch(setMode(input.preferredThemeMode))
-                setSuccessMessage('Préférences mises à jour.')
+                showFitnessSuccessToast('Préférences mises à jour.')
             } catch (saveError) {
-                setError(getErrorMessage(saveError))
-                throw saveError
+                showFitnessErrorToast(getErrorMessage(saveError))
             } finally {
                 setIsSavingPreferences(false)
             }
@@ -216,16 +212,14 @@ const useAccountProfile = () => {
     const exportData = useCallback(async () => {
         setIsExporting(true)
         setError(null)
-        setSuccessMessage(null)
 
         try {
             const currentUid = assertUid()
             const payload = await buildUserDataExportBundle(currentUid)
             downloadUserDataExport(currentUid, payload)
-            setSuccessMessage('Export JSON généré.')
+            showFitnessSuccessToast('Export JSON généré.')
         } catch (exportError) {
-            setError(getErrorMessage(exportError))
-            throw exportError
+            showFitnessErrorToast(getErrorMessage(exportError))
         } finally {
             setIsExporting(false)
         }
@@ -240,7 +234,6 @@ const useAccountProfile = () => {
         isSavingPreferences,
         isExporting,
         error,
-        successMessage,
         saveProfile,
         savePreferences,
         exportData,

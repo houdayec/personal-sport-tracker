@@ -16,9 +16,21 @@ import type {
     ExerciseSnapshot,
     ExerciseSource,
 } from '@/features/fitness/training/types/exercise'
+import { isCardioNoSetsExercise } from '@/features/fitness/training/utils/exerciseKind'
 import {
     WORKOUT_SESSION_SCHEMA_VERSION,
     WORKOUT_TEMPLATE_SCHEMA_VERSION,
+    type HiitSessionData,
+    type HiitTemplateConfig,
+    type RunningGpxData,
+    type RunningGpxTrackPoint,
+    type RunningSessionData,
+    type RunningTemplateConfig,
+    type SessionType,
+    type StrengthSessionData,
+    type StrengthTemplateConfig,
+    type UpdateHiitSessionInput,
+    type UpdateRunningSessionInput,
     type PerformedWorkoutExercise,
     type PlannedWorkoutExercise,
     type SavePerformedExerciseInput,
@@ -30,6 +42,7 @@ import {
     type WorkoutTemplateExercise,
     type WorkoutTemplateInput,
 } from '@/features/fitness/training/types/workoutSession'
+import { normalizeRunningTypeValue } from '@/features/fitness/training/utils/runningType'
 
 const getSessionSortTime = (session: {
     startedAt?: any
@@ -75,6 +88,15 @@ const normalizeExerciseSource = (
     fallback: ExerciseSource = 'user',
 ): ExerciseSource => {
     return value === 'global' || value === 'user' ? value : fallback
+}
+
+const normalizeSessionType = (
+    value: unknown,
+    fallback: SessionType = 'strength',
+): SessionType => {
+    return value === 'strength' || value === 'hiit' || value === 'running'
+        ? value
+        : fallback
 }
 
 const normalizeString = (value: unknown): string => {
@@ -169,6 +191,246 @@ const toFirestoreTemplateSet = (
     }
 }
 
+const normalizeStrengthTemplateConfig = (
+    record: Record<string, unknown>,
+): StrengthTemplateConfig => {
+    const rawConfig =
+        record.strengthConfig && typeof record.strengthConfig === 'object'
+            ? (record.strengthConfig as Record<string, unknown>)
+            : {}
+    const rawExercises = Array.isArray(rawConfig.exercises)
+        ? rawConfig.exercises
+        : Array.isArray(record.exercises)
+          ? record.exercises
+          : []
+
+    return {
+        exercises: rawExercises.map(normalizeTemplateExercise),
+    }
+}
+
+const toPositiveNumber = (value: unknown, fallback: number): number => {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+        return fallback
+    }
+    return value
+}
+
+const toOptionalPositiveNumber = (value: unknown): number | undefined => {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+        return undefined
+    }
+    return value
+}
+
+const roundNumber = (value: number, decimals: number): number => {
+    const factor = 10 ** decimals
+    return Math.round(value * factor) / factor
+}
+
+const MAX_GPX_TRACK_POINTS = 1200
+
+const normalizeGpxPoint = (
+    value: unknown,
+): RunningGpxTrackPoint | null => {
+    if (!value || typeof value !== 'object') {
+        return null
+    }
+
+    const record = value as Record<string, unknown>
+    const lat = typeof record.lat === 'number' && Number.isFinite(record.lat) ? record.lat : null
+    const lon = typeof record.lon === 'number' && Number.isFinite(record.lon) ? record.lon : null
+    const distanceKm =
+        typeof record.distanceKm === 'number' && Number.isFinite(record.distanceKm)
+            ? Math.max(0, record.distanceKm)
+            : null
+    const elapsedSec =
+        typeof record.elapsedSec === 'number' && Number.isFinite(record.elapsedSec)
+            ? Math.max(0, record.elapsedSec)
+            : null
+
+    if (
+        lat === null ||
+        lon === null ||
+        lat < -90 ||
+        lat > 90 ||
+        lon < -180 ||
+        lon > 180 ||
+        distanceKm === null ||
+        elapsedSec === null
+    ) {
+        return null
+    }
+
+    const eleM =
+        typeof record.eleM === 'number' && Number.isFinite(record.eleM)
+            ? roundNumber(record.eleM, 1)
+            : undefined
+    const timeMs =
+        typeof record.timeMs === 'number' &&
+        Number.isFinite(record.timeMs) &&
+        record.timeMs > 0
+            ? Math.round(record.timeMs)
+            : undefined
+
+    return {
+        lat: roundNumber(lat, 6),
+        lon: roundNumber(lon, 6),
+        distanceKm: roundNumber(distanceKm, 3),
+        elapsedSec: Math.round(elapsedSec),
+        ...(typeof eleM === 'number' ? { eleM } : {}),
+        ...(typeof timeMs === 'number' ? { timeMs } : {}),
+    }
+}
+
+const normalizeRunningGpxData = (value: unknown): RunningGpxData | undefined => {
+    if (!value || typeof value !== 'object') {
+        return undefined
+    }
+
+    const record = value as Record<string, unknown>
+    const fileName =
+        typeof record.fileName === 'string' && record.fileName.trim()
+            ? record.fileName.trim()
+            : 'trace.gpx'
+    const uploadedAtMs =
+        typeof record.uploadedAtMs === 'number' &&
+        Number.isFinite(record.uploadedAtMs) &&
+        record.uploadedAtMs > 0
+            ? Math.round(record.uploadedAtMs)
+            : Date.now()
+
+    const rawPoints = Array.isArray(record.points) ? record.points : []
+    const points = rawPoints
+        .map(normalizeGpxPoint)
+        .filter((point): point is RunningGpxTrackPoint => Boolean(point))
+        .slice(0, MAX_GPX_TRACK_POINTS)
+
+    if (!points.length) {
+        return undefined
+    }
+
+    const summaryRaw =
+        record.summary && typeof record.summary === 'object'
+            ? (record.summary as Record<string, unknown>)
+            : {}
+
+    const lastPoint = points[points.length - 1]
+    const distanceKm =
+        typeof summaryRaw.distanceKm === 'number' &&
+        Number.isFinite(summaryRaw.distanceKm) &&
+        summaryRaw.distanceKm >= 0
+            ? roundNumber(summaryRaw.distanceKm, 3)
+            : lastPoint.distanceKm
+    const durationSec =
+        typeof summaryRaw.durationSec === 'number' &&
+        Number.isFinite(summaryRaw.durationSec) &&
+        summaryRaw.durationSec >= 0
+            ? Math.round(summaryRaw.durationSec)
+            : lastPoint.elapsedSec
+
+    const avgPaceSecPerKm =
+        typeof summaryRaw.avgPaceSecPerKm === 'number' &&
+        Number.isFinite(summaryRaw.avgPaceSecPerKm) &&
+        summaryRaw.avgPaceSecPerKm > 0
+            ? roundNumber(summaryRaw.avgPaceSecPerKm, 1)
+            : distanceKm > 0 && durationSec > 0
+              ? roundNumber(durationSec / distanceKm, 1)
+              : undefined
+
+    const toOptionalNonNegative = (input: unknown, decimals = 1) => {
+        if (typeof input !== 'number' || !Number.isFinite(input) || input < 0) {
+            return undefined
+        }
+        return roundNumber(input, decimals)
+    }
+
+    return {
+        fileName,
+        uploadedAtMs,
+        summary: {
+            originalPointCount:
+                typeof summaryRaw.originalPointCount === 'number' &&
+                Number.isFinite(summaryRaw.originalPointCount) &&
+                summaryRaw.originalPointCount >= points.length
+                    ? Math.round(summaryRaw.originalPointCount)
+                    : points.length,
+            storedPointCount: points.length,
+            distanceKm,
+            durationSec,
+            ...(typeof avgPaceSecPerKm === 'number' ? { avgPaceSecPerKm } : {}),
+            ...(toOptionalNonNegative(summaryRaw.elevationGainM) !== undefined
+                ? { elevationGainM: toOptionalNonNegative(summaryRaw.elevationGainM) }
+                : {}),
+            ...(toOptionalNonNegative(summaryRaw.elevationLossM) !== undefined
+                ? { elevationLossM: toOptionalNonNegative(summaryRaw.elevationLossM) }
+                : {}),
+            ...(toOptionalNonNegative(summaryRaw.minElevationM) !== undefined
+                ? { minElevationM: toOptionalNonNegative(summaryRaw.minElevationM) }
+                : {}),
+            ...(toOptionalNonNegative(summaryRaw.maxElevationM) !== undefined
+                ? { maxElevationM: toOptionalNonNegative(summaryRaw.maxElevationM) }
+                : {}),
+        },
+        points,
+    }
+}
+
+const normalizeHiitTemplateConfig = (
+    record: Record<string, unknown>,
+): HiitTemplateConfig => {
+    const rawConfig =
+        record.hiitConfig && typeof record.hiitConfig === 'object'
+            ? (record.hiitConfig as Record<string, unknown>)
+            : {}
+
+    const format =
+        rawConfig.format === 'circuit' || rawConfig.format === 'interval'
+            ? rawConfig.format
+            : 'interval'
+    const exercises = Array.isArray(rawConfig.exercises)
+        ? rawConfig.exercises
+              .filter((item) => typeof item === 'string')
+              .map((item) => item.trim())
+              .filter(Boolean)
+        : []
+
+    return {
+        format,
+        rounds: toPositiveNumber(rawConfig.rounds, 4),
+        workSec: toPositiveNumber(rawConfig.workSec, 40),
+        restSec: toPositiveNumber(rawConfig.restSec, 20),
+        ...(toOptionalPositiveNumber(rawConfig.restBetweenRoundsSec)
+            ? {
+                  restBetweenRoundsSec: toOptionalPositiveNumber(
+                      rawConfig.restBetweenRoundsSec,
+                  ),
+              }
+            : {}),
+        exercises,
+    }
+}
+
+const normalizeRunningTemplateConfig = (
+    record: Record<string, unknown>,
+): RunningTemplateConfig => {
+    const rawConfig =
+        record.runningConfig && typeof record.runningConfig === 'object'
+            ? (record.runningConfig as Record<string, unknown>)
+            : {}
+
+    const runType = normalizeRunningTypeValue(rawConfig.runType, 'Footing')
+
+    const targetDistanceKm = toOptionalPositiveNumber(rawConfig.targetDistanceKm)
+    const targetDurationMin = toOptionalPositiveNumber(rawConfig.targetDurationMin)
+
+    return {
+        runType,
+        ...(targetDistanceKm ? { targetDistanceKm } : {}),
+        ...(targetDurationMin ? { targetDurationMin } : {}),
+    }
+}
+
 const normalizeTemplateExercise = (
     exercise: unknown,
     index: number,
@@ -229,6 +491,11 @@ const templateFromSnapshot = (
     snapshot: QueryDocumentSnapshot<WorkoutTemplateDocument>,
 ): WorkoutTemplate => {
     const data = snapshot.data()
+    const record = data as unknown as Record<string, unknown>
+    const sessionType = normalizeSessionType(record.sessionType, 'strength')
+    const strengthConfig = normalizeStrengthTemplateConfig(record)
+    const hiitConfig = normalizeHiitTemplateConfig(record)
+    const runningConfig = normalizeRunningTemplateConfig(record)
 
     return {
         id: snapshot.id,
@@ -236,10 +503,15 @@ const templateFromSnapshot = (
             typeof data.name === 'string' && data.name.trim()
                 ? data.name.trim()
                 : 'Template sans nom',
+        sessionType,
+        description:
+            typeof record.description === 'string' ? record.description.trim() : '',
+        isArchived: Boolean(record.isArchived),
         tags: normalizeTemplateTags(data.tags),
-        exercises: Array.isArray(data.exercises)
-            ? data.exercises.map(normalizeTemplateExercise)
-            : [],
+        exercises: strengthConfig.exercises,
+        strengthConfig,
+        hiitConfig,
+        runningConfig,
         schemaVersion: data.schemaVersion ?? WORKOUT_TEMPLATE_SCHEMA_VERSION,
         createdAt: data.createdAt ?? null,
         updatedAt: data.updatedAt ?? null,
@@ -250,64 +522,134 @@ const normalizeTemplateInput = (
     input: WorkoutTemplateInput,
 ): WorkoutTemplateInput => {
     const name = input.name.trim()
+    const sessionType = normalizeSessionType(input.sessionType, 'strength')
+    const description = normalizeString(input.description)
+    const isArchived = Boolean(input.isArchived)
 
     if (!name) {
         throw new Error('Le nom du template est requis.')
     }
 
-    if (!Array.isArray(input.exercises) || input.exercises.length === 0) {
-        throw new Error('Le template doit contenir au moins un exercice.')
+    const normalizeStrengthExercises = (
+        exercisesInput: WorkoutTemplateExercise[],
+    ): WorkoutTemplateExercise[] => {
+        if (!Array.isArray(exercisesInput) || exercisesInput.length === 0) {
+            throw new Error('Le template doit contenir au moins un exercice.')
+        }
+
+        return exercisesInput.map((exercise, exerciseIndex) => {
+            const snapshotName = exercise.exerciseSnapshot?.name?.trim() || ''
+            const exerciseName = snapshotName || exercise.name.trim()
+
+            if (!exerciseName) {
+                throw new Error(
+                    `Le nom de l’exercice ${exerciseIndex + 1} est requis.`,
+                )
+            }
+
+            if (!Array.isArray(exercise.plannedSets) || exercise.plannedSets.length === 0) {
+                throw new Error(`L’exercice "${exerciseName}" doit contenir au moins un set.`)
+            }
+
+            const muscleGroup =
+                exercise.exerciseSnapshot?.muscleGroup?.trim() ||
+                exercise.muscleGroup?.trim() ||
+                ''
+            const equipment =
+                exercise.exerciseSnapshot?.equipment?.trim() ||
+                exercise.equipment?.trim() ||
+                ''
+            const exerciseId = exercise.exerciseId || null
+            const exerciseSource = normalizeExerciseSource(
+                exercise.exerciseSource,
+                'user',
+            )
+            const exerciseSnapshot = {
+                name: exerciseName,
+                muscleGroup,
+                equipment,
+            }
+
+            return {
+                exerciseSource,
+                exerciseId,
+                exerciseSnapshot,
+                name: exerciseName,
+                muscleGroup,
+                equipment,
+                plannedSets: exercise.plannedSets.map((set, setIndex) =>
+                    toFirestoreTemplateSet(
+                        {
+                            ...set,
+                            setNumber: setIndex + 1,
+                        },
+                        setIndex,
+                    ),
+                ),
+            }
+        })
     }
 
-    const exercises = input.exercises.map((exercise, exerciseIndex) => {
-        const exerciseName = exercise.name.trim()
-
-        if (!exerciseName) {
-            throw new Error(
-                `Le nom de l’exercice ${exerciseIndex + 1} est requis.`,
-            )
-        }
-
-        if (!Array.isArray(exercise.plannedSets) || exercise.plannedSets.length === 0) {
-            throw new Error(`L’exercice "${exerciseName}" doit contenir au moins un set.`)
-        }
-
-        const muscleGroup = exercise.muscleGroup?.trim() || ''
-        const equipment = exercise.equipment?.trim() || ''
-        const exerciseId = exercise.exerciseId || null
-        const exerciseSource = normalizeExerciseSource(
-            exercise.exerciseSource,
-            'user',
+    if (sessionType === 'strength') {
+        const normalizedStrengthExercises = normalizeStrengthExercises(
+            input.strengthConfig?.exercises || input.exercises || [],
         )
-        const exerciseSnapshot = {
-            name: exerciseName,
-            muscleGroup,
-            equipment,
+
+        return {
+            name,
+            tags: normalizeTemplateTags(input.tags),
+            sessionType,
+            description,
+            isArchived,
+            exercises: normalizedStrengthExercises,
+            strengthConfig: {
+                exercises: normalizedStrengthExercises,
+            },
+            hiitConfig: undefined,
+            runningConfig: undefined,
+        }
+    }
+
+    if (sessionType === 'hiit') {
+        const hiitConfig = normalizeHiitTemplateConfig({
+            hiitConfig: input.hiitConfig || {},
+        })
+
+        if (!hiitConfig.exercises.length) {
+            throw new Error('Ajoute au moins un exercice HIIT.')
         }
 
         return {
-            exerciseSource,
-            exerciseId,
-            exerciseSnapshot,
-            name: exerciseName,
-            muscleGroup,
-            equipment,
-            plannedSets: exercise.plannedSets.map((set, setIndex) =>
-                toFirestoreTemplateSet(
-                    {
-                        ...set,
-                        setNumber: setIndex + 1,
-                    },
-                    setIndex,
-                ),
-            ),
+            name,
+            tags: normalizeTemplateTags(input.tags),
+            sessionType,
+            description,
+            isArchived,
+            exercises: [],
+            strengthConfig: {
+                exercises: [],
+            },
+            hiitConfig,
+            runningConfig: undefined,
         }
+    }
+
+    const runningConfig = normalizeRunningTemplateConfig({
+        runningConfig: input.runningConfig || {},
     })
 
     return {
         name,
         tags: normalizeTemplateTags(input.tags),
-        exercises,
+        sessionType,
+        description,
+        isArchived,
+        exercises: [],
+        strengthConfig: {
+            exercises: [],
+        },
+        hiitConfig: undefined,
+        runningConfig,
     }
 }
 
@@ -417,26 +759,36 @@ const normalizePlannedExercise = (
     }
 }
 
-const sessionFromSnapshot = (
-    snapshot: QueryDocumentSnapshot<WorkoutSessionDocument>,
-): WorkoutSession => {
-    const data = snapshot.data()
-
-    const plannedExercises = Array.isArray(data.plannedExercises)
-        ? data.plannedExercises.map(normalizePlannedExercise)
-        : []
-
-    const performedMap =
-        data.performedExercises && typeof data.performedExercises === 'object'
-            ? data.performedExercises
+const normalizeStrengthSessionData = (
+    record: Record<string, unknown>,
+): StrengthSessionData => {
+    const rawStrengthData =
+        record.strengthData && typeof record.strengthData === 'object'
+            ? (record.strengthData as Record<string, unknown>)
             : {}
+
+    const rawPlanned = Array.isArray(rawStrengthData.plannedExercises)
+        ? rawStrengthData.plannedExercises
+        : Array.isArray(record.plannedExercises)
+          ? record.plannedExercises
+          : []
+
+    const plannedExercises = rawPlanned.map(normalizePlannedExercise)
+
+    const rawPerformedMap =
+        rawStrengthData.performedExercises &&
+        typeof rawStrengthData.performedExercises === 'object'
+            ? (rawStrengthData.performedExercises as Record<string, unknown>)
+            : record.performedExercises && typeof record.performedExercises === 'object'
+              ? (record.performedExercises as Record<string, unknown>)
+              : {}
 
     const normalizedPerformed = plannedExercises.reduce<
         Record<string, PerformedWorkoutExercise>
     >((acc, planned) => {
         const value = normalizePerformedExercise(
             planned,
-            (performedMap as Record<string, unknown>)[planned.plannedExerciseId],
+            rawPerformedMap[planned.plannedExerciseId],
         )
 
         if (value) {
@@ -446,9 +798,119 @@ const sessionFromSnapshot = (
         return acc
     }, {})
 
-    const performedIds = Array.isArray(data.performedExerciseIds)
-        ? data.performedExerciseIds.filter((id) => typeof id === 'string')
+    const rawPerformedIds = Array.isArray(rawStrengthData.performedExerciseIds)
+        ? rawStrengthData.performedExerciseIds
+        : Array.isArray(record.performedExerciseIds)
+          ? record.performedExerciseIds
+          : []
+    const performedExerciseIds = rawPerformedIds.filter(
+        (id): id is string => typeof id === 'string',
+    )
+
+    return {
+        plannedExercises,
+        performedExercises: normalizedPerformed,
+        performedExerciseIds,
+    }
+}
+
+const normalizeHiitSessionData = (
+    record: Record<string, unknown>,
+): HiitSessionData => {
+    const rawHiitData =
+        record.hiitData && typeof record.hiitData === 'object'
+            ? (record.hiitData as Record<string, unknown>)
+            : {}
+
+    const format =
+        rawHiitData.format === 'circuit' || rawHiitData.format === 'interval'
+            ? rawHiitData.format
+            : 'interval'
+    const rounds = toPositiveNumber(rawHiitData.rounds, 4)
+    const workSec = toPositiveNumber(rawHiitData.workSec, 40)
+    const restSec = toPositiveNumber(rawHiitData.restSec, 20)
+    const restBetweenRoundsSec = toOptionalPositiveNumber(
+        rawHiitData.restBetweenRoundsSec,
+    )
+    const exercises = Array.isArray(rawHiitData.exercises)
+        ? rawHiitData.exercises
+              .filter((exercise) => typeof exercise === 'string')
+              .map((exercise) => exercise.trim())
+              .filter(Boolean)
         : []
+    const completedRounds =
+        typeof rawHiitData.completedRounds === 'number' &&
+        Number.isFinite(rawHiitData.completedRounds)
+            ? Math.max(0, Math.min(rounds, rawHiitData.completedRounds))
+            : 0
+    const completedExerciseNames = Array.isArray(rawHiitData.completedExerciseNames)
+        ? rawHiitData.completedExerciseNames
+              .filter((item) => typeof item === 'string')
+              .map((item) => item.trim())
+              .filter(Boolean)
+        : []
+
+    return {
+        format,
+        rounds,
+        workSec,
+        restSec,
+        ...(restBetweenRoundsSec ? { restBetweenRoundsSec } : {}),
+        exercises,
+        completedRounds,
+        completedExerciseNames,
+        ...(typeof rawHiitData.notes === 'string'
+            ? { notes: rawHiitData.notes }
+            : {}),
+    }
+}
+
+const normalizeRunningSessionData = (
+    record: Record<string, unknown>,
+): RunningSessionData => {
+    const rawRunningData =
+        record.runningData && typeof record.runningData === 'object'
+            ? (record.runningData as Record<string, unknown>)
+            : {}
+
+    const runType = normalizeRunningTypeValue(rawRunningData.runType, 'Footing')
+
+    const targetDistanceKm = toOptionalPositiveNumber(
+        rawRunningData.targetDistanceKm,
+    )
+    const targetDurationMin = toOptionalPositiveNumber(
+        rawRunningData.targetDurationMin,
+    )
+    const distanceKm = toOptionalPositiveNumber(rawRunningData.distanceKm)
+    const durationSec = toOptionalPositiveNumber(rawRunningData.durationSec)
+    const avgPaceSecPerKm = toOptionalPositiveNumber(
+        rawRunningData.avgPaceSecPerKm,
+    )
+    const gpxData = normalizeRunningGpxData(rawRunningData.gpxData)
+
+    return {
+        runType,
+        ...(targetDistanceKm ? { targetDistanceKm } : {}),
+        ...(targetDurationMin ? { targetDurationMin } : {}),
+        ...(distanceKm ? { distanceKm } : {}),
+        ...(durationSec ? { durationSec } : {}),
+        ...(avgPaceSecPerKm ? { avgPaceSecPerKm } : {}),
+        ...(gpxData ? { gpxData } : {}),
+        ...(typeof rawRunningData.notes === 'string'
+            ? { notes: rawRunningData.notes }
+            : {}),
+    }
+}
+
+const sessionFromSnapshot = (
+    snapshot: QueryDocumentSnapshot<WorkoutSessionDocument>,
+): WorkoutSession => {
+    const data = snapshot.data()
+    const record = data as unknown as Record<string, unknown>
+    const sessionType = normalizeSessionType(record.sessionType, 'strength')
+    const strengthData = normalizeStrengthSessionData(record)
+    const hiitData = normalizeHiitSessionData(record)
+    const runningData = normalizeRunningSessionData(record)
 
     const sourceTemplate =
         data.sourceTemplate &&
@@ -462,24 +924,33 @@ const sessionFromSnapshot = (
                       typeof data.sourceTemplate.version === 'number'
                           ? data.sourceTemplate.version
                           : WORKOUT_TEMPLATE_SCHEMA_VERSION,
+                  sessionType: normalizeSessionType(
+                      (data.sourceTemplate as Record<string, unknown>).sessionType,
+                      sessionType,
+                  ),
               }
             : data.templateId && data.templateName
               ? {
                     id: data.templateId,
                     name: data.templateName,
                     version: WORKOUT_TEMPLATE_SCHEMA_VERSION,
+                    sessionType,
                 }
               : null
 
     return {
         id: snapshot.id,
+        sessionType,
         status: data.status,
         startedAt: data.startedAt ?? null,
         endedAt: data.endedAt ?? data.completedAt ?? null,
         completedAt: data.completedAt ?? null,
-        plannedExercises,
-        performedExercises: normalizedPerformed,
-        performedExerciseIds: performedIds,
+        plannedExercises: strengthData.plannedExercises,
+        performedExercises: strengthData.performedExercises,
+        performedExerciseIds: strengthData.performedExerciseIds,
+        strengthData,
+        hiitData,
+        runningData,
         sourceTemplate,
         createdAt: data.createdAt ?? null,
         updatedAt: data.updatedAt ?? null,
@@ -496,7 +967,10 @@ const sanitizeKey = (value: string): string => {
 export const convertTemplateToPlannedExercises = (
     template: WorkoutTemplate,
 ): PlannedWorkoutExercise[] => {
-    return template.exercises.map((exercise, index) => {
+    const strengthExercises =
+        template.strengthConfig?.exercises || template.exercises || []
+
+    return strengthExercises.map((exercise, index) => {
         const baseId = exercise.exerciseId || `exercise_${index + 1}`
         const exerciseSource = normalizeExerciseSource(
             exercise.exerciseSource,
@@ -540,7 +1014,10 @@ const ensureTemplateExists = async (
         templateSnapshot as QueryDocumentSnapshot<WorkoutTemplateDocument>,
     )
 
-    if (!template.exercises.length) {
+    if (
+        template.sessionType === 'strength' &&
+        !(template.strengthConfig?.exercises || template.exercises || []).length
+    ) {
         throw new Error('Ce template ne contient aucun exercice.')
     }
 
@@ -553,7 +1030,9 @@ export const listWorkoutTemplates = async (
     const templatesRef = fitnessCollections.workoutTemplates<WorkoutTemplateDocument>(uid)
     const snapshot = await getDocs(templatesRef)
 
-    return sortByMostRecent(snapshot.docs.map(templateFromSnapshot))
+    return sortByMostRecent(snapshot.docs.map(templateFromSnapshot)).filter(
+        (template) => !template.isArchived,
+    )
 }
 
 export const getWorkoutTemplateById = async (
@@ -572,8 +1051,16 @@ export const createWorkoutTemplate = async (
 
     const templateRef = await addDoc(templatesRef, {
         name: normalized.name,
+        sessionType: normalized.sessionType,
+        description: normalized.description || '',
+        isArchived: Boolean(normalized.isArchived),
         tags: normalized.tags,
-        exercises: normalized.exercises,
+        exercises: normalized.strengthConfig?.exercises || normalized.exercises,
+        strengthConfig: normalized.strengthConfig || {
+            exercises: normalized.exercises,
+        },
+        hiitConfig: normalized.hiitConfig || null,
+        runningConfig: normalized.runningConfig || null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         schemaVersion: WORKOUT_TEMPLATE_SCHEMA_VERSION,
@@ -595,8 +1082,16 @@ export const updateWorkoutTemplate = async (
 
     await updateDoc(templateRef, {
         name: normalized.name,
+        sessionType: normalized.sessionType,
+        description: normalized.description || '',
+        isArchived: Boolean(normalized.isArchived),
         tags: normalized.tags,
-        exercises: normalized.exercises,
+        exercises: normalized.strengthConfig?.exercises || normalized.exercises,
+        strengthConfig: normalized.strengthConfig || {
+            exercises: normalized.exercises,
+        },
+        hiitConfig: normalized.hiitConfig || null,
+        runningConfig: normalized.runningConfig || null,
         updatedAt: serverTimestamp(),
         schemaVersion: WORKOUT_TEMPLATE_SCHEMA_VERSION,
     })
@@ -623,8 +1118,11 @@ export const duplicateWorkoutTemplate = async (
 
     const duplicatedTemplate = await addDoc(templatesRef, {
         name: `${source.name} (copie)`,
+        sessionType: source.sessionType,
+        description: source.description || '',
+        isArchived: false,
         tags: source.tags || [],
-        exercises: source.exercises.map((exercise) => ({
+        exercises: (source.strengthConfig?.exercises || source.exercises || []).map((exercise) => ({
             exerciseSource: normalizeExerciseSource(exercise.exerciseSource, 'user'),
             exerciseId: exercise.exerciseId || null,
             exerciseSnapshot: exercise.exerciseSnapshot || {
@@ -645,6 +1143,36 @@ export const duplicateWorkoutTemplate = async (
                 ),
             ),
         })),
+        strengthConfig: {
+            exercises: (source.strengthConfig?.exercises || source.exercises || []).map(
+                (exercise) => ({
+                    exerciseSource: normalizeExerciseSource(
+                        exercise.exerciseSource,
+                        'user',
+                    ),
+                    exerciseId: exercise.exerciseId || null,
+                    exerciseSnapshot: exercise.exerciseSnapshot || {
+                        name: exercise.name,
+                        muscleGroup: exercise.muscleGroup || '',
+                        equipment: exercise.equipment || '',
+                    },
+                    name: exercise.name,
+                    muscleGroup: exercise.muscleGroup || '',
+                    equipment: exercise.equipment || '',
+                    plannedSets: exercise.plannedSets.map((set, setIndex) =>
+                        toFirestoreTemplateSet(
+                            {
+                                ...set,
+                                setNumber: setIndex + 1,
+                            },
+                            setIndex,
+                        ),
+                    ),
+                }),
+            ),
+        },
+        hiitConfig: source.hiitConfig || null,
+        runningConfig: source.runningConfig || null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         schemaVersion: WORKOUT_TEMPLATE_SCHEMA_VERSION,
@@ -711,11 +1239,25 @@ export const startWorkoutSessionFromTemplate = async (
     }
 
     const template = await ensureTemplateExists(uid, templateId)
-    const plannedExercises = convertTemplateToPlannedExercises(template)
+    const plannedExercises =
+        template.sessionType === 'strength'
+            ? convertTemplateToPlannedExercises(template)
+            : []
 
     const sessionsRef = fitnessCollections.workoutSessions<WorkoutSessionDocument>(uid)
+    const hiitConfig = template.hiitConfig || {
+        format: 'interval' as const,
+        rounds: 4,
+        workSec: 40,
+        restSec: 20,
+        exercises: [],
+    }
+    const runningConfig = template.runningConfig || {
+        runType: 'Footing',
+    }
 
     const sessionDocRef = await addDoc(sessionsRef, {
+        sessionType: template.sessionType || 'strength',
         status: 'in_progress',
         startedAt: serverTimestamp(),
         endedAt: null,
@@ -723,10 +1265,37 @@ export const startWorkoutSessionFromTemplate = async (
         plannedExercises,
         performedExercises: {},
         performedExerciseIds: [],
+        strengthData: {
+            plannedExercises,
+            performedExercises: {},
+            performedExerciseIds: [],
+        },
+        hiitData: {
+            format: hiitConfig.format,
+            rounds: hiitConfig.rounds,
+            workSec: hiitConfig.workSec,
+            restSec: hiitConfig.restSec,
+            ...(hiitConfig.restBetweenRoundsSec
+                ? { restBetweenRoundsSec: hiitConfig.restBetweenRoundsSec }
+                : {}),
+            exercises: hiitConfig.exercises || [],
+            completedRounds: 0,
+            completedExerciseNames: [],
+        },
+        runningData: {
+            runType: runningConfig.runType,
+            ...(runningConfig.targetDistanceKm
+                ? { targetDistanceKm: runningConfig.targetDistanceKm }
+                : {}),
+            ...(runningConfig.targetDurationMin
+                ? { targetDurationMin: runningConfig.targetDurationMin }
+                : {}),
+        },
         sourceTemplate: {
             id: template.id,
             name: template.name,
             version: template.schemaVersion ?? WORKOUT_TEMPLATE_SCHEMA_VERSION,
+            sessionType: template.sessionType,
         },
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -738,11 +1307,96 @@ export const startWorkoutSessionFromTemplate = async (
     return getWorkoutSessionById(uid, sessionDocRef.id)
 }
 
+const buildPlannedExerciseForSessionInsert = (
+    input: {
+        exerciseSource: ExerciseSource
+        exerciseId: string | null
+        exerciseSnapshot: ExerciseSnapshot
+    },
+    orderIndex: number,
+): PlannedWorkoutExercise => {
+    const name = normalizeString(input.exerciseSnapshot.name)
+
+    if (!name) {
+        throw new Error('Nom d’exercice invalide.')
+    }
+
+    const muscleGroup = normalizeString(input.exerciseSnapshot.muscleGroup)
+    const equipment = normalizeString(input.exerciseSnapshot.equipment)
+    const exerciseSource = normalizeExerciseSource(input.exerciseSource, 'user')
+    const exerciseId = input.exerciseId || null
+    const plannedExerciseId = `planned_${orderIndex + 1}_${sanitizeKey(exerciseId || name)}_${Date.now()}`
+    const isNoSetsExercise = isCardioNoSetsExercise({
+        name,
+        muscleGroup,
+        equipment,
+    })
+
+    return {
+        plannedExerciseId,
+        exerciseSource,
+        exerciseId,
+        exerciseSnapshot: {
+            name,
+            muscleGroup,
+            equipment,
+        },
+        name,
+        muscleGroup,
+        equipment,
+        orderIndex,
+        plannedSets: isNoSetsExercise ? [] : [{ setNumber: 1 }],
+    }
+}
+
+export const addExerciseToWorkoutSession = async (
+    uid: string,
+    sessionId: string,
+    input: {
+        exerciseSource: ExerciseSource
+        exerciseId: string | null
+        exerciseSnapshot: ExerciseSnapshot
+    },
+): Promise<PlannedWorkoutExercise> => {
+    const currentSession = await getWorkoutSessionById(uid, sessionId)
+
+    if (currentSession.status !== 'in_progress') {
+        throw new Error('Seules les séances en cours peuvent être modifiées.')
+    }
+    if (currentSession.sessionType !== 'strength') {
+        throw new Error('Ajout manuel d’exercice disponible uniquement pour les séances force.')
+    }
+
+    const orderIndex = currentSession.plannedExercises.length
+    const plannedExercise = buildPlannedExerciseForSessionInsert(input, orderIndex)
+    const sessionRef = doc(
+        fitnessCollections.workoutSessions<WorkoutSessionDocument>(uid),
+        sessionId,
+    )
+
+    await updateDoc(sessionRef, {
+        plannedExercises: [...currentSession.plannedExercises, plannedExercise],
+        'strengthData.plannedExercises': [
+            ...currentSession.plannedExercises,
+            plannedExercise,
+        ],
+        updatedAt: serverTimestamp(),
+    })
+
+    return plannedExercise
+}
+
 export const updatePerformedExercise = async (
     uid: string,
     sessionId: string,
     input: SavePerformedExerciseInput,
 ): Promise<void> => {
+    const currentSession = await getWorkoutSessionById(uid, sessionId)
+
+    if (currentSession.sessionType !== 'strength') {
+        throw new Error('Le mode sets/reps est réservé aux séances force.')
+    }
+
     const sessionRef = doc(
         fitnessCollections.workoutSessions<WorkoutSessionDocument>(uid),
         sessionId,
@@ -771,7 +1425,9 @@ export const updatePerformedExercise = async (
 
     const payload: Record<string, unknown> = {
         [`performedExercises.${input.plannedExerciseId}`]: nextPerformed,
+        [`strengthData.performedExercises.${input.plannedExerciseId}`]: nextPerformed,
         performedExerciseIds: arrayUnion(...trackedIds),
+        'strengthData.performedExerciseIds': arrayUnion(...trackedIds),
         updatedAt: serverTimestamp(),
     }
 
@@ -785,6 +1441,9 @@ export const markExerciseCompleted = async (
 ): Promise<void> => {
     if (typeof input === 'string') {
         const currentSession = await getWorkoutSessionById(uid, sessionId)
+        if (currentSession.sessionType !== 'strength') {
+            throw new Error('Le mode sets/reps est réservé aux séances force.')
+        }
         const existingPerformed = currentSession.performedExercises[input]
         const plannedExercise = currentSession.plannedExercises.find(
             (exercise) => exercise.plannedExerciseId === input,
@@ -810,6 +1469,88 @@ export const markExerciseCompleted = async (
     await updatePerformedExercise(uid, sessionId, {
         ...input,
         status: 'completed',
+    })
+}
+
+export const updateHiitSessionData = async (
+    uid: string,
+    sessionId: string,
+    input: UpdateHiitSessionInput,
+): Promise<void> => {
+    const currentSession = await getWorkoutSessionById(uid, sessionId)
+
+    if (currentSession.sessionType !== 'hiit') {
+        throw new Error('Cette séance n’est pas de type HIIT.')
+    }
+
+    const sessionRef = doc(
+        fitnessCollections.workoutSessions<WorkoutSessionDocument>(uid),
+        sessionId,
+    )
+    const nextHiit = {
+        ...currentSession.hiitData,
+        ...(typeof input.completedRounds === 'number'
+            ? { completedRounds: Math.max(0, input.completedRounds) }
+            : {}),
+        ...(Array.isArray(input.completedExerciseNames)
+            ? {
+                  completedExerciseNames: input.completedExerciseNames
+                      .map((name) => name.trim())
+                      .filter(Boolean),
+              }
+            : {}),
+        ...(typeof input.notes === 'string' ? { notes: input.notes } : {}),
+    }
+
+    await updateDoc(sessionRef, {
+        hiitData: nextHiit,
+        updatedAt: serverTimestamp(),
+    })
+}
+
+export const updateRunningSessionData = async (
+    uid: string,
+    sessionId: string,
+    input: UpdateRunningSessionInput,
+): Promise<void> => {
+    const currentSession = await getWorkoutSessionById(uid, sessionId)
+
+    if (currentSession.sessionType !== 'running') {
+        throw new Error('Cette séance n’est pas de type running.')
+    }
+
+    const sessionRef = doc(
+        fitnessCollections.workoutSessions<WorkoutSessionDocument>(uid),
+        sessionId,
+    )
+
+    const normalizedGpxData =
+        Object.prototype.hasOwnProperty.call(input, 'gpxData') &&
+        input.gpxData !== null
+            ? normalizeRunningGpxData(input.gpxData)
+            : undefined
+
+    const nextRunning = {
+        ...currentSession.runningData,
+        ...(typeof input.distanceKm === 'number' && Number.isFinite(input.distanceKm)
+            ? { distanceKm: Math.max(0, input.distanceKm) }
+            : {}),
+        ...(typeof input.durationSec === 'number' && Number.isFinite(input.durationSec)
+            ? { durationSec: Math.max(0, input.durationSec) }
+            : {}),
+        ...(typeof input.avgPaceSecPerKm === 'number' &&
+        Number.isFinite(input.avgPaceSecPerKm)
+            ? { avgPaceSecPerKm: Math.max(0, input.avgPaceSecPerKm) }
+            : {}),
+        ...(Object.prototype.hasOwnProperty.call(input, 'gpxData')
+            ? { gpxData: normalizedGpxData || null }
+            : {}),
+        ...(typeof input.notes === 'string' ? { notes: input.notes } : {}),
+    }
+
+    await updateDoc(sessionRef, {
+        runningData: nextRunning,
+        updatedAt: serverTimestamp(),
     })
 }
 

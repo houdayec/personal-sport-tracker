@@ -12,6 +12,7 @@ import {
 import BodyMeasurementSnapshotForm, {
     type BodyMeasurementSnapshotFormValues,
 } from '@/features/fitness/body/components/BodyMeasurementSnapshotForm'
+import { showFitnessErrorToast } from '@/features/fitness/common/utils/feedbackToast'
 import useBodyMeasurementEntries from '@/features/fitness/body/hooks/useBodyMeasurementEntries'
 import {
     BODY_MEASUREMENT_FIELDS,
@@ -146,7 +147,6 @@ const BodyMeasurementsPage = () => {
     const [createForm, setCreateForm] = useState<BodyMeasurementSnapshotFormValues>(
         createDefaultFormValues,
     )
-    const [createError, setCreateError] = useState<string | null>(null)
 
     const [detailEntry, setDetailEntry] = useState<BodyMeasurementEntry | null>(null)
 
@@ -154,7 +154,6 @@ const BodyMeasurementsPage = () => {
     const [editForm, setEditForm] = useState<BodyMeasurementSnapshotFormValues>(
         createDefaultFormValues,
     )
-    const [editError, setEditError] = useState<string | null>(null)
 
     const [entryToDelete, setEntryToDelete] = useState<BodyMeasurementEntry | null>(null)
 
@@ -168,10 +167,6 @@ const BodyMeasurementsPage = () => {
             ...prev,
             [field]: value,
         }))
-
-        if (createError) {
-            setCreateError(null)
-        }
     }
 
     const updateCreateMeasurementValue = (
@@ -185,10 +180,6 @@ const BodyMeasurementsPage = () => {
                 [field]: value,
             },
         }))
-
-        if (createError) {
-            setCreateError(null)
-        }
     }
 
     const updateEditField = (
@@ -199,10 +190,6 @@ const BodyMeasurementsPage = () => {
             ...prev,
             [field]: value,
         }))
-
-        if (editError) {
-            setEditError(null)
-        }
     }
 
     const updateEditMeasurementValue = (
@@ -216,23 +203,18 @@ const BodyMeasurementsPage = () => {
                 [field]: value,
             },
         }))
-
-        if (editError) {
-            setEditError(null)
-        }
     }
 
     const handleCreateSnapshot = async () => {
         try {
-            setCreateError(null)
             const input = buildInputFromForm(createForm)
             await addEntry(input)
             setCreateForm(createDefaultFormValues())
         } catch (submitError) {
             if (submitError instanceof Error && submitError.message) {
-                setCreateError(submitError.message)
+                showFitnessErrorToast(submitError.message)
             } else {
-                setCreateError('Une erreur est survenue. Merci de réessayer.')
+                showFitnessErrorToast('Une erreur est survenue. Merci de réessayer.')
             }
         }
     }
@@ -240,7 +222,6 @@ const BodyMeasurementsPage = () => {
     const openEditDialog = (entry: BodyMeasurementEntry) => {
         setEditingEntry(entry)
         setEditForm(toFormValues(entry))
-        setEditError(null)
     }
 
     const closeEditDialog = () => {
@@ -257,15 +238,14 @@ const BodyMeasurementsPage = () => {
         }
 
         try {
-            setEditError(null)
             const input = buildInputFromForm(editForm)
             await editEntry(editingEntry.id, input)
             setEditingEntry(null)
         } catch (submitError) {
             if (submitError instanceof Error && submitError.message) {
-                setEditError(submitError.message)
+                showFitnessErrorToast(submitError.message)
             } else {
-                setEditError('Une erreur est survenue. Merci de réessayer.')
+                showFitnessErrorToast('Une erreur est survenue. Merci de réessayer.')
             }
         }
     }
@@ -319,12 +299,6 @@ const BodyMeasurementsPage = () => {
                         Rafraîchir
                     </Button>
                 </div>
-
-                {createError && (
-                    <Alert className="mt-4" type="danger" showIcon>
-                        {createError}
-                    </Alert>
-                )}
 
                 <div className="mt-4">
                     <BodyMeasurementSnapshotForm
@@ -520,12 +494,6 @@ const BodyMeasurementsPage = () => {
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                         Ajuste les valeurs mesurées si nécessaire.
                     </p>
-
-                    {editError && (
-                        <Alert className="mt-4" type="danger" showIcon>
-                            {editError}
-                        </Alert>
-                    )}
 
                     <div className="mt-4">
                         <BodyMeasurementSnapshotForm

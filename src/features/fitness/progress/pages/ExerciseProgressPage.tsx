@@ -43,7 +43,7 @@ const ExerciseProgressPage = () => {
                     <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
                         Progression
                     </p>
-                    <h3 className="mt-1 text-2xl font-semibold">Exercise Progress</h3>
+                    <h3 className="mt-1 text-2xl font-semibold">Progression d’exercice</h3>
                     <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
                         Choisis un exercice pour voir, séance après séance, si ta
                         charge ou tes répétitions progressent.

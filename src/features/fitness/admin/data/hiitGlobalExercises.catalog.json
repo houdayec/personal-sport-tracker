@@ -1,0 +1,67 @@
+{
+  "global_exercises": [
+    {
+      "category": "hiit_cardio",
+      "exercises": [
+        { "name": "Burpees", "name_en": "Burpees", "muscleGroup": "full_body", "equipment": "poids_du_corps" },
+        { "name": "Jumping jacks", "name_en": "Jumping Jacks", "muscleGroup": "full_body", "equipment": "poids_du_corps" },
+        { "name": "Montées de genoux", "name_en": "High Knees", "muscleGroup": "cardio", "equipment": "poids_du_corps" },
+        { "name": "Talons-fesses", "name_en": "Butt Kicks", "muscleGroup": "cardio", "equipment": "poids_du_corps" },
+        { "name": "Skater jumps", "name_en": "Skater Jumps", "muscleGroup": "jambes", "equipment": "poids_du_corps" },
+        { "name": "Sauts latéraux", "name_en": "Lateral Jumps", "muscleGroup": "jambes", "equipment": "poids_du_corps" }
+      ]
+    },
+    {
+      "category": "hiit_core",
+      "exercises": [
+        { "name": "Mountain climbers", "name_en": "Mountain Climbers", "muscleGroup": "abdominaux", "equipment": "poids_du_corps" },
+        { "name": "Russian twists", "name_en": "Russian Twists", "muscleGroup": "abdominaux", "equipment": "poids_du_corps" },
+        { "name": "V-ups", "name_en": "V-Ups", "muscleGroup": "abdominaux", "equipment": "poids_du_corps" },
+        { "name": "Crunchs", "name_en": "Crunches", "muscleGroup": "abdominaux", "equipment": "poids_du_corps" },
+        { "name": "Relevés de jambes", "name_en": "Leg Raises", "muscleGroup": "abdominaux", "equipment": "poids_du_corps" },
+        { "name": "Planche dynamique", "name_en": "Plank Shoulder Taps", "muscleGroup": "abdominaux", "equipment": "poids_du_corps" }
+      ]
+    },
+    {
+      "category": "hiit_lower_body",
+      "exercises": [
+        { "name": "Squats sautés", "name_en": "Jump Squats", "muscleGroup": "jambes", "equipment": "poids_du_corps" },
+        { "name": "Fentes sautées", "name_en": "Jump Lunges", "muscleGroup": "jambes", "equipment": "poids_du_corps" },
+        { "name": "Squats poids du corps", "name_en": "Bodyweight Squats", "muscleGroup": "jambes", "equipment": "poids_du_corps" },
+        { "name": "Fentes alternées", "name_en": "Alternating Lunges", "muscleGroup": "jambes", "equipment": "poids_du_corps" },
+        { "name": "Step back lunges", "name_en": "Reverse Lunges", "muscleGroup": "jambes", "equipment": "poids_du_corps" },
+        { "name": "Sauts en étoile", "name_en": "Star Jumps", "muscleGroup": "full_body", "equipment": "poids_du_corps" }
+      ]
+    },
+    {
+      "category": "hiit_upper_body",
+      "exercises": [
+        { "name": "Pompes", "name_en": "Push-Ups", "muscleGroup": "pectoraux", "equipment": "poids_du_corps" },
+        { "name": "Pompes explosives", "name_en": "Clap Push-Ups", "muscleGroup": "pectoraux", "equipment": "poids_du_corps" },
+        { "name": "Pompes inclinées", "name_en": "Incline Push-Ups", "muscleGroup": "pectoraux", "equipment": "poids_du_corps" },
+        { "name": "Pompes diamant", "name_en": "Diamond Push-Ups", "muscleGroup": "triceps", "equipment": "poids_du_corps" },
+        { "name": "Pompes pike", "name_en": "Pike Push-Ups", "muscleGroup": "épaules", "equipment": "poids_du_corps" }
+      ]
+    },
+    {
+      "category": "hiit_full_body",
+      "exercises": [
+        { "name": "Burpee avec pompe", "name_en": "Burpee Push-Up", "muscleGroup": "full_body", "equipment": "poids_du_corps" },
+        { "name": "Burpee avec saut haut", "name_en": "Burpee Jump", "muscleGroup": "full_body", "equipment": "poids_du_corps" },
+        { "name": "Thruster poids du corps", "name_en": "Bodyweight Thruster", "muscleGroup": "full_body", "equipment": "poids_du_corps" },
+        { "name": "Bear crawl", "name_en": "Bear Crawl", "muscleGroup": "full_body", "equipment": "poids_du_corps" },
+        { "name": "Crab walk", "name_en": "Crab Walk", "muscleGroup": "full_body", "equipment": "poids_du_corps" },
+        { "name": "Inchworm", "name_en": "Inchworm", "muscleGroup": "full_body", "equipment": "poids_du_corps" }
+      ]
+    },
+    {
+      "category": "hiit_explosive",
+      "exercises": [
+        { "name": "Box jump", "name_en": "Box Jump", "muscleGroup": "jambes", "equipment": "box" },
+        { "name": "Broad jump", "name_en": "Broad Jump", "muscleGroup": "jambes", "equipment": "poids_du_corps" },
+        { "name": "Tuck jumps", "name_en": "Tuck Jumps", "muscleGroup": "jambes", "equipment": "poids_du_corps" },
+        { "name": "Sauts groupés", "name_en": "Jump Tucks", "muscleGroup": "jambes", "equipment": "poids_du_corps" }
+      ]
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import {
     unarchiveExercise,
     updateExercise,
 } from '@/features/fitness/training/services/exerciseService'
+import { showFitnessErrorToast, showFitnessSuccessToast } from '@/features/fitness/common/utils/feedbackToast'
 import type { Exercise, ExerciseInput } from '@/features/fitness/training/types/exercise'
 
 const uidRequiredErrorMessage =
@@ -91,7 +92,7 @@ const useExerciseLibrary = () => {
             try {
                 await operation()
             } catch (mutationError) {
-                setError(getErrorMessage(mutationError))
+                showFitnessErrorToast(getErrorMessage(mutationError))
                 throw mutationError
             } finally {
                 setIsMutating(false)
@@ -106,6 +107,7 @@ const useExerciseLibrary = () => {
                 const currentUid = assertUid()
                 await createExercise(currentUid, input)
                 await refreshActiveExercises()
+                showFitnessSuccessToast('Exercice ajouté à ta bibliothèque.')
             })
         },
         [assertUid, refreshActiveExercises, runMutation],
@@ -124,6 +126,7 @@ const useExerciseLibrary = () => {
                 if (isArchivedLoaded) {
                     await refreshArchivedExercises()
                 }
+                showFitnessSuccessToast('Exercice mis à jour.')
             })
         },
         [
@@ -148,6 +151,7 @@ const useExerciseLibrary = () => {
                 if (isArchivedLoaded) {
                     await refreshArchivedExercises()
                 }
+                showFitnessSuccessToast('Exercice archivé.')
             })
         },
         [
@@ -172,6 +176,7 @@ const useExerciseLibrary = () => {
                 if (isArchivedLoaded) {
                     await refreshArchivedExercises()
                 }
+                showFitnessSuccessToast('Exercice désarchivé.')
             })
         },
         [

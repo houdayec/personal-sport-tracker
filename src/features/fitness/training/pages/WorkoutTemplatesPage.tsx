@@ -13,9 +13,11 @@ import WorkoutTemplateFormDialog from '@/features/fitness/training/components/Wo
 import useWorkoutTemplates from '@/features/fitness/training/hooks/useWorkoutTemplates'
 import { FITNESS_ROUTES } from '@/features/fitness/constants/routes'
 import type {
+    SessionType,
     WorkoutTemplate,
     WorkoutTemplateInput,
 } from '@/features/fitness/training/types/workoutSession'
+import { formatRunningTypeLabel } from '@/features/fitness/training/utils/runningType'
 import {
     HiOutlineDocumentAdd,
     HiOutlineDuplicate,
@@ -30,6 +32,9 @@ type TemplateFormMode = 'create' | 'edit'
 const DEFAULT_TEMPLATE_INPUT: WorkoutTemplateInput = {
     name: '',
     tags: [],
+    sessionType: 'strength',
+    description: '',
+    isArchived: false,
     exercises: [
         {
             exerciseSource: 'user',
@@ -51,13 +56,22 @@ const DEFAULT_TEMPLATE_INPUT: WorkoutTemplateInput = {
             ],
         },
     ],
+    strengthConfig: undefined,
+    hiitConfig: undefined,
+    runningConfig: undefined,
 }
 
 const cloneTemplateAsInput = (template: WorkoutTemplate): WorkoutTemplateInput => {
+    const strengthExercises =
+        template.strengthConfig?.exercises || template.exercises || []
+
     return {
         name: template.name,
         tags: template.tags || [],
-        exercises: template.exercises.map((exercise) => ({
+        sessionType: template.sessionType || 'strength',
+        description: template.description || '',
+        isArchived: Boolean(template.isArchived),
+        exercises: strengthExercises.map((exercise) => ({
             exerciseSource: exercise.exerciseSource || 'user',
             exerciseId: exercise.exerciseId || null,
             exerciseSnapshot: exercise.exerciseSnapshot || {
@@ -74,7 +88,34 @@ const cloneTemplateAsInput = (template: WorkoutTemplate): WorkoutTemplateInput =
                 targetWeight: set.targetWeight || '',
             })),
         })),
+        strengthConfig: {
+            exercises: strengthExercises.map((exercise) => ({
+                exerciseSource: exercise.exerciseSource || 'user',
+                exerciseId: exercise.exerciseId || null,
+                exerciseSnapshot: exercise.exerciseSnapshot || {
+                    name: exercise.name,
+                    muscleGroup: exercise.muscleGroup || '',
+                    equipment: exercise.equipment || '',
+                },
+                name: exercise.name,
+                muscleGroup: exercise.muscleGroup || '',
+                equipment: exercise.equipment || '',
+                plannedSets: exercise.plannedSets.map((set, index) => ({
+                    setNumber: index + 1,
+                    targetReps: set.targetReps || '',
+                    targetWeight: set.targetWeight || '',
+                })),
+            })),
+        },
+        hiitConfig: template.hiitConfig,
+        runningConfig: template.runningConfig,
     }
+}
+
+const sessionTypeLabel: Record<SessionType, string> = {
+    strength: 'Force',
+    hiit: 'HIIT',
+    running: 'Course',
 }
 
 const getTemplateDate = (template: WorkoutTemplate) => {
@@ -181,15 +222,35 @@ const WorkoutTemplatesPage = () => {
 
     return (
         <div className="space-y-6">
-            <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
-                    Entraînement
-                </p>
-                <h3 className="mt-1 text-2xl font-semibold">Templates de séances</h3>
-                <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                    Prépare tes séances à l’avance et lance-les rapidement quand tu
-                    t’entraînes.
-                </p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
+                        Entraînement
+                    </p>
+                    <h3 className="mt-1 text-2xl font-semibold">Templates de séances</h3>
+                    <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
+                        Prépare tes séances à l’avance et lance-les rapidement quand tu
+                        t’entraînes.
+                    </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        size="sm"
+                        icon={<HiOutlineRefresh />}
+                        onClick={loadTemplates}
+                        disabled={isLoading || isMutating || isStarting}
+                    >
+                        Rafraîchir
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="solid"
+                        icon={<HiOutlineDocumentAdd />}
+                        onClick={openCreateDialog}
+                    >
+                        Nouveau template
+                    </Button>
+                </div>
             </div>
 
             {error && (
@@ -197,30 +258,6 @@ const WorkoutTemplatesPage = () => {
                     {error}
                 </Alert>
             )}
-
-            <Card>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold">Bibliothèque de templates</p>
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            size="sm"
-                            icon={<HiOutlineRefresh />}
-                            onClick={loadTemplates}
-                            disabled={isLoading || isMutating || isStarting}
-                        >
-                            Rafraîchir
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="solid"
-                            icon={<HiOutlineDocumentAdd />}
-                            onClick={openCreateDialog}
-                        >
-                            Nouveau template
-                        </Button>
-                    </div>
-                </div>
-            </Card>
 
             <Card>
                 {isLoading ? (
@@ -257,8 +294,14 @@ const WorkoutTemplatesPage = () => {
 
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             <Tag className="bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-100">
-                                                {template.exercises.length} exercice
-                                                {template.exercises.length > 1 ? 's' : ''}
+                                                {sessionTypeLabel[template.sessionType || 'strength']}
+                                            </Tag>
+                                            <Tag className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                                                {template.sessionType === 'strength'
+                                                    ? `${(template.strengthConfig?.exercises || template.exercises || []).length} exercice${(template.strengthConfig?.exercises || template.exercises || []).length > 1 ? 's' : ''}`
+                                                    : template.sessionType === 'hiit'
+                                                      ? `${template.hiitConfig?.rounds || 0} tours`
+                                                      : formatRunningTypeLabel(template.runningConfig?.runType)}
                                             </Tag>
                                             {template.tags.map((tag) => (
                                                 <Tag
@@ -269,6 +312,11 @@ const WorkoutTemplatesPage = () => {
                                                 </Tag>
                                             ))}
                                         </div>
+                                        {template.description && (
+                                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                                {template.description}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-2">
@@ -279,7 +327,7 @@ const WorkoutTemplatesPage = () => {
                                             onClick={() => handleStartSession(template.id)}
                                             loading={isStarting}
                                         >
-                                            Start
+                                            Lancer
                                         </Button>
                                         <Button
                                             size="xs"
@@ -287,7 +335,7 @@ const WorkoutTemplatesPage = () => {
                                             onClick={() => openEditDialog(template)}
                                             disabled={isMutating || isStarting}
                                         >
-                                            Edit
+                                            Modifier
                                         </Button>
                                         <Button
                                             size="xs"
@@ -297,7 +345,7 @@ const WorkoutTemplatesPage = () => {
                                             }
                                             disabled={isMutating || isStarting}
                                         >
-                                            Duplicate
+                                            Dupliquer
                                         </Button>
                                         <Button
                                             size="xs"
@@ -306,7 +354,7 @@ const WorkoutTemplatesPage = () => {
                                             onClick={() => setTemplateToDelete(template)}
                                             disabled={isMutating || isStarting}
                                         >
-                                            Delete
+                                            Supprimer
                                         </Button>
                                     </div>
                                 </div>

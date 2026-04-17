@@ -13,6 +13,7 @@ import {
     Spinner,
     Tag,
 } from '@/components/ui'
+import { showFitnessErrorToast } from '@/features/fitness/common/utils/feedbackToast'
 import useBodyWeightEntries from '@/features/fitness/body/hooks/useBodyWeightEntries'
 import {
     BODY_WEIGHT_UNITS,
@@ -123,11 +124,8 @@ const BodyWeightPage = () => {
     } = useBodyWeightEntries()
 
     const [quickForm, setQuickForm] = useState<BodyWeightFormValues>(defaultFormValues)
-    const [quickFormError, setQuickFormError] = useState<string | null>(null)
-
     const [editingEntry, setEditingEntry] = useState<BodyWeightEntry | null>(null)
     const [editForm, setEditForm] = useState<BodyWeightFormValues>(defaultFormValues)
-    const [editError, setEditError] = useState<string | null>(null)
 
     const [entryToDelete, setEntryToDelete] = useState<BodyWeightEntry | null>(null)
 
@@ -143,10 +141,6 @@ const BodyWeightPage = () => {
             ...prev,
             [field]: value,
         }))
-
-        if (quickFormError) {
-            setQuickFormError(null)
-        }
     }
 
     const setEditField = (field: keyof BodyWeightFormValues, value: string) => {
@@ -154,23 +148,18 @@ const BodyWeightPage = () => {
             ...prev,
             [field]: value,
         }))
-
-        if (editError) {
-            setEditError(null)
-        }
     }
 
     const handleQuickSubmit = async () => {
         try {
-            setQuickFormError(null)
             const input = buildInputFromForm(quickForm)
             await addEntry(input)
             setQuickForm(defaultFormValues())
         } catch (submitError) {
             if (submitError instanceof Error && submitError.message) {
-                setQuickFormError(submitError.message)
+                showFitnessErrorToast(submitError.message)
             } else {
-                setQuickFormError('Une erreur est survenue. Merci de réessayer.')
+                showFitnessErrorToast('Une erreur est survenue. Merci de réessayer.')
             }
         }
     }
@@ -178,7 +167,6 @@ const BodyWeightPage = () => {
     const openEditDialog = (entry: BodyWeightEntry) => {
         setEditingEntry(entry)
         setEditForm(toFormValues(entry))
-        setEditError(null)
     }
 
     const closeEditDialog = () => {
@@ -195,15 +183,14 @@ const BodyWeightPage = () => {
         }
 
         try {
-            setEditError(null)
             const input = buildInputFromForm(editForm)
             await editEntry(editingEntry.id, input)
             setEditingEntry(null)
         } catch (submitError) {
             if (submitError instanceof Error && submitError.message) {
-                setEditError(submitError.message)
+                showFitnessErrorToast(submitError.message)
             } else {
-                setEditError('Une erreur est survenue. Merci de réessayer.')
+                showFitnessErrorToast('Une erreur est survenue. Merci de réessayer.')
             }
         }
     }
@@ -258,12 +245,6 @@ const BodyWeightPage = () => {
                         </p>
                     </div>
                 </div>
-
-                {quickFormError && (
-                    <Alert className="mt-4" type="danger" showIcon>
-                        {quickFormError}
-                    </Alert>
-                )}
 
                 <FormContainer className="mt-4" layout="vertical">
                     <div className="grid gap-4 lg:grid-cols-4">
@@ -429,12 +410,6 @@ const BodyWeightPage = () => {
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                         Ajuste la mesure enregistrée si nécessaire.
                     </p>
-
-                    {editError && (
-                        <Alert type="danger" className="mt-4" showIcon>
-                            {editError}
-                        </Alert>
-                    )}
 
                     <FormContainer className="mt-4" layout="vertical">
                         <FormItem label="Date de mesure" asterisk>

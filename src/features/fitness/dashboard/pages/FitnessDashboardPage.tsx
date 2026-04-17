@@ -1,6 +1,19 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import dayjs from 'dayjs'
 import Card from '@/components/ui/Card'
+import { Alert, Button, Tag } from '@/components/ui'
 import { Link } from 'react-router-dom'
 import { FITNESS_ROUTES } from '@/features/fitness/constants/routes'
+import { useAppSelector } from '@/store'
+import { getCurrentWorkoutSession } from '@/features/fitness/training/services/workoutSessionService'
+import type { WorkoutSession } from '@/features/fitness/training/types/workoutSession'
+import { HiOutlinePlay, HiOutlineRefresh } from 'react-icons/hi'
+
+const sessionTypeLabel: Record<'strength' | 'hiit' | 'running', string> = {
+    strength: 'FORCE',
+    hiit: 'HIIT',
+    running: 'COURSE',
+}
 
 const keyMetrics = [
     {
@@ -48,12 +61,93 @@ const quickLinks = [
     },
 ]
 
+const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error && error.message) {
+        return error.message
+    }
+
+    return 'Impossible de charger la séance en cours.'
+}
+
 const FitnessDashboardPage = () => {
+    const uid = useAppSelector((state) => state.auth.session.uid)
+    const [activeSession, setActiveSession] = useState<WorkoutSession | null>(null)
+    const [isLoadingSession, setIsLoadingSession] = useState(false)
+    const [sessionError, setSessionError] = useState<string | null>(null)
+
+    const loadActiveSession = useCallback(async () => {
+        if (!uid) {
+            setActiveSession(null)
+            setSessionError(null)
+            return
+        }
+
+        setIsLoadingSession(true)
+        setSessionError(null)
+
+        try {
+            const session = await getCurrentWorkoutSession(uid)
+            setActiveSession(session)
+        } catch (error) {
+            setActiveSession(null)
+            setSessionError(getErrorMessage(error))
+        } finally {
+            setIsLoadingSession(false)
+        }
+    }, [uid])
+
+    useEffect(() => {
+        loadActiveSession()
+    }, [loadActiveSession])
+
+    const activeSessionProgress = useMemo(() => {
+        if (!activeSession) {
+            return {
+                completed: 0,
+                total: 0,
+                percent: 0,
+            }
+        }
+        if (activeSession.sessionType !== 'strength') {
+            const completed =
+                activeSession.sessionType === 'hiit'
+                    ? activeSession.hiitData?.completedRounds || 0
+                    : activeSession.runningData?.distanceKm
+                      ? 1
+                      : 0
+            const total =
+                activeSession.sessionType === 'hiit'
+                    ? activeSession.hiitData?.rounds || 0
+                    : 1
+
+            return {
+                completed,
+                total,
+                percent: total > 0 ? Math.round((completed / total) * 100) : 0,
+            }
+        }
+
+        const total = activeSession.plannedExercises.length
+        const completed = activeSession.plannedExercises.filter((exercise) => {
+            return (
+                activeSession.performedExercises[exercise.plannedExerciseId]?.status ===
+                'completed'
+            )
+        }).length
+        const percent = total > 0 ? Math.round((completed / total) * 100) : 0
+
+        return {
+            completed,
+            total,
+            percent,
+        }
+    }, [activeSession])
+
     return (
         <div className="space-y-6">
             <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
-                    Dashboard
+                    Tableau de bord
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Vue d’ensemble fitness</h3>
                 <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
@@ -61,6 +155,66 @@ const FitnessDashboardPage = () => {
                     progression.
                 </p>
             </div>
+
+            {sessionError && (
+                <Alert type="danger" showIcon>
+                    {sessionError}
+                </Alert>
+            )}
+
+            {activeSession && (
+                <Card className="border-blue-200 bg-blue-50/60 dark:border-blue-500/40 dark:bg-[#1F2937]">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-200">
+                                Séance en cours
+                            </p>
+                            <h5 className="mt-1 text-gray-900 dark:text-[#F9FAFB]">
+                                {activeSession.sourceTemplate?.name ||
+                                    activeSession.templateName ||
+                                    'Séance en cours'}
+                            </h5>
+                            <p className="mt-1 text-sm text-gray-700 dark:text-[#D1D5DB]">
+                                Démarrée le{' '}
+                                {activeSession.startedAt
+                                    ? dayjs(activeSession.startedAt.toDate()).format(
+                                          'DD/MM/YYYY HH:mm',
+                                      )
+                                    : 'maintenant'}
+                                .
+                            </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                <Tag className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                                    {sessionTypeLabel[activeSession.sessionType || 'strength']}
+                                </Tag>
+                                <Tag className="bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-100">
+                                    {activeSessionProgress.completed}/
+                                    {activeSessionProgress.total} terminé
+                                    {activeSessionProgress.total > 1 ? 's' : ''}
+                                </Tag>
+                                <Tag className="bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-100">
+                                    {activeSessionProgress.percent}%
+                                </Tag>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Button
+                                size="sm"
+                                icon={<HiOutlineRefresh />}
+                                onClick={loadActiveSession}
+                            >
+                                Rafraîchir
+                            </Button>
+                            <Link to={FITNESS_ROUTES.trainingToday}>
+                                <Button size="sm" variant="solid" icon={<HiOutlinePlay />}>
+                                    Reprendre la séance
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
+                </Card>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 {keyMetrics.map((metric) => (

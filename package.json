@@ -35,6 +35,7 @@
     "cheerio": "^1.0.0",
     "chrome-aws-lambda": "^10.1.0",
     "classnames": "^2.5.1",
+    "confetti-js": "^0.0.18",
     "d3-dsv": "^3.0.1",
     "d3-fetch": "^3.0.1",
     "d3-scale": "^4.0.2",

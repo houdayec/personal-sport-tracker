@@ -1,5 +1,6 @@
 import {
     addDoc,
+    deleteField,
     deleteDoc,
     doc,
     getDocs,
@@ -95,7 +96,7 @@ export const createBodyWeightEntry = async (
         measuredAt: Timestamp.fromDate(normalized.measuredAt),
         weight: normalized.weight,
         unit: normalized.unit,
-        note: normalized.note,
+        ...(normalized.note ? { note: normalized.note } : {}),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         schemaVersion: BODY_WEIGHT_SCHEMA_VERSION,
@@ -119,7 +120,7 @@ export const updateBodyWeightEntry = async (
         measuredAt: Timestamp.fromDate(normalized.measuredAt),
         weight: normalized.weight,
         unit: normalized.unit,
-        note: normalized.note,
+        ...(normalized.note ? { note: normalized.note } : { note: deleteField() }),
         updatedAt: serverTimestamp(),
         schemaVersion: BODY_WEIGHT_SCHEMA_VERSION,
     })

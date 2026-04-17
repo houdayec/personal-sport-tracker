@@ -9,6 +9,7 @@ import { db } from '@/firebase'
 
 export const USERS_COLLECTION = 'users' as const
 export const GLOBAL_EXERCISES_COLLECTION = 'global_exercises' as const
+export const GLOBAL_RUNNING_TYPES_COLLECTION = 'global_running_types' as const
 
 export const FITNESS_USER_SUBCOLLECTIONS = {
     exercises: 'exercises',
@@ -23,7 +24,7 @@ export type FitnessUserSubcollectionName =
 
 const assertUid = (uid: string) => {
     if (!uid || !uid.trim()) {
-        throw new Error('A valid uid is required for user-scoped Firestore access.')
+        throw new Error('Un uid valide est requis pour accéder aux données utilisateur.')
     }
 }
 
@@ -54,9 +55,17 @@ export const globalExercisesCollectionRef = <
     return collection(db, GLOBAL_EXERCISES_COLLECTION) as CollectionReference<T>
 }
 
+export const globalRunningTypesCollectionRef = <
+    T extends DocumentData = DocumentData,
+>(): CollectionReference<T> => {
+    return collection(db, GLOBAL_RUNNING_TYPES_COLLECTION) as CollectionReference<T>
+}
+
 export const fitnessCollections = {
     globalExercises: <T extends DocumentData = DocumentData>() =>
         globalExercisesCollectionRef<T>(),
+    globalRunningTypes: <T extends DocumentData = DocumentData>() =>
+        globalRunningTypesCollectionRef<T>(),
     exercises: <T extends DocumentData = DocumentData>(uid: string) =>
         userSubcollectionRef<T>(uid, FITNESS_USER_SUBCOLLECTIONS.exercises),
     workoutTemplates: <T extends DocumentData = DocumentData>(uid: string) =>
