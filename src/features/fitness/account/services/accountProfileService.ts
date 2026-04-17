@@ -10,6 +10,7 @@ import {
     USER_PROFILE_SCHEMA_VERSION,
     type CreateUserProfileInput,
     type PreferredLengthUnit,
+    type PreferredThemeMode,
     type PreferredWeightUnit,
     type UpdateUserProfilePatch,
     type UserProfile,
@@ -18,6 +19,7 @@ import {
 
 const DEFAULT_WEIGHT_UNIT: PreferredWeightUnit = 'kg'
 const DEFAULT_LENGTH_UNIT: PreferredLengthUnit = 'cm'
+const DEFAULT_THEME_MODE: PreferredThemeMode = 'light'
 
 const toUserProfileRef = (uid: string): DocumentReference<UserProfileDocument> => {
     return userDocumentRef(uid) as DocumentReference<UserProfileDocument>
@@ -29,6 +31,10 @@ const isPreferredWeightUnit = (value: unknown): value is PreferredWeightUnit => 
 
 const isPreferredLengthUnit = (value: unknown): value is PreferredLengthUnit => {
     return value === 'cm' || value === 'in'
+}
+
+const isPreferredThemeMode = (value: unknown): value is PreferredThemeMode => {
+    return value === 'dark' || value === 'light'
 }
 
 const normalizeDisplayName = (value: string): string => {
@@ -73,6 +79,9 @@ const userProfileFromSnapshot = (
         preferredLengthUnit: isPreferredLengthUnit(data.preferredLengthUnit)
             ? data.preferredLengthUnit
             : DEFAULT_LENGTH_UNIT,
+        preferredThemeMode: isPreferredThemeMode(data.preferredThemeMode)
+            ? data.preferredThemeMode
+            : DEFAULT_THEME_MODE,
         timezone: typeof data.timezone === 'string' ? data.timezone : normalizeTimezone(),
         isOnboarded: Boolean(data.isOnboarded),
         createdAt: data.createdAt ?? null,
@@ -94,6 +103,9 @@ const buildCreatePayload = (data: CreateUserProfileInput): CreateUserProfileInpu
         preferredLengthUnit: isPreferredLengthUnit(data.preferredLengthUnit)
             ? data.preferredLengthUnit
             : DEFAULT_LENGTH_UNIT,
+        preferredThemeMode: isPreferredThemeMode(data.preferredThemeMode)
+            ? data.preferredThemeMode
+            : DEFAULT_THEME_MODE,
         timezone: normalizeTimezone(data.timezone),
         isOnboarded: Boolean(data.isOnboarded),
     }
@@ -116,6 +128,10 @@ const buildPatchPayload = (patch: UpdateUserProfilePatch): UpdateUserProfilePatc
 
     if (isPreferredLengthUnit(patch.preferredLengthUnit)) {
         payload.preferredLengthUnit = patch.preferredLengthUnit
+    }
+
+    if (isPreferredThemeMode(patch.preferredThemeMode)) {
+        payload.preferredThemeMode = patch.preferredThemeMode
     }
 
     if (typeof patch.timezone === 'string') {

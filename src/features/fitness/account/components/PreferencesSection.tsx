@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button, Card, FormContainer, FormItem, Input } from '@/components/ui'
 import type {
     PreferredLengthUnit,
+    PreferredThemeMode,
     PreferredWeightUnit,
     UserProfile,
 } from '@/features/fitness/account/types/accountProfile'
@@ -12,6 +13,7 @@ interface PreferencesSectionProps {
     onSubmit: (input: {
         preferredWeightUnit: PreferredWeightUnit
         preferredLengthUnit: PreferredLengthUnit
+        preferredThemeMode: PreferredThemeMode
         timezone: string
     }) => Promise<void>
 }
@@ -27,18 +29,28 @@ const PreferencesSection = ({
     const [preferredLengthUnit, setPreferredLengthUnit] = useState<PreferredLengthUnit>(
         profile.preferredLengthUnit || 'cm',
     )
+    const [preferredThemeMode, setPreferredThemeMode] = useState<PreferredThemeMode>(
+        profile.preferredThemeMode || 'light',
+    )
     const [timezone, setTimezone] = useState(profile.timezone || 'UTC')
 
     useEffect(() => {
         setPreferredWeightUnit(profile.preferredWeightUnit || 'kg')
         setPreferredLengthUnit(profile.preferredLengthUnit || 'cm')
+        setPreferredThemeMode(profile.preferredThemeMode || 'light')
         setTimezone(profile.timezone || 'UTC')
-    }, [profile.preferredWeightUnit, profile.preferredLengthUnit, profile.timezone])
+    }, [
+        profile.preferredWeightUnit,
+        profile.preferredLengthUnit,
+        profile.preferredThemeMode,
+        profile.timezone,
+    ])
 
     const handleSubmit = async () => {
         await onSubmit({
             preferredWeightUnit,
             preferredLengthUnit,
+            preferredThemeMode,
             timezone,
         })
     }
@@ -51,7 +63,7 @@ const PreferencesSection = ({
             </p>
 
             <FormContainer className="mt-4" layout="vertical">
-                <div className="grid gap-4 lg:grid-cols-3">
+                <div className="grid gap-4 lg:grid-cols-4">
                     <FormItem label="Unité de poids">
                         <Input
                             asElement="select"
@@ -84,6 +96,19 @@ const PreferencesSection = ({
                             onChange={(event) => setTimezone(event.target.value)}
                             placeholder="Europe/Paris"
                         />
+                    </FormItem>
+
+                    <FormItem label="Mode par défaut">
+                        <Input
+                            asElement="select"
+                            value={preferredThemeMode}
+                            onChange={(event) =>
+                                setPreferredThemeMode(event.target.value as PreferredThemeMode)
+                            }
+                        >
+                            <option value="light">Clair</option>
+                            <option value="dark">Sombre</option>
+                        </Input>
                     </FormItem>
                 </div>
             </FormContainer>

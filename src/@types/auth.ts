@@ -25,5 +25,6 @@ export type ForgotPassword = {
 }
 
 export type ResetPassword = {
+    oobCode: string
     password: string
 }

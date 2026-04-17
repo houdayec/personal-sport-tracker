@@ -1,16 +1,18 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FormItem, FormContainer } from '@/components/ui/Form'
 import Button from '@/components/ui/Button'
 import Alert from '@/components/ui/Alert'
 import PasswordInput from '@/components/shared/PasswordInput'
 import ActionLink from '@/components/shared/ActionLink'
-import { apiResetPassword } from '@/services/AuthService'
+import {
+    apiResetPassword,
+    apiVerifyResetPasswordCode,
+} from '@/services/AuthService'
 import useTimeOutMessage from '@/utils/hooks/useTimeOutMessage'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import type { CommonProps } from '@/@types/common'
-import type { AxiosError } from 'axios'
 
 interface ResetPasswordFormProps extends CommonProps {
     disableSubmit?: boolean
@@ -34,10 +36,49 @@ const ResetPasswordForm = (props: ResetPasswordFormProps) => {
     const { disableSubmit = false, className, signInUrl = '/sign-in' } = props
 
     const [resetComplete, setResetComplete] = useState(false)
+    const [isCodeChecking, setIsCodeChecking] = useState(true)
+    const [isCodeValid, setIsCodeValid] = useState(false)
 
     const [message, setMessage] = useTimeOutMessage()
 
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
+
+    const oobCode = useMemo(
+        () => searchParams.get('oobCode') || '',
+        [searchParams],
+    )
+
+    const getErrorMessage = (error: unknown) => {
+        if (error instanceof Error && error.message) {
+            return error.message
+        }
+
+        return 'Lien invalide ou expiré. Demande un nouvel email de réinitialisation.'
+    }
+
+    useEffect(() => {
+        const verifyCode = async () => {
+            if (!oobCode) {
+                setIsCodeValid(false)
+                setIsCodeChecking(false)
+                setMessage('Lien invalide. Demande un nouvel email de réinitialisation.')
+                return
+            }
+
+            try {
+                await apiVerifyResetPasswordCode(oobCode)
+                setIsCodeValid(true)
+            } catch (error) {
+                setIsCodeValid(false)
+                setMessage(getErrorMessage(error))
+            } finally {
+                setIsCodeChecking(false)
+            }
+        }
+
+        verifyCode()
+    }, [oobCode, setMessage])
 
     const onSubmit = async (
         values: ResetPasswordFormSchema,
@@ -46,16 +87,13 @@ const ResetPasswordForm = (props: ResetPasswordFormProps) => {
         const { password } = values
         setSubmitting(true)
         try {
-            const resp = await apiResetPassword({ password })
+            const resp = await apiResetPassword({ oobCode, password })
             if (resp.data) {
                 setSubmitting(false)
                 setResetComplete(true)
             }
-        } catch (errors) {
-            setMessage(
-                (errors as AxiosError<{ message: string }>)?.response?.data
-                    ?.message || (errors as Error).toString(),
-            )
+        } catch (error) {
+            setMessage(getErrorMessage(error))
             setSubmitting(false)
         }
     }
@@ -71,6 +109,19 @@ const ResetPasswordForm = (props: ResetPasswordFormProps) => {
                     <>
                         <h3 className="mb-1">Reset done</h3>
                         <p>Your password has been successfully reset</p>
+                    </>
+                ) : isCodeChecking ? (
+                    <>
+                        <h3 className="mb-1">Checking link</h3>
+                        <p>We are validating your password reset link.</p>
+                    </>
+                ) : !isCodeValid ? (
+                    <>
+                        <h3 className="mb-1">Invalid link</h3>
+                        <p>
+                            This reset link is invalid or expired. Request a new one
+                            from the forgot password page.
+                        </p>
                     </>
                 ) : (
                     <>
@@ -88,8 +139,8 @@ const ResetPasswordForm = (props: ResetPasswordFormProps) => {
             )}
             <Formik
                 initialValues={{
-                    password: '123Qwe1',
-                    confirmPassword: '123Qwe1',
+                    password: '',
+                    confirmPassword: '',
                 }}
                 validationSchema={validationSchema}
                 onSubmit={(values, { setSubmitting }) => {
@@ -103,7 +154,7 @@ const ResetPasswordForm = (props: ResetPasswordFormProps) => {
                 {({ touched, errors, isSubmitting }) => (
                     <Form>
                         <FormContainer>
-                            {!resetComplete ? (
+                            {!resetComplete && isCodeValid ? (
                                 <>
                                     <FormItem
                                         label="Password"
@@ -146,14 +197,29 @@ const ResetPasswordForm = (props: ResetPasswordFormProps) => {
                                     </Button>
                                 </>
                             ) : (
-                                <Button
-                                    block
-                                    variant="solid"
-                                    type="button"
-                                    onClick={onContinue}
-                                >
-                                    Continue
-                                </Button>
+                                <>
+                                    {resetComplete ? (
+                                        <Button
+                                            block
+                                            variant="solid"
+                                            type="button"
+                                            onClick={onContinue}
+                                        >
+                                            Continue
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            block
+                                            variant="solid"
+                                            type="button"
+                                            onClick={() =>
+                                                navigate('/forgot-password')
+                                            }
+                                        >
+                                            Request a new reset link
+                                        </Button>
+                                    )}
+                                </>
                             )}
 
                             <div className="mt-4 text-center">

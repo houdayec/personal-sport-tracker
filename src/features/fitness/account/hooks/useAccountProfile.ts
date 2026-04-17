@@ -12,10 +12,11 @@ import {
 } from '@/features/fitness/account/services/accountProfileService'
 import type {
     PreferredLengthUnit,
+    PreferredThemeMode,
     PreferredWeightUnit,
     UserProfile,
 } from '@/features/fitness/account/types/accountProfile'
-import { setUser, useAppDispatch, useAppSelector } from '@/store'
+import { setMode, setUser, useAppDispatch, useAppSelector } from '@/store'
 import { buildUiAvatarUrl } from '@/utils/uiAvatar'
 
 const getErrorMessage = (error: unknown): string => {
@@ -104,6 +105,7 @@ const useAccountProfile = () => {
                 photoUrl: defaultAvatarUrl,
                 preferredWeightUnit: 'kg',
                 preferredLengthUnit: 'cm',
+                preferredThemeMode: 'light',
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
                 isOnboarded: true,
             })
@@ -113,6 +115,9 @@ const useAccountProfile = () => {
                 const avatarUrl = await syncAuthIdentity(currentProfile.displayName)
                 currentProfile.photoUrl = avatarUrl
             }
+            if (currentProfile?.preferredThemeMode) {
+                dispatch(setMode(currentProfile.preferredThemeMode))
+            }
             setProfile(currentProfile)
         } catch (loadError) {
             setError(getErrorMessage(loadError))
@@ -120,7 +125,7 @@ const useAccountProfile = () => {
         } finally {
             setIsLoading(false)
         }
-    }, [assertUid, authDisplayName, authEmail, syncAuthIdentity])
+    }, [assertUid, authDisplayName, authEmail, dispatch, syncAuthIdentity])
 
     useEffect(() => {
         loadProfile()
@@ -174,6 +179,7 @@ const useAccountProfile = () => {
         async (input: {
             preferredWeightUnit: PreferredWeightUnit
             preferredLengthUnit: PreferredLengthUnit
+            preferredThemeMode: PreferredThemeMode
             timezone: string
         }) => {
             setIsSavingPreferences(true)
@@ -185,14 +191,17 @@ const useAccountProfile = () => {
                 await updateUserProfile(currentUid, {
                     preferredWeightUnit: input.preferredWeightUnit,
                     preferredLengthUnit: input.preferredLengthUnit,
+                    preferredThemeMode: input.preferredThemeMode,
                     timezone: input.timezone,
                 })
 
                 patchLocalProfile({
                     preferredWeightUnit: input.preferredWeightUnit,
                     preferredLengthUnit: input.preferredLengthUnit,
+                    preferredThemeMode: input.preferredThemeMode,
                     timezone: input.timezone.trim(),
                 })
+                dispatch(setMode(input.preferredThemeMode))
                 setSuccessMessage('Préférences mises à jour.')
             } catch (saveError) {
                 setError(getErrorMessage(saveError))
@@ -201,7 +210,7 @@ const useAccountProfile = () => {
                 setIsSavingPreferences(false)
             }
         },
-        [assertUid, patchLocalProfile],
+        [assertUid, dispatch, patchLocalProfile],
     )
 
     const exportData = useCallback(async () => {

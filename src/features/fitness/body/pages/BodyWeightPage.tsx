@@ -5,6 +5,7 @@ import {
     Alert,
     Button,
     Card,
+    DatePicker,
     Dialog,
     FormContainer,
     FormItem,
@@ -22,8 +23,8 @@ import {
 import {
     HiOutlineCalendar,
     HiOutlineClock,
+    HiOutlineChevronDown,
     HiOutlinePencil,
-    HiOutlineRefresh,
     HiOutlineTrash,
 } from 'react-icons/hi'
 
@@ -39,8 +40,22 @@ const UNIT_LABELS: Record<BodyWeightUnit, string> = {
     lb: 'lb',
 }
 
+const DATE_TIME_STORAGE_FORMAT = 'YYYY-MM-DDTHH:mm'
+
+const toDateTimeStorageValue = (value: Date): string =>
+    dayjs(value).format(DATE_TIME_STORAGE_FORMAT)
+
+const fromDateTimeStorageValue = (value: string): Date | null => {
+    if (!value.trim()) {
+        return null
+    }
+
+    const parsed = dayjs(value, DATE_TIME_STORAGE_FORMAT, true)
+    return parsed.isValid() ? parsed.toDate() : null
+}
+
 const defaultFormValues = (): BodyWeightFormValues => ({
-    measuredAt: dayjs().format('YYYY-MM-DDTHH:mm'),
+    measuredAt: dayjs().format(DATE_TIME_STORAGE_FORMAT),
     weight: '',
     unit: 'kg',
     note: '',
@@ -48,8 +63,8 @@ const defaultFormValues = (): BodyWeightFormValues => ({
 
 const toFormValues = (entry: BodyWeightEntry): BodyWeightFormValues => ({
     measuredAt: entry.measuredAt
-        ? dayjs(entry.measuredAt.toDate()).format('YYYY-MM-DDTHH:mm')
-        : dayjs().format('YYYY-MM-DDTHH:mm'),
+        ? dayjs(entry.measuredAt.toDate()).format(DATE_TIME_STORAGE_FORMAT)
+        : dayjs().format(DATE_TIME_STORAGE_FORMAT),
     weight: String(entry.weight),
     unit: entry.unit,
     note: entry.note || '',
@@ -102,7 +117,6 @@ const BodyWeightPage = () => {
         isLoading,
         isMutating,
         error,
-        loadEntries,
         addEntry,
         editEntry,
         removeEntry,
@@ -118,6 +132,11 @@ const BodyWeightPage = () => {
     const [entryToDelete, setEntryToDelete] = useState<BodyWeightEntry | null>(null)
 
     const latestEntry = useMemo(() => entries[0] || null, [entries])
+
+    const scrollToHistory = () => {
+        const section = document.getElementById('body-weight-history')
+        section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
 
     const setQuickField = (field: keyof BodyWeightFormValues, value: string) => {
         setQuickForm((prev) => ({
@@ -204,18 +223,24 @@ const BodyWeightPage = () => {
 
     return (
         <div className="space-y-6">
-            <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
-                    Corps
-                </p>
-                <h3 className="mt-1 text-2xl font-semibold">Suivi du poids</h3>
-                <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                    Entrées stockées dans
-                    <code className="mx-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700">
-                        users/{'{uid}'}/body_weight_entries
-                    </code>
-                    pour conserver l’historique réel.
-                </p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
+                        Corps
+                    </p>
+                    <h3 className="mt-1 text-2xl font-semibold">Suivi du poids</h3>
+                    <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
+                        Ajoute ton poids en quelques secondes et suis son évolution dans
+                        le temps.
+                    </p>
+                </div>
+                <Button
+                    size="xs"
+                    icon={<HiOutlineChevronDown />}
+                    onClick={scrollToHistory}
+                >
+                    Historique des entrées
+                </Button>
             </div>
 
             {error && (
@@ -232,14 +257,6 @@ const BodyWeightPage = () => {
                             Saisir un poids prend quelques secondes.
                         </p>
                     </div>
-                    <Button
-                        size="sm"
-                        icon={<HiOutlineRefresh />}
-                        onClick={loadEntries}
-                        disabled={isLoading || isMutating}
-                    >
-                        Rafraîchir
-                    </Button>
                 </div>
 
                 {quickFormError && (
@@ -251,11 +268,14 @@ const BodyWeightPage = () => {
                 <FormContainer className="mt-4" layout="vertical">
                     <div className="grid gap-4 lg:grid-cols-4">
                         <FormItem label="Date de mesure" asterisk>
-                            <Input
-                                type="datetime-local"
-                                value={quickForm.measuredAt}
-                                onChange={(event) =>
-                                    setQuickField('measuredAt', event.target.value)
+                            <DatePicker.DateTimepicker
+                                value={fromDateTimeStorageValue(quickForm.measuredAt)}
+                                inputFormat="DD/MM/YYYY HH:mm"
+                                onChange={(value) =>
+                                    setQuickField(
+                                        'measuredAt',
+                                        value ? toDateTimeStorageValue(value) : '',
+                                    )
                                 }
                             />
                         </FormItem>
@@ -327,7 +347,7 @@ const BodyWeightPage = () => {
                 </Card>
             )}
 
-            <Card header="Historique des entrées">
+            <Card id="body-weight-history" header="Historique des entrées">
                 {isLoading ? (
                     <div className="flex min-h-[180px] items-center justify-center">
                         <Spinner size={34} />
@@ -418,11 +438,14 @@ const BodyWeightPage = () => {
 
                     <FormContainer className="mt-4" layout="vertical">
                         <FormItem label="Date de mesure" asterisk>
-                            <Input
-                                type="datetime-local"
-                                value={editForm.measuredAt}
-                                onChange={(event) =>
-                                    setEditField('measuredAt', event.target.value)
+                            <DatePicker.DateTimepicker
+                                value={fromDateTimeStorageValue(editForm.measuredAt)}
+                                inputFormat="DD/MM/YYYY HH:mm"
+                                onChange={(value) =>
+                                    setEditField(
+                                        'measuredAt',
+                                        value ? toDateTimeStorageValue(value) : '',
+                                    )
                                 }
                             />
                         </FormItem>

@@ -70,7 +70,16 @@ const MobileNav = () => {
                         <MobileNavToggle toggled={isOpen} />
                     </div>
                     <Drawer
-                        title="Sport Tracker"
+                        title={
+                            <div className="flex items-center gap-2">
+                                <img
+                                    src="/img/logo/logo-light-streamline-squircle.png"
+                                    alt="Sport Tracker"
+                                    className="h-6 w-6 rounded object-contain"
+                                />
+                                <span className="font-semibold">Sport Tracker</span>
+                            </div>
+                        }
                         isOpen={isOpen}
                         bodyClass={classNames(navColor(), 'p-0')}
                         width={330}

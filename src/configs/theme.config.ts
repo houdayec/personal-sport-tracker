@@ -30,12 +30,12 @@ export type ThemeConfig = {
 export const themeConfig: ThemeConfig = {
     themeColor: 'green',
     direction: THEME_ENUM.DIR_LTR,
-    mode: THEME_ENUM.MODE_DARK,
+    mode: THEME_ENUM.MODE_LIGHT,
     primaryColorLevel: 500,
     cardBordered: true,
     panelExpand: false,
     controlSize: 'md',
-    navMode: THEME_ENUM.NAV_MODE_DARK,
+    navMode: THEME_ENUM.NAV_MODE_LIGHT,
     layout: {
         type: THEME_ENUM.LAYOUT_TYPE_MODERN,
         sideNavCollapse: false,

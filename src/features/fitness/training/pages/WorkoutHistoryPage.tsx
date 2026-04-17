@@ -20,8 +20,8 @@ const WorkoutHistoryPage = () => {
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Historique des séances</h3>
                 <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                    Consultation des sessions réelles sauvegardées dans
-                    `users/{'{uid}'}/workout_sessions`, sans dépendance aux templates actuels.
+                    Retrouve tes séances passées, compare le prévu et le réalisé, et
+                    garde une trace fiable de tes entraînements.
                 </p>
             </div>
 

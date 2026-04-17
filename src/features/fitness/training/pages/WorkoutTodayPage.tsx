@@ -273,8 +273,8 @@ const WorkoutTodayPage = () => {
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Séance du jour</h3>
                 <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                    Reprise automatique d’une séance `in_progress` ou lancement d’un
-                    template pour créer une session réelle indépendante.
+                    Démarre ou reprends ta séance, puis note ce que tu fais
+                    réellement, à ton rythme.
                 </p>
             </div>
 

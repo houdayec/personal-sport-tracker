@@ -9,7 +9,6 @@ import useTimeOutMessage from '@/utils/hooks/useTimeOutMessage'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import type { CommonProps } from '@/@types/common'
-import type { AxiosError } from 'axios'
 
 interface ForgotPasswordFormProps extends CommonProps {
     disableSubmit?: boolean
@@ -31,6 +30,14 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
 
     const [message, setMessage] = useTimeOutMessage()
 
+    const getErrorMessage = (error: unknown) => {
+        if (error instanceof Error && error.message) {
+            return error.message
+        }
+
+        return 'Unable to send reset email. Please try again.'
+    }
+
     const onSendMail = async (
         values: ForgotPasswordFormSchema,
         setSubmitting: (isSubmitting: boolean) => void,
@@ -42,11 +49,8 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
                 setSubmitting(false)
                 setEmailSent(true)
             }
-        } catch (errors) {
-            setMessage(
-                (errors as AxiosError<{ message: string }>)?.response?.data
-                    ?.message || (errors as Error).toString(),
-            )
+        } catch (error) {
+            setMessage(getErrorMessage(error))
             setSubmitting(false)
         }
     }
@@ -79,7 +83,7 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
             )}
             <Formik
                 initialValues={{
-                    email: 'admin@mail.com',
+                    email: '',
                 }}
                 validationSchema={validationSchema}
                 onSubmit={(values, { setSubmitting }) => {

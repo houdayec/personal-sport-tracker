@@ -16,12 +16,12 @@ export type Config = {
 export const defaultConfig = {
     themeColor: 'green',
     direction: 'ltr',
-    mode: 'dark',
+    mode: 'light',
     locale: 'en',
     primaryColorLevel: 500,
     cardBordered: false,
     controlSize: SIZES.MD,
-    navMode: 'dark',
+    navMode: 'light',
 } as const
 
 export const ConfigContext = createContext<Config>(defaultConfig)

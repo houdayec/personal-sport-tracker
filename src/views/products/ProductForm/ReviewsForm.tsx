@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFormikContext } from 'formik'
 import AdaptableCard from '@/components/shared/AdaptableCard'
 import Input from '@/components/ui/Input'
+import DatePicker from '@/components/ui/DatePicker'
 import Button from '@/components/ui/Button'
 import { FormItem } from '@/components/ui/Form'
 import { Select, toast } from '@/components/ui'
@@ -27,11 +28,16 @@ const ratingOptions = [
     { label: '3', value: 3 },
 ]
 
-const toDateInput = (iso?: string) => (iso ? iso.slice(0, 10) : '')
+const toDateValue = (iso?: string): Date | null => {
+    if (!iso) return null
+    const date = new Date(iso)
+    return Number.isNaN(date.getTime()) ? null : date
+}
 
-const toIsoFromDateInput = (value: string) => {
+const toIsoFromDateValue = (value: Date | null) => {
     if (!value) return ''
-    const date = new Date(`${value}T12:00:00`)
+    const date = new Date(value)
+    date.setHours(12, 0, 0, 0)
     return date.toISOString()
 }
 
@@ -443,10 +449,14 @@ const ReviewsForm = ({ mode }: { mode: 'new' | 'edit' }) => {
                                 </div>
                                 <div className="lg:col-span-3">
                                     <FormItem label="Date">
-                                        <Input
-                                            type="date"
-                                            value={toDateInput(review.date)}
-                                            onChange={(e) => updateReview(index, { date: toIsoFromDateInput(e.target.value) })}
+                                        <DatePicker
+                                            inputFormat="DD/MM/YYYY"
+                                            value={toDateValue(review.date)}
+                                            onChange={(date) =>
+                                                updateReview(index, {
+                                                    date: toIsoFromDateValue(date),
+                                                })
+                                            }
                                         />
                                     </FormItem>
                                 </div>

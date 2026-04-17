@@ -191,8 +191,10 @@ const ExerciseLibraryPage = () => {
                     >
                         <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
-                                <p className="text-base font-semibold">{exercise.name}</p>
-                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                <p className="text-base font-semibold text-gray-900 dark:text-[#F9FAFB]">
+                                    {exercise.name}
+                                </p>
+                                <p className="mt-1 text-xs text-gray-500 dark:text-[#9CA3AF]">
                                     Dernière mise à jour: {formatExerciseDate(exercise)}
                                 </p>
                                 <div className="mt-3 flex flex-wrap gap-2">
@@ -275,15 +277,8 @@ const ExerciseLibraryPage = () => {
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Bibliothèque d’exercices</h3>
                 <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                    Bibliothèque fusionnée avec exercices partagés
-                    <code className="mx-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700">
-                        global_exercises
-                    </code>
-                    et exercices personnalisés
-                    <code className="mx-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700">
-                        users/{'{uid}'}/exercises
-                    </code>
-                    .
+                    Retrouve tous tes exercices au même endroit: ceux proposés par
+                    l’app et ceux que tu as créés.
                 </p>
             </div>
 

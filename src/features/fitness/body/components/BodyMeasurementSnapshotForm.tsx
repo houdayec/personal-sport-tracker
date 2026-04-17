@@ -1,4 +1,5 @@
-import { FormContainer, FormItem, Input } from '@/components/ui'
+import dayjs from 'dayjs'
+import { DatePicker, FormContainer, FormItem, Input } from '@/components/ui'
 import {
     BODY_MEASUREMENT_FIELDS,
     BODY_MEASUREMENT_UNITS,
@@ -23,6 +24,20 @@ interface BodyMeasurementSnapshotFormProps {
     onMeasurementValueChange: (field: BodyMeasurementFieldKey, value: string) => void
 }
 
+const DATE_TIME_STORAGE_FORMAT = 'YYYY-MM-DDTHH:mm'
+
+const toDateTimeStorageValue = (value: Date): string =>
+    dayjs(value).format(DATE_TIME_STORAGE_FORMAT)
+
+const fromDateTimeStorageValue = (value: string): Date | null => {
+    if (!value.trim()) {
+        return null
+    }
+
+    const parsed = dayjs(value, DATE_TIME_STORAGE_FORMAT, true)
+    return parsed.isValid() ? parsed.toDate() : null
+}
+
 const BodyMeasurementSnapshotForm = ({
     values,
     disabled,
@@ -33,10 +48,15 @@ const BodyMeasurementSnapshotForm = ({
         <FormContainer layout="vertical">
             <div className="grid gap-4 lg:grid-cols-3">
                 <FormItem label="Date de mesure" asterisk>
-                    <Input
-                        type="datetime-local"
-                        value={values.measuredAt}
-                        onChange={(event) => onFieldChange('measuredAt', event.target.value)}
+                    <DatePicker.DateTimepicker
+                        value={fromDateTimeStorageValue(values.measuredAt)}
+                        inputFormat="DD/MM/YYYY HH:mm"
+                        onChange={(value) =>
+                            onFieldChange(
+                                'measuredAt',
+                                value ? toDateTimeStorageValue(value) : '',
+                            )
+                        }
                         disabled={disabled}
                     />
                 </FormItem>

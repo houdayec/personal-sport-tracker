@@ -291,11 +291,8 @@ const BodyMeasurementsPage = () => {
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Mensurations</h3>
                 <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                    Chaque entrée est un snapshot complet daté stocké dans
-                    <code className="mx-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700">
-                        users/{'{uid}'}/body_measurement_entries
-                    </code>
-                    .
+                    Enregistre une prise complète de mensurations pour suivre ton
+                    évolution avec précision.
                 </p>
             </div>
 

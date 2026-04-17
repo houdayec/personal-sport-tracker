@@ -19,6 +19,11 @@ const Logo = (props: LogoProps) => {
         logoWidth = 'auto',
     } = props
 
+    const iconSrc =
+        mode === 'dark'
+            ? '/img/logo/logo-light-streamline-squircle.png'
+            : '/img/logo/logo-dark-streamline.png'
+
     return (
         <div
             className={classNames('logo my-4', className)}
@@ -30,15 +35,16 @@ const Logo = (props: LogoProps) => {
             <div className="flex items-center gap-2">
                 <div
                     className={classNames(
-                        'flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold',
-                        mode === 'dark'
-                            ? 'bg-white/15 text-white'
-                            : 'bg-blue-100 text-blue-600',
+                        'flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl',
                         imgClass,
                     )}
                     aria-label={`${APP_NAME} logo`}
                 >
-                    ST
+                    <img
+                        src={iconSrc}
+                        alt={`${APP_NAME} logo`}
+                        className="h-full w-full object-contain"
+                    />
                 </div>
                 {type === 'full' && (
                     <span

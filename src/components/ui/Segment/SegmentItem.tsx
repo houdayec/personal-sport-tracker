@@ -77,7 +77,7 @@ const SegmentItem = forwardRef<HTMLButtonElement, SegmentItemProps>(
             if (!disabled) {
                 if (!active) {
                     if (selectionType === 'single') {
-                        onActive?.([valueProp as string])
+                        onActive?.(valueProp as SegmentValue)
                     }
                     if (selectionType === 'multiple') {
                         const nextValue = [

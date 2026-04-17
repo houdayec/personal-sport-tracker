@@ -50,8 +50,8 @@ const AdminDevPage = () => {
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Dev Tools</h3>
                 <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                    Outils temporaires pour pousser des fichiers de seed locaux vers la
-                    base depuis l’application.
+                    Outils internes pour lancer rapidement des actions de maintenance
+                    quand c’est nécessaire.
                 </p>
             </div>
 

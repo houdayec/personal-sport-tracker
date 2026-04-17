@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import AdaptableCard from '@/components/shared/AdaptableCard'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import DatePicker from '@/components/ui/DatePicker'
 import Spinner from '@/components/ui/Spinner'
 import { Select, toast } from '@/components/ui'
 import Notification from '@/components/ui/Notification'
@@ -78,6 +79,19 @@ const getAgeDays = (date?: string, reviewCount?: number) => {
     const parsed = new Date(date)
     if (Number.isNaN(parsed.getTime())) return null
     return Math.floor((Date.now() - parsed.getTime()) / (24 * 60 * 60 * 1000))
+}
+
+const toDateValue = (iso?: string): Date | null => {
+    if (!iso) return null
+    const date = new Date(iso)
+    return Number.isNaN(date.getTime()) ? null : date
+}
+
+const toIsoFromDateValue = (value: Date | null) => {
+    if (!value) return ''
+    const date = new Date(value)
+    date.setHours(12, 0, 0, 0)
+    return date.toISOString()
 }
 
 const ReviewsManager = () => {
@@ -708,12 +722,12 @@ const ReviewsManager = () => {
                                                     </div>
                                                     <div className="md:col-span-2">
                                                         <label className="text-xs text-gray-500">Date</label>
-                                                        <Input
-                                                            type="date"
-                                                            value={review.date.slice(0, 10)}
-                                                            onChange={(e) =>
+                                                        <DatePicker
+                                                            inputFormat="DD/MM/YYYY"
+                                                            value={toDateValue(review.date)}
+                                                            onChange={(date) =>
                                                                 updateReview(sku, index, {
-                                                                    date: new Date(`${e.target.value}T12:00:00`).toISOString(),
+                                                                    date: toIsoFromDateValue(date),
                                                                 })
                                                             }
                                                         />

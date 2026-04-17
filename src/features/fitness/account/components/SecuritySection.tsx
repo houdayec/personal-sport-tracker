@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Button, Card } from '@/components/ui'
 import { HiOutlineLogout, HiOutlineKey } from 'react-icons/hi'
 
@@ -8,6 +8,8 @@ interface SecuritySectionProps {
 }
 
 const SecuritySection = ({ isSigningOut, onSignOut }: SecuritySectionProps) => {
+    const navigate = useNavigate()
+
     return (
         <Card>
             <h5>Sécurité / Actions compte</h5>
@@ -27,9 +29,8 @@ const SecuritySection = ({ isSigningOut, onSignOut }: SecuritySectionProps) => {
 
                 <Button
                     size="sm"
-                    asElement={Link}
-                    to="/forgot-password"
                     icon={<HiOutlineKey />}
+                    onClick={() => navigate('/forgot-password')}
                 >
                     Réinitialiser le mot de passe
                 </Button>

@@ -187,8 +187,8 @@ const WorkoutTemplatesPage = () => {
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Templates de séances</h3>
                 <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                    Crée des templates réutilisables, duplique-les, puis lance une
-                    session réelle préremplie en un clic.
+                    Prépare tes séances à l’avance et lance-les rapidement quand tu
+                    t’entraînes.
                 </p>
             </div>
 

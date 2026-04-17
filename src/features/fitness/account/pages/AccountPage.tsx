@@ -63,8 +63,8 @@ const AccountPage = () => {
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Paramètres du compte</h3>
                 <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                    Gère ton profil, tes préférences, l’export des données et les actions
-                    de sécurité.
+                    Modifie ton profil, tes préférences et tes options de compte en
+                    un seul endroit.
                 </p>
             </div>
 

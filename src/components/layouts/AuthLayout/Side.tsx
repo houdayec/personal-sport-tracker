@@ -35,7 +35,7 @@ const Side = ({ children, content, ...rest }: SideProps) => {
                     </div>
                     */}
                     <p className="text-lg text-white opacity-80">
-                        The only way to do great work is to love what you do. If you haven't found it yet, keep looking. Don't settle.
+                        Chaque entraînement te rapproche de ta meilleure version. Reste constant, les résultats suivent.
                     </p>
                 </div>
                 <span className="text-white">

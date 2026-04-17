@@ -36,7 +36,8 @@ const ProgressPage = () => {
                 </p>
                 <h3 className="mt-1 text-2xl font-semibold">Body Tracking</h3>
                 <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                    Visualisation simple de l’évolution du poids et des mensurations.
+                    Visualise simplement l’évolution de ton poids et de tes
+                    mensurations sur la période choisie.
                 </p>
             </div>
 

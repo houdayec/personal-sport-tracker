@@ -1,15 +1,18 @@
 import type { Timestamp } from 'firebase/firestore'
+import type { Mode } from '@/@types/theme'
 
 export const USER_PROFILE_SCHEMA_VERSION = 1 as const
 
 export type PreferredWeightUnit = 'kg' | 'lb'
 export type PreferredLengthUnit = 'cm' | 'in'
+export type PreferredThemeMode = Mode
 
 export interface UserProfileDocument {
     displayName: string
     photoUrl?: string
     preferredWeightUnit?: PreferredWeightUnit
     preferredLengthUnit?: PreferredLengthUnit
+    preferredThemeMode?: PreferredThemeMode
     timezone?: string
     isOnboarded?: boolean
     createdAt: Timestamp | null
@@ -26,6 +29,7 @@ export interface CreateUserProfileInput {
     photoUrl?: string
     preferredWeightUnit?: PreferredWeightUnit
     preferredLengthUnit?: PreferredLengthUnit
+    preferredThemeMode?: PreferredThemeMode
     timezone?: string
     isOnboarded?: boolean
 }
@@ -35,6 +39,7 @@ export interface UpdateUserProfilePatch {
     photoUrl?: string
     preferredWeightUnit?: PreferredWeightUnit
     preferredLengthUnit?: PreferredLengthUnit
+    preferredThemeMode?: PreferredThemeMode
     timezone?: string
     isOnboarded?: boolean
 }

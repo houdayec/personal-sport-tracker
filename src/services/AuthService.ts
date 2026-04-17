@@ -1,11 +1,20 @@
-import ApiService from './ApiService'
 import type {
     ForgotPassword,
     ResetPassword,
 } from '@/@types/auth'
 
 import { auth } from '@/firebase'
-import { setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth'
+import {
+    setPersistence,
+    browserLocalPersistence,
+    createUserWithEmailAndPassword,
+    getAuth,
+    signInWithEmailAndPassword,
+    signOut,
+    sendPasswordResetEmail,
+    confirmPasswordReset,
+    verifyPasswordResetCode,
+} from 'firebase/auth'
 
 export async function apiSignIn({ email, password }: { email: string; password: string }) {
     const auth = getAuth()
@@ -65,17 +74,47 @@ export async function apiSignOut() {
 
 
 export async function apiForgotPassword(data: ForgotPassword) {
-    return ApiService.fetchData({
-        url: '/forgot-password',
-        method: 'post',
-        data,
-    })
+    const email = data.email.trim()
+
+    if (!email) {
+        throw new Error('Email requis.')
+    }
+
+    const actionCodeSettings = {
+        url: `${window.location.origin}/reset-password`,
+        handleCodeInApp: true,
+    }
+
+    await sendPasswordResetEmail(auth, email, actionCodeSettings)
+
+    return { data: true }
 }
 
 export async function apiResetPassword(data: ResetPassword) {
-    return ApiService.fetchData({
-        url: '/reset-password',
-        method: 'post',
-        data,
-    })
+    const password = data.password.trim()
+    const oobCode = data.oobCode.trim()
+
+    if (!oobCode) {
+        throw new Error('Lien de réinitialisation invalide.')
+    }
+
+    if (!password) {
+        throw new Error('Nouveau mot de passe requis.')
+    }
+
+    await confirmPasswordReset(auth, oobCode, password)
+
+    return { data: true }
+}
+
+export async function apiVerifyResetPasswordCode(oobCode: string) {
+    const code = oobCode.trim()
+
+    if (!code) {
+        throw new Error('Lien de réinitialisation invalide.')
+    }
+
+    await verifyPasswordResetCode(auth, code)
+
+    return { data: true }
 }
