@@ -98,9 +98,13 @@ const useBodyCheckins = () => {
         ) => {
             await runMutation(async () => {
                 const currentUid = assertUid()
+                const photoPlaceholders = photosToUpload.map((photo) => ({
+                    type: photo.type,
+                    url: 'pending-upload',
+                }))
                 const checkinId = await createBodyCheckin(currentUid, {
                     ...input,
-                    photos: [],
+                    photos: photoPlaceholders,
                 })
 
                 for (const photo of photosToUpload) {
@@ -134,10 +138,14 @@ const useBodyCheckins = () => {
                     }
                     return !newPhotoTypes.has(photo.type)
                 })
+                const photoPlaceholders = payload.newPhotos.map((photo) => ({
+                    type: photo.type,
+                    url: 'pending-upload',
+                }))
 
                 await updateBodyCheckin(currentUid, payload.checkinId, {
                     ...payload.input,
-                    photos: remainingPhotos,
+                    photos: [...remainingPhotos, ...photoPlaceholders],
                 })
 
                 for (const photoPath of payload.removedPhotoPaths) {
