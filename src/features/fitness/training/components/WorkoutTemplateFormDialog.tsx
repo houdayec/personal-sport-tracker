@@ -570,6 +570,29 @@ const WorkoutTemplateFormDialog = ({
         })
     }
 
+    const moveExercise = (fromIndex: number, toIndex: number) => {
+        setValues((prev) => {
+            if (
+                fromIndex < 0 ||
+                toIndex < 0 ||
+                fromIndex >= prev.exercises.length ||
+                toIndex >= prev.exercises.length ||
+                fromIndex === toIndex
+            ) {
+                return prev
+            }
+
+            const reordered = [...prev.exercises]
+            const [moved] = reordered.splice(fromIndex, 1)
+            reordered.splice(toIndex, 0, moved)
+
+            return {
+                ...prev,
+                exercises: reordered,
+            }
+        })
+    }
+
     const addSet = (exerciseIndex: number) => {
         setValues((prev) => ({
             ...prev,
@@ -955,6 +978,9 @@ const WorkoutTemplateFormDialog = ({
                                     Ajouter exercice
                                 </Button>
                             </div>
+                            <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                                Tu peux modifier l’ordre avec les boutons ↑ / ↓ sur chaque exercice.
+                            </p>
 
                             {errors.exercises && (
                                 <Alert type="danger" className="mb-3">
@@ -972,15 +998,48 @@ const WorkoutTemplateFormDialog = ({
                                             <p className="text-base font-semibold">
                                                 Exercice {exerciseIndex + 1}
                                             </p>
-                                            <Button
-                                                size="xs"
-                                                variant="twoTone"
-                                                icon={<HiOutlineTrash />}
-                                                onClick={() => removeExercise(exerciseIndex)}
-                                                disabled={values.exercises.length <= 1}
-                                            >
-                                                Supprimer
-                                            </Button>
+                                            <div className="flex items-center gap-1">
+                                                <Button
+                                                    size="xs"
+                                                    disabled={exerciseIndex === 0}
+                                                    onClick={() =>
+                                                        moveExercise(
+                                                            exerciseIndex,
+                                                            exerciseIndex - 1,
+                                                        )
+                                                    }
+                                                >
+                                                    ↑
+                                                </Button>
+                                                <Button
+                                                    size="xs"
+                                                    disabled={
+                                                        exerciseIndex ===
+                                                        values.exercises.length - 1
+                                                    }
+                                                    onClick={() =>
+                                                        moveExercise(
+                                                            exerciseIndex,
+                                                            exerciseIndex + 1,
+                                                        )
+                                                    }
+                                                >
+                                                    ↓
+                                                </Button>
+                                                <Button
+                                                    size="xs"
+                                                    variant="twoTone"
+                                                    icon={<HiOutlineTrash />}
+                                                    onClick={() =>
+                                                        removeExercise(exerciseIndex)
+                                                    }
+                                                    disabled={
+                                                        values.exercises.length <= 1
+                                                    }
+                                                >
+                                                    Supprimer
+                                                </Button>
+                                            </div>
                                         </div>
 
                                         <div className="grid gap-3 lg:grid-cols-2">
@@ -1356,22 +1415,34 @@ const WorkoutTemplateFormDialog = ({
                 </FormContainer>
             </div>
 
-            <div className="rounded-b-lg bg-gray-100 px-6 py-3 text-right dark:bg-gray-700">
-                <Button
-                    className="ltr:mr-2 rtl:ml-2"
-                    size="sm"
-                    onClick={handleClose}
-                >
-                    Annuler
-                </Button>
-                <Button
-                    size="sm"
-                    variant="solid"
-                    loading={isSubmitting}
-                    onClick={handleSubmit}
-                >
-                    {mode === 'create' ? 'Créer le template' : 'Enregistrer'}
-                </Button>
+            <div className="rounded-b-lg bg-gray-100 px-6 py-3 dark:bg-gray-700">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        {values.sessionType === 'strength' && (
+                            <Button
+                                size="sm"
+                                icon={<HiOutlinePlus />}
+                                onClick={addExercise}
+                                disabled={isSubmitting}
+                            >
+                                Ajouter un exercice
+                            </Button>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button size="sm" onClick={handleClose}>
+                            Annuler
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="solid"
+                            loading={isSubmitting}
+                            onClick={handleSubmit}
+                        >
+                            {mode === 'create' ? 'Créer le template' : 'Enregistrer'}
+                        </Button>
+                    </div>
+                </div>
             </div>
         </Dialog>
     )

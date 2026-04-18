@@ -90,7 +90,9 @@ export const useWorkoutHistoryList = () => {
                     ? session.plannedExercises.length
                     : session.sessionType === 'hiit'
                       ? session.hiitData?.exercises?.length || 0
-                      : 0,
+                      : session.sessionType === 'breathing'
+                        ? session.breathingData?.completedCycles || 0
+                        : 0,
         }))
     }, [sessions])
 

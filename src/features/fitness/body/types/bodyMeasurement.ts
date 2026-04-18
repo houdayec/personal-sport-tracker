@@ -12,6 +12,7 @@ export const BODY_MEASUREMENT_FIELDS = [
     { key: 'chest', label: 'Poitrine' },
     { key: 'waist', label: 'Taille' },
     { key: 'hips', label: 'Hanches' },
+    { key: 'glutes', label: 'Fesses' },
     { key: 'leftArm', label: 'Bras gauche' },
     { key: 'rightArm', label: 'Bras droit' },
     { key: 'leftThigh', label: 'Cuisse gauche' },

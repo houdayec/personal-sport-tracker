@@ -71,6 +71,27 @@ const navigationConfig: NavigationTree[] = [
         ],
     },
     {
+        key: 'fitness.breathing',
+        path: FITNESS_ROUTES.trainingBreathing,
+        title: 'Respiration',
+        translateKey: 'nav.fitness.breathing.title',
+        icon: 'breathing',
+        type: NAV_ITEM_TYPE_COLLAPSE,
+        authority: [],
+        subMenu: [
+            {
+                key: 'fitness.breathing.coherence',
+                path: FITNESS_ROUTES.trainingBreathing,
+                title: 'Cohérence cardiaque',
+                translateKey: 'nav.fitness.breathing.coherence',
+                icon: '',
+                type: NAV_ITEM_TYPE_ITEM,
+                authority: [],
+                subMenu: [],
+            },
+        ],
+    },
+    {
         key: 'fitness.body',
         path: FITNESS_ROUTES.bodyRoot,
         title: 'Corps',

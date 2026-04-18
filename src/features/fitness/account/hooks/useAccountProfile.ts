@@ -13,6 +13,7 @@ import {
 import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import { showFitnessErrorToast, showFitnessSuccessToast } from '@/features/fitness/common/utils/feedbackToast'
 import type {
+    BreathingGuidanceDefaults,
     PreferredLengthUnit,
     PreferredThemeMode,
     PreferredWeightUnit,
@@ -110,6 +111,11 @@ const useAccountProfile = () => {
                 preferredLengthUnit: 'cm',
                 preferredThemeMode: 'light',
                 weeklySessionGoal: 4,
+                breathingGuidanceDefaults: {
+                    soundEnabled: true,
+                    voiceEnabled: false,
+                    vibrationEnabled: false,
+                },
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
                 isOnboarded: true,
             })
@@ -183,6 +189,7 @@ const useAccountProfile = () => {
             preferredLengthUnit: PreferredLengthUnit
             preferredThemeMode: PreferredThemeMode
             weeklySessionGoal: number
+            breathingGuidanceDefaults: BreathingGuidanceDefaults
             timezone: string
         }) => {
             setIsSavingPreferences(true)
@@ -195,6 +202,7 @@ const useAccountProfile = () => {
                     preferredLengthUnit: input.preferredLengthUnit,
                     preferredThemeMode: input.preferredThemeMode,
                     weeklySessionGoal: input.weeklySessionGoal,
+                    breathingGuidanceDefaults: input.breathingGuidanceDefaults,
                     timezone: input.timezone,
                 })
 
@@ -203,6 +211,7 @@ const useAccountProfile = () => {
                     preferredLengthUnit: input.preferredLengthUnit,
                     preferredThemeMode: input.preferredThemeMode,
                     weeklySessionGoal: input.weeklySessionGoal,
+                    breathingGuidanceDefaults: input.breathingGuidanceDefaults,
                     timezone: input.timezone.trim(),
                 })
                 dispatch(setMode(input.preferredThemeMode))

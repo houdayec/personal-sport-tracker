@@ -7,7 +7,12 @@
                 "library": "Exercise Library",
                 "templates": "Workout Templates",
                 "today": "Today's Workout",
+                "breathing": "Breathing",
                 "history": "History"
+            },
+            "breathing": {
+                "title": "Breathing",
+                "coherence": "Cardiac Coherence"
             },
             "body": {
                 "title": "Body",

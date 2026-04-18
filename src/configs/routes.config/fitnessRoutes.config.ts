@@ -63,6 +63,14 @@ export const fitnessProtectedRoutes: Routes = [
         authority: ['USER'],
     },
     {
+        key: 'fitness.breathing.coherence',
+        path: FITNESS_ROUTES.trainingBreathing,
+        component: lazy(
+            () => import('@/features/fitness/training/pages/BreathingSessionPage'),
+        ),
+        authority: ['USER'],
+    },
+    {
         key: 'fitness.training.history',
         path: FITNESS_ROUTES.trainingHistory,
         component: lazy(

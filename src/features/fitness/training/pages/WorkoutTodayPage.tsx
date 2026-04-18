@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import dayjs from 'dayjs'
 import ConfettiGenerator from 'confetti-js'
+import { useNavigate } from 'react-router-dom'
 import {
     Alert,
     Button,
@@ -14,6 +15,7 @@ import {
     Tooltip,
 } from '@/components/ui'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import { FITNESS_ROUTES } from '@/features/fitness/constants/routes'
 import HiitActiveSessionScreen from '@/features/fitness/training/components/HiitActiveSessionScreen'
 import WorkoutExerciseDetailDialog from '@/features/fitness/training/components/WorkoutExerciseDetailDialog'
 import useWorkoutTodaySession from '@/features/fitness/training/hooks/useWorkoutTodaySession'
@@ -55,6 +57,7 @@ const sessionTypeLabel = {
     strength: 'Force',
     hiit: 'HIIT',
     running: 'Course',
+    breathing: 'Respiration',
 } as const
 
 const hiitFormatLabel: Record<'interval' | 'circuit', string> = {
@@ -63,7 +66,7 @@ const hiitFormatLabel: Record<'interval' | 'circuit', string> = {
 }
 
 const getTemplateSummary = (template: {
-    sessionType?: 'strength' | 'hiit' | 'running'
+    sessionType?: 'strength' | 'hiit' | 'running' | 'breathing'
     strengthConfig?: { exercises?: unknown[] }
     exercises?: unknown[]
     hiitConfig?: { rounds?: number }
@@ -77,6 +80,10 @@ const getTemplateSummary = (template: {
 
     if (sessionType === 'hiit') {
         return `${template.hiitConfig?.rounds || 0} tours`
+    }
+
+    if (sessionType === 'breathing') {
+        return 'Respiration guidée'
     }
 
     return formatRunningTypeLabel(template.runningConfig?.runType)
@@ -171,6 +178,7 @@ const triggerSessionFinishedConfetti = () => {
 }
 
 const WorkoutTodayPage = () => {
+    const navigate = useNavigate()
     const {
         exerciseOptions,
         templates,
@@ -653,6 +661,59 @@ const WorkoutTodayPage = () => {
     const renderActiveSession = () => {
         if (!activeSession) {
             return null
+        }
+
+        if (activeSession.sessionType === 'breathing') {
+            const inhaleSec = activeSession.breathingData?.inhaleSec || 5
+            const exhaleSec = activeSession.breathingData?.exhaleSec || 5
+            const durationSec = activeSession.breathingData?.durationSec || 300
+            const elapsedSec = Math.max(
+                0,
+                Math.min(durationSec, activeSession.breathingData?.elapsedSec || 0),
+            )
+            const completionPercent =
+                durationSec > 0 ? Math.round((elapsedSec / durationSec) * 100) : 0
+
+            return (
+                <div className="space-y-4">
+                    <Card>
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                                <h5>Séance respiration en cours</h5>
+                                <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                                    Pattern {inhaleSec}s inspiration / {exhaleSec}s expiration
+                                </p>
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Progression: {completionPercent}% ·{' '}
+                                    {activeSession.breathingData?.completedCycles || 0} cycle
+                                    {(activeSession.breathingData?.completedCycles || 0) > 1
+                                        ? 's'
+                                        : ''}
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="solid"
+                                    icon={<HiOutlinePlay />}
+                                    onClick={() => navigate(FITNESS_ROUTES.trainingBreathing)}
+                                >
+                                    Ouvrir cohérence cardiaque
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="twoTone"
+                                    icon={<HiOutlineCheckCircle />}
+                                    loading={isFinishingSession}
+                                    onClick={() => setIsFinishConfirmOpen(true)}
+                                >
+                                    Terminer la séance
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            )
         }
 
         if (activeSession.sessionType === 'hiit') {

@@ -12,6 +12,7 @@ import {
     type PreferredLengthUnit,
     type PreferredThemeMode,
     type PreferredWeightUnit,
+    type BreathingGuidanceDefaults,
     type UpdateUserProfilePatch,
     type UserProfile,
     type UserProfileDocument,
@@ -21,6 +22,11 @@ const DEFAULT_WEIGHT_UNIT: PreferredWeightUnit = 'kg'
 const DEFAULT_LENGTH_UNIT: PreferredLengthUnit = 'cm'
 const DEFAULT_THEME_MODE: PreferredThemeMode = 'light'
 const DEFAULT_WEEKLY_SESSION_GOAL = 4
+const DEFAULT_BREATHING_GUIDANCE_DEFAULTS: BreathingGuidanceDefaults = {
+    soundEnabled: true,
+    voiceEnabled: false,
+    vibrationEnabled: false,
+}
 
 const toUserProfileRef = (uid: string): DocumentReference<UserProfileDocument> => {
     return userDocumentRef(uid) as DocumentReference<UserProfileDocument>
@@ -70,6 +76,25 @@ const normalizeWeeklySessionGoal = (value: unknown): number => {
     return Math.min(14, Math.max(1, Math.round(value)))
 }
 
+const normalizeBreathingGuidanceDefaults = (value: unknown): BreathingGuidanceDefaults => {
+    const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+
+    return {
+        soundEnabled:
+            typeof record.soundEnabled === 'boolean'
+                ? record.soundEnabled
+                : DEFAULT_BREATHING_GUIDANCE_DEFAULTS.soundEnabled,
+        voiceEnabled:
+            typeof record.voiceEnabled === 'boolean'
+                ? record.voiceEnabled
+                : DEFAULT_BREATHING_GUIDANCE_DEFAULTS.voiceEnabled,
+        vibrationEnabled:
+            typeof record.vibrationEnabled === 'boolean'
+                ? record.vibrationEnabled
+                : DEFAULT_BREATHING_GUIDANCE_DEFAULTS.vibrationEnabled,
+    }
+}
+
 const userProfileFromSnapshot = (
     snapshot: QueryDocumentSnapshot<UserProfileDocument>,
 ): UserProfile => {
@@ -92,6 +117,9 @@ const userProfileFromSnapshot = (
             ? data.preferredThemeMode
             : DEFAULT_THEME_MODE,
         weeklySessionGoal: normalizeWeeklySessionGoal(data.weeklySessionGoal),
+        breathingGuidanceDefaults: normalizeBreathingGuidanceDefaults(
+            data.breathingGuidanceDefaults,
+        ),
         timezone: typeof data.timezone === 'string' ? data.timezone : normalizeTimezone(),
         isOnboarded: Boolean(data.isOnboarded),
         createdAt: data.createdAt ?? null,
@@ -117,6 +145,9 @@ const buildCreatePayload = (data: CreateUserProfileInput): CreateUserProfileInpu
             ? data.preferredThemeMode
             : DEFAULT_THEME_MODE,
         weeklySessionGoal: normalizeWeeklySessionGoal(data.weeklySessionGoal),
+        breathingGuidanceDefaults: normalizeBreathingGuidanceDefaults(
+            data.breathingGuidanceDefaults,
+        ),
         timezone: normalizeTimezone(data.timezone),
         isOnboarded: Boolean(data.isOnboarded),
     }
@@ -147,6 +178,12 @@ const buildPatchPayload = (patch: UpdateUserProfilePatch): UpdateUserProfilePatc
 
     if (typeof patch.weeklySessionGoal === 'number' && Number.isFinite(patch.weeklySessionGoal)) {
         payload.weeklySessionGoal = normalizeWeeklySessionGoal(patch.weeklySessionGoal)
+    }
+
+    if (patch.breathingGuidanceDefaults) {
+        payload.breathingGuidanceDefaults = normalizeBreathingGuidanceDefaults(
+            patch.breathingGuidanceDefaults,
+        )
     }
 
     if (typeof patch.timezone === 'string') {

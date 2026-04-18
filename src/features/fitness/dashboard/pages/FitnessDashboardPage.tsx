@@ -14,10 +14,11 @@ import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import type { WorkoutSession } from '@/features/fitness/training/types/workoutSession'
 import { HiOutlinePlay, HiOutlineRefresh } from 'react-icons/hi'
 
-const sessionTypeLabel: Record<'strength' | 'hiit' | 'running', string> = {
+const sessionTypeLabel: Record<'strength' | 'hiit' | 'running' | 'breathing', string> = {
     strength: 'FORCE',
     hiit: 'HIIT',
     running: 'COURSE',
+    breathing: 'RESPIRATION',
 }
 
 const getSessionTimestampMs = (session: WorkoutSession): number => {
@@ -162,12 +163,26 @@ const FitnessDashboardPage = () => {
             const completed =
                 activeSession.sessionType === 'hiit'
                     ? activeSession.hiitData?.completedRounds || 0
+                    : activeSession.sessionType === 'breathing'
+                      ? activeSession.breathingData?.completedCycles || 0
                     : activeSession.runningData?.distanceKm
                       ? 1
                       : 0
             const total =
                 activeSession.sessionType === 'hiit'
                     ? activeSession.hiitData?.rounds || 0
+                    : activeSession.sessionType === 'breathing'
+                      ? Math.max(
+                            1,
+                            Math.floor(
+                                (activeSession.breathingData?.durationSec || 300) /
+                                    Math.max(
+                                        1,
+                                        (activeSession.breathingData?.inhaleSec || 5) +
+                                            (activeSession.breathingData?.exhaleSec || 5),
+                                    ),
+                            ),
+                        )
                     : 1
 
             return {
@@ -208,6 +223,11 @@ const FitnessDashboardPage = () => {
         ],
         [sessionsThisYearCount, weeklyCompletedSessions, weeklySessionGoal],
     )
+
+    const resumeSessionRoute =
+        activeSession?.sessionType === 'breathing'
+            ? FITNESS_ROUTES.trainingBreathing
+            : FITNESS_ROUTES.trainingToday
 
     return (
         <div className="space-y-6">
@@ -272,7 +292,7 @@ const FitnessDashboardPage = () => {
                             >
                                 Rafraîchir
                             </Button>
-                            <Link to={FITNESS_ROUTES.trainingToday}>
+                            <Link to={resumeSessionRoute}>
                                 <Button size="sm" variant="solid" icon={<HiOutlinePlay />}>
                                     Reprendre la séance
                                 </Button>

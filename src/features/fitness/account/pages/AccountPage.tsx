@@ -108,37 +108,37 @@ const AccountPage = () => {
                 </Card>
             ) : (
                 <>
-                    {tab === 'profile' && (
+                    <div className={tab === 'profile' ? 'block' : 'hidden'}>
                         <ProfileSection
                             profile={profile}
                             email={authEmail}
                             isSaving={isSavingProfile}
                             onSubmit={saveProfile}
                         />
-                    )}
+                    </div>
 
-                    {tab === 'preferences' && (
+                    <div className={tab === 'preferences' ? 'block' : 'hidden'}>
                         <PreferencesSection
                             profile={profile}
                             isSaving={isSavingPreferences}
                             onSubmit={savePreferences}
                         />
-                    )}
+                    </div>
 
-                    {tab === 'data' && (
+                    <div className={tab === 'data' ? 'block' : 'hidden'}>
                         <DataSection
                             uid={uid}
                             isExporting={isExporting}
                             onExport={exportData}
                         />
-                    )}
+                    </div>
 
-                    {tab === 'security' && (
+                    <div className={tab === 'security' ? 'block' : 'hidden'}>
                         <SecuritySection
                             isSigningOut={isSigningOut}
                             onSignOut={handleSignOut}
                         />
-                    )}
+                    </div>
                 </>
             )}
         </div>

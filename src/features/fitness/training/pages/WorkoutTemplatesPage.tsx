@@ -126,6 +126,7 @@ const sessionTypeLabel: Record<SessionType, string> = {
     strength: 'Force',
     hiit: 'HIIT',
     running: 'Course',
+    breathing: 'Respiration',
 }
 
 const getTemplateDate = (template: WorkoutTemplate) => {
@@ -317,9 +318,11 @@ const WorkoutTemplatesPage = () => {
                                                     ? `${(template.strengthConfig?.exercises || template.exercises || []).length} exercice${(template.strengthConfig?.exercises || template.exercises || []).length > 1 ? 's' : ''}`
                                                     : template.sessionType === 'hiit'
                                                       ? `${template.hiitConfig?.rounds || 0} tours`
+                                                      : template.sessionType === 'breathing'
+                                                        ? 'Respiration guidée'
                                                       : formatRunningTypeLabel(template.runningConfig?.runType)}
                                             </Tag>
-                                            {template.tags.map((tag) => (
+                                            {(template.tags || []).map((tag) => (
                                                 <Tag
                                                     key={`${template.id}-${tag}`}
                                                     className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"

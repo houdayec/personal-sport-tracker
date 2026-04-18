@@ -98,7 +98,9 @@ const WorkoutHistoryDetailPage = () => {
                                 <p className="mt-2 font-semibold">
                                     {session.sourceTemplate?.name ||
                                         session.templateName ||
-                                        'Non renseigné'}
+                                        (session.sessionType === 'breathing'
+                                            ? 'Session respiration'
+                                            : 'Non renseigné')}
                                 </p>
                             </Card>
                             <Card>
@@ -376,6 +378,58 @@ const WorkoutHistoryDetailPage = () => {
                                             </div>
                                         )}
                                     </div>
+                                )}
+                            </Card>
+                        )}
+
+                        {session.sessionType === 'breathing' && (
+                            <Card header="Détails respiration">
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/70">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Pattern
+                                        </p>
+                                        <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                            {session.breathingData?.inhaleSec || 5}s inspiration /{' '}
+                                            {session.breathingData?.exhaleSec || 5}s expiration
+                                        </p>
+                                    </div>
+                                    <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/70">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Cycles complétés
+                                        </p>
+                                        <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                            {session.breathingData?.completedCycles || 0}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/70">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Durée cible
+                                        </p>
+                                        <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                            {formatElapsed(session.breathingData?.durationSec || 0)}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800/70">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Progression enregistrée
+                                        </p>
+                                        <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                            {Math.round(
+                                                ((session.breathingData?.elapsedSec || 0) * 100) /
+                                                    Math.max(
+                                                        1,
+                                                        session.breathingData?.durationSec || 0,
+                                                    ),
+                                            )}
+                                            %
+                                        </p>
+                                    </div>
+                                </div>
+                                {session.breathingData?.notes && (
+                                    <p className="mt-3 text-sm text-gray-700 dark:text-gray-200">
+                                        Notes: {session.breathingData.notes}
+                                    </p>
                                 )}
                             </Card>
                         )}

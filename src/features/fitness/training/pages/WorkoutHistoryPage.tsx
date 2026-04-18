@@ -9,10 +9,11 @@ import {
 import { formatRunningTypeLabel } from '@/features/fitness/training/utils/runningType'
 import { HiOutlineClock, HiOutlineRefresh, HiOutlineClipboardList } from 'react-icons/hi'
 
-const sessionTypeLabel: Record<'strength' | 'hiit' | 'running', string> = {
+const sessionTypeLabel: Record<'strength' | 'hiit' | 'running' | 'breathing', string> = {
     strength: 'FORCE',
     hiit: 'HIIT',
     running: 'COURSE',
+    breathing: 'RESPIRATION',
 }
 
 const WorkoutHistoryPage = () => {
@@ -94,7 +95,9 @@ const WorkoutHistoryPage = () => {
                                                 Modèle:{' '}
                                                 {session.sourceTemplate?.name ||
                                                     session.templateName ||
-                                                    'Non renseigné'}
+                                                    (session.sessionType === 'breathing'
+                                                        ? 'Session respiration'
+                                                        : 'Non renseigné')}
                                             </p>
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 <Tag className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
@@ -116,6 +119,8 @@ const WorkoutHistoryPage = () => {
                                                         ? `${session.plannedExerciseCount} exercice${session.plannedExerciseCount > 1 ? 's' : ''}`
                                                         : session.sessionType === 'hiit'
                                                           ? `${session.hiitData?.rounds || 0} tours`
+                                                          : session.sessionType === 'breathing'
+                                                            ? `${session.breathingData?.completedCycles || 0} cycle${(session.breathingData?.completedCycles || 0) > 1 ? 's' : ''}`
                                                           : formatRunningTypeLabel(
                                                                 session.runningData?.runType,
                                                             )}

@@ -21,6 +21,8 @@ import { isCardioNoSetsExercise } from '@/features/fitness/training/utils/exerci
 import {
     WORKOUT_SESSION_SCHEMA_VERSION,
     WORKOUT_TEMPLATE_SCHEMA_VERSION,
+    type BreathingSessionData,
+    type CreateBreathingSessionInput,
     type HiitSessionData,
     type HiitTemplateConfig,
     type RunningGpxData,
@@ -28,6 +30,7 @@ import {
     type RunningSessionData,
     type RunningTemplateConfig,
     type SessionType,
+    type UpdateBreathingSessionInput,
     type StrengthSessionData,
     type StrengthTemplateConfig,
     type UpdateHiitSessionInput,
@@ -95,7 +98,10 @@ const normalizeSessionType = (
     value: unknown,
     fallback: SessionType = 'strength',
 ): SessionType => {
-    return value === 'strength' || value === 'hiit' || value === 'running'
+    return value === 'strength' ||
+        value === 'hiit' ||
+        value === 'running' ||
+        value === 'breathing'
         ? value
         : fallback
 }
@@ -635,6 +641,12 @@ const normalizeTemplateInput = (
         }
     }
 
+    if (sessionType === 'breathing') {
+        throw new Error(
+            'Les séances respiration se lancent depuis la page Cohérence cardiaque.',
+        )
+    }
+
     const runningConfig = normalizeRunningTemplateConfig({
         runningConfig: input.runningConfig || {},
     })
@@ -903,6 +915,43 @@ const normalizeRunningSessionData = (
     }
 }
 
+const normalizeBreathingSessionData = (
+    record: Record<string, unknown>,
+): BreathingSessionData => {
+    const rawBreathingData =
+        record.breathingData && typeof record.breathingData === 'object'
+            ? (record.breathingData as Record<string, unknown>)
+            : {}
+
+    const inhaleSec = toPositiveNumber(rawBreathingData.inhaleSec, 5)
+    const exhaleSec = toPositiveNumber(rawBreathingData.exhaleSec, 5)
+    const durationSec = toPositiveNumber(rawBreathingData.durationSec, 300)
+    const elapsedSec =
+        typeof rawBreathingData.elapsedSec === 'number' &&
+        Number.isFinite(rawBreathingData.elapsedSec)
+            ? Math.max(0, Math.min(durationSec, Math.round(rawBreathingData.elapsedSec)))
+            : 0
+    const cycleSec = inhaleSec + exhaleSec
+    const completedCycles =
+        typeof rawBreathingData.completedCycles === 'number' &&
+        Number.isFinite(rawBreathingData.completedCycles)
+            ? Math.max(0, Math.round(rawBreathingData.completedCycles))
+            : cycleSec > 0
+              ? Math.floor(elapsedSec / cycleSec)
+              : 0
+
+    return {
+        inhaleSec,
+        exhaleSec,
+        durationSec,
+        elapsedSec,
+        completedCycles,
+        ...(typeof rawBreathingData.notes === 'string'
+            ? { notes: rawBreathingData.notes }
+            : {}),
+    }
+}
+
 const sessionFromSnapshot = (
     snapshot: QueryDocumentSnapshot<WorkoutSessionDocument>,
 ): WorkoutSession => {
@@ -912,6 +961,7 @@ const sessionFromSnapshot = (
     const strengthData = normalizeStrengthSessionData(record)
     const hiitData = normalizeHiitSessionData(record)
     const runningData = normalizeRunningSessionData(record)
+    const breathingData = normalizeBreathingSessionData(record)
 
     const sourceTemplate =
         data.sourceTemplate &&
@@ -952,6 +1002,7 @@ const sessionFromSnapshot = (
         strengthData,
         hiitData,
         runningData,
+        breathingData,
         sourceTemplate,
         createdAt: data.createdAt ?? null,
         updatedAt: data.updatedAt ?? null,
@@ -1236,7 +1287,41 @@ export const getInProgressWorkoutSession = async (
         return null
     }
 
-    const sortedSessions = sortSessionsByDateDesc(sessions)
+    const sortedSessions = sortSessionsByDateDesc(
+        sessions.filter((session) => session.sessionType !== 'breathing'),
+    )
+
+    return sortedSessions[0] || null
+}
+
+export const getInProgressBreathingSession = async (
+    uid: string,
+): Promise<WorkoutSession | null> => {
+    const sessionsRef = fitnessCollections.workoutSessions<WorkoutSessionDocument>(uid)
+    const inProgressQuery = query(sessionsRef, where('status', '==', 'in_progress'))
+    let snapshot
+    try {
+        snapshot = await getDocsFromServer(inProgressQuery)
+    } catch {
+        snapshot = await getDocs(inProgressQuery)
+    }
+
+    if (!snapshot.docs.length) {
+        return null
+    }
+
+    const breathingSessions = snapshot.docs
+        .map(sessionFromSnapshot)
+        .filter(
+            (session) =>
+                session.status === 'in_progress' && session.sessionType === 'breathing',
+        )
+
+    if (!breathingSessions.length) {
+        return null
+    }
+
+    const sortedSessions = sortSessionsByDateDesc(breathingSessions)
 
     return sortedSessions[0] || null
 }
@@ -1315,6 +1400,51 @@ export const startWorkoutSessionFromTemplate = async (
         schemaVersion: WORKOUT_SESSION_SCHEMA_VERSION,
         templateId: template.id,
         templateName: template.name,
+    })
+
+    return getWorkoutSessionById(uid, sessionDocRef.id)
+}
+
+export const startBreathingSession = async (
+    uid: string,
+    input?: CreateBreathingSessionInput,
+): Promise<WorkoutSession> => {
+    const existingBreathingSession = await getInProgressBreathingSession(uid)
+
+    if (existingBreathingSession) {
+        return existingBreathingSession
+    }
+
+    const inhaleSec = toPositiveNumber(input?.inhaleSec, 5)
+    const exhaleSec = toPositiveNumber(input?.exhaleSec, 5)
+    const durationSec = toPositiveNumber(input?.durationSec, 300)
+
+    const sessionsRef = fitnessCollections.workoutSessions<WorkoutSessionDocument>(uid)
+    const sessionDocRef = await addDoc(sessionsRef, {
+        sessionType: 'breathing',
+        status: 'in_progress',
+        startedAt: serverTimestamp(),
+        endedAt: null,
+        completedAt: null,
+        plannedExercises: [],
+        performedExercises: {},
+        performedExerciseIds: [],
+        strengthData: {
+            plannedExercises: [],
+            performedExercises: {},
+            performedExerciseIds: [],
+        },
+        breathingData: {
+            inhaleSec,
+            exhaleSec,
+            durationSec,
+            elapsedSec: 0,
+            completedCycles: 0,
+        },
+        sourceTemplate: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        schemaVersion: WORKOUT_SESSION_SCHEMA_VERSION,
     })
 
     return getWorkoutSessionById(uid, sessionDocRef.id)
@@ -1567,6 +1697,59 @@ export const updateRunningSessionData = async (
     })
 }
 
+export const updateBreathingSessionData = async (
+    uid: string,
+    sessionId: string,
+    input: UpdateBreathingSessionInput,
+): Promise<void> => {
+    const currentSession = await getWorkoutSessionById(uid, sessionId)
+
+    if (currentSession.sessionType !== 'breathing') {
+        throw new Error('Cette séance n’est pas de type respiration.')
+    }
+
+    const sessionRef = doc(
+        fitnessCollections.workoutSessions<WorkoutSessionDocument>(uid),
+        sessionId,
+    )
+
+    const durationSec = toPositiveNumber(
+        currentSession.breathingData?.durationSec,
+        300,
+    )
+    const inhaleSec = toPositiveNumber(currentSession.breathingData?.inhaleSec, 5)
+    const exhaleSec = toPositiveNumber(currentSession.breathingData?.exhaleSec, 5)
+    const cycleSec = inhaleSec + exhaleSec
+
+    const nextElapsedSec =
+        typeof input.elapsedSec === 'number' && Number.isFinite(input.elapsedSec)
+            ? Math.max(0, Math.min(durationSec, Math.round(input.elapsedSec)))
+            : currentSession.breathingData?.elapsedSec || 0
+    const nextCompletedCycles =
+        typeof input.completedCycles === 'number' &&
+        Number.isFinite(input.completedCycles)
+            ? Math.max(0, Math.round(input.completedCycles))
+            : cycleSec > 0
+              ? Math.floor(nextElapsedSec / cycleSec)
+              : 0
+
+    await updateDoc(sessionRef, {
+        breathingData: {
+            ...(currentSession.breathingData || {
+                inhaleSec,
+                exhaleSec,
+                durationSec,
+                elapsedSec: 0,
+                completedCycles: 0,
+            }),
+            elapsedSec: nextElapsedSec,
+            completedCycles: nextCompletedCycles,
+            ...(typeof input.notes === 'string' ? { notes: input.notes } : {}),
+        },
+        updatedAt: serverTimestamp(),
+    })
+}
+
 export const completeWorkoutSession = async (
     uid: string,
     sessionId: string,
@@ -1587,4 +1770,5 @@ export const completeWorkoutSession = async (
 // Aliases aligned with product naming
 export const createWorkoutSessionFromTemplate = startWorkoutSessionFromTemplate
 export const getCurrentWorkoutSession = getInProgressWorkoutSession
+export const getCurrentBreathingSession = getInProgressBreathingSession
 export const finishWorkoutSession = completeWorkoutSession

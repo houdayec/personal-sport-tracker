@@ -7,7 +7,7 @@ import type {
 export const WORKOUT_SESSION_SCHEMA_VERSION = 1 as const
 export const WORKOUT_TEMPLATE_SCHEMA_VERSION = 1 as const
 
-export type SessionType = 'strength' | 'hiit' | 'running'
+export type SessionType = 'strength' | 'hiit' | 'running' | 'breathing'
 export type WorkoutSessionStatus = 'in_progress' | 'completed'
 
 export type PerformedExerciseStatus = 'not_started' | 'in_progress' | 'completed'
@@ -147,6 +147,15 @@ export interface RunningSessionData {
     notes?: string
 }
 
+export interface BreathingSessionData {
+    inhaleSec: number
+    exhaleSec: number
+    durationSec: number
+    elapsedSec: number
+    completedCycles: number
+    notes?: string
+}
+
 export interface RunningGpxTrackPoint {
     lat: number
     lon: number
@@ -188,6 +197,7 @@ export interface WorkoutSessionDocument {
     strengthData?: StrengthSessionData
     hiitData?: HiitSessionData
     runningData?: RunningSessionData
+    breathingData?: BreathingSessionData
     sourceTemplate?: WorkoutSessionSourceTemplate | null
     createdAt: Timestamp | null
     updatedAt: Timestamp | null
@@ -223,5 +233,17 @@ export interface UpdateRunningSessionInput {
     durationSec?: number
     avgPaceSecPerKm?: number
     gpxData?: RunningGpxData | null
+    notes?: string
+}
+
+export interface CreateBreathingSessionInput {
+    inhaleSec?: number
+    exhaleSec?: number
+    durationSec?: number
+}
+
+export interface UpdateBreathingSessionInput {
+    elapsedSec?: number
+    completedCycles?: number
     notes?: string
 }

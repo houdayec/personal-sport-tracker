@@ -7,7 +7,12 @@
                 "library": "Bibliothèque d’exercices",
                 "templates": "Modèles de séances",
                 "today": "Séance du jour",
+                "breathing": "Cohérence cardiaque",
                 "history": "Historique"
+            },
+            "breathing": {
+                "title": "Respiration",
+                "coherence": "Cohérence cardiaque"
             },
             "body": {
                 "title": "Corps",

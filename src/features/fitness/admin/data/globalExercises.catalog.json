@@ -82,6 +82,7 @@
     {
       "category": "machines_chest",
       "exercises": [
+        { "name": "Développé couché", "name_en": "Bench Press", "muscleGroup": "pectoraux", "equipment": "barre" },
         { "name": "Presse à pectoraux (machine)", "name_en": "Chest Press Machine", "muscleGroup": "pectoraux", "equipment": "machine" },
         { "name": "Pec deck (écarté machine)", "name_en": "Pec Deck Fly", "muscleGroup": "pectoraux", "equipment": "machine" },
         { "name": "Chest press incliné (machine)", "name_en": "Incline Chest Press Machine", "muscleGroup": "pectoraux", "equipment": "machine" },

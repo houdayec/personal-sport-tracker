@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, Card, FormContainer, FormItem, Input } from '@/components/ui'
 import type {
+    BreathingGuidanceDefaults,
     PreferredLengthUnit,
     PreferredThemeMode,
     PreferredWeightUnit,
@@ -15,6 +16,7 @@ interface PreferencesSectionProps {
         preferredLengthUnit: PreferredLengthUnit
         preferredThemeMode: PreferredThemeMode
         weeklySessionGoal: number
+        breathingGuidanceDefaults: BreathingGuidanceDefaults
         timezone: string
     }) => Promise<void>
 }
@@ -36,6 +38,15 @@ const PreferencesSection = ({
     const [weeklySessionGoal, setWeeklySessionGoal] = useState<number>(
         profile.weeklySessionGoal || 4,
     )
+    const [breathingSoundEnabled, setBreathingSoundEnabled] = useState(
+        profile.breathingGuidanceDefaults?.soundEnabled ?? true,
+    )
+    const [breathingVoiceEnabled, setBreathingVoiceEnabled] = useState(
+        profile.breathingGuidanceDefaults?.voiceEnabled ?? false,
+    )
+    const [breathingVibrationEnabled, setBreathingVibrationEnabled] = useState(
+        profile.breathingGuidanceDefaults?.vibrationEnabled ?? false,
+    )
     const [timezone, setTimezone] = useState(profile.timezone || 'UTC')
 
     useEffect(() => {
@@ -43,12 +54,20 @@ const PreferencesSection = ({
         setPreferredLengthUnit(profile.preferredLengthUnit || 'cm')
         setPreferredThemeMode(profile.preferredThemeMode || 'light')
         setWeeklySessionGoal(profile.weeklySessionGoal || 4)
+        setBreathingSoundEnabled(profile.breathingGuidanceDefaults?.soundEnabled ?? true)
+        setBreathingVoiceEnabled(profile.breathingGuidanceDefaults?.voiceEnabled ?? false)
+        setBreathingVibrationEnabled(
+            profile.breathingGuidanceDefaults?.vibrationEnabled ?? false,
+        )
         setTimezone(profile.timezone || 'UTC')
     }, [
         profile.preferredWeightUnit,
         profile.preferredLengthUnit,
         profile.preferredThemeMode,
         profile.weeklySessionGoal,
+        profile.breathingGuidanceDefaults?.soundEnabled,
+        profile.breathingGuidanceDefaults?.voiceEnabled,
+        profile.breathingGuidanceDefaults?.vibrationEnabled,
         profile.timezone,
     ])
 
@@ -58,6 +77,11 @@ const PreferencesSection = ({
             preferredLengthUnit,
             preferredThemeMode,
             weeklySessionGoal,
+            breathingGuidanceDefaults: {
+                soundEnabled: breathingSoundEnabled,
+                voiceEnabled: breathingVoiceEnabled,
+                vibrationEnabled: breathingVibrationEnabled,
+            },
             timezone,
         })
     }
@@ -66,11 +90,11 @@ const PreferencesSection = ({
         <Card>
             <h5>Préférences</h5>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                Unités et fuseau horaire utilisés dans l’app.
+                Unités, affichage et comportement par défaut des sessions.
             </p>
 
             <FormContainer className="mt-4" layout="vertical">
-                <div className="grid gap-4 lg:grid-cols-5">
+                <div className="grid gap-4 lg:grid-cols-3">
                     <FormItem label="Unité de poids">
                         <Input
                             asElement="select"
@@ -135,6 +159,45 @@ const PreferencesSection = ({
                         >
                             <option value="light">Clair</option>
                             <option value="dark">Sombre</option>
+                        </Input>
+                    </FormItem>
+
+                    <FormItem label="Respiration: son par défaut">
+                        <Input
+                            asElement="select"
+                            value={breathingSoundEnabled ? 'on' : 'off'}
+                            onChange={(event) =>
+                                setBreathingSoundEnabled(event.target.value === 'on')
+                            }
+                        >
+                            <option value="on">Activé</option>
+                            <option value="off">Désactivé</option>
+                        </Input>
+                    </FormItem>
+
+                    <FormItem label="Respiration: voix par défaut">
+                        <Input
+                            asElement="select"
+                            value={breathingVoiceEnabled ? 'on' : 'off'}
+                            onChange={(event) =>
+                                setBreathingVoiceEnabled(event.target.value === 'on')
+                            }
+                        >
+                            <option value="on">Activée</option>
+                            <option value="off">Désactivée</option>
+                        </Input>
+                    </FormItem>
+
+                    <FormItem label="Respiration: vibration par défaut">
+                        <Input
+                            asElement="select"
+                            value={breathingVibrationEnabled ? 'on' : 'off'}
+                            onChange={(event) =>
+                                setBreathingVibrationEnabled(event.target.value === 'on')
+                            }
+                        >
+                            <option value="on">Activée</option>
+                            <option value="off">Désactivée</option>
                         </Input>
                     </FormItem>
                 </div>

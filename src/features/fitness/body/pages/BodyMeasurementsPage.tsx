@@ -116,7 +116,7 @@ const buildInputFromForm = (
 }
 
 const getSummaryValues = (entry: BodyMeasurementEntry): string[] => {
-    const trackedKeys: BodyMeasurementFieldKey[] = ['waist', 'chest', 'hips']
+    const trackedKeys: BodyMeasurementFieldKey[] = ['waist', 'chest', 'hips', 'glutes']
 
     return trackedKeys
         .map((key) => {
@@ -285,7 +285,7 @@ const BodyMeasurementsPage = () => {
             <Card>
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                        <p className="font-semibold">Nouveau snapshot</p>
+                        <p className="font-semibold">Nouvelle entrée de mensurations</p>
                         <p className="text-sm text-gray-600 dark:text-gray-300">
                             Une prise complète en une seule entrée.
                         </p>
@@ -315,7 +315,7 @@ const BodyMeasurementsPage = () => {
                         loading={isMutating}
                         onClick={handleCreateSnapshot}
                     >
-                        Enregistrer le snapshot
+                        Enregistrer les mensurations
                     </Button>
                 </div>
             </Card>
@@ -324,7 +324,9 @@ const BodyMeasurementsPage = () => {
                 <Card>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">Dernier snapshot</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Dernières mensurations
+                            </p>
                             <p className="mt-1 font-semibold">{formatSnapshotDate(latestEntry)}</p>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -341,7 +343,7 @@ const BodyMeasurementsPage = () => {
                 </Card>
             )}
 
-            <Card header="Historique des snapshots">
+            <Card header="Historique des mensurations">
                 {isLoading ? (
                     <div className="flex min-h-[180px] items-center justify-center">
                         <Spinner size={34} />
@@ -349,7 +351,7 @@ const BodyMeasurementsPage = () => {
                 ) : entries.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center dark:border-gray-600">
                         <p className="text-sm text-gray-600 dark:text-gray-300">
-                            Aucun snapshot enregistré pour le moment.
+                            Aucune mensuration enregistrée pour le moment.
                         </p>
                     </div>
                 ) : (
@@ -362,18 +364,18 @@ const BodyMeasurementsPage = () => {
                                 <div className="flex flex-wrap items-start justify-between gap-4">
                                     <div>
                                         <p className="text-base font-semibold">
-                                            Snapshot du {formatSnapshotDate(entry)}
+                                            Mesure du {formatSnapshotDate(entry)}
                                         </p>
 
                                         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                                             <span className="inline-flex items-center gap-1">
                                                 <HiOutlineCalendar />
-                                                Unité: {entry.unit}
+                                                Unité de mesure: {entry.unit}
                                             </span>
                                             {entry.updatedAt && (
                                                 <span className="inline-flex items-center gap-1">
                                                     <HiOutlineClock />
-                                                    Mis à jour le{' '}
+                                                    Modifié le{' '}
                                                     {dayjs(entry.updatedAt.toDate()).format(
                                                         'DD/MM/YYYY HH:mm',
                                                     )}
@@ -446,7 +448,7 @@ const BodyMeasurementsPage = () => {
                 onRequestClose={() => setDetailEntry(null)}
             >
                 <div className="px-6 py-5">
-                    <h5>Détail du snapshot</h5>
+                    <h5>Détail des mensurations</h5>
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                         {detailEntry ? formatSnapshotDate(detailEntry) : ''}
                     </p>
@@ -490,7 +492,7 @@ const BodyMeasurementsPage = () => {
                 onRequestClose={closeEditDialog}
             >
                 <div className="px-6 py-5">
-                    <h5>Modifier le snapshot</h5>
+                    <h5>Modifier les mensurations</h5>
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                         Ajuste les valeurs mesurées si nécessaire.
                     </p>
@@ -527,7 +529,7 @@ const BodyMeasurementsPage = () => {
             <ConfirmDialog
                 isOpen={Boolean(entryToDelete)}
                 type="danger"
-                title="Supprimer ce snapshot ?"
+                title="Supprimer cette entrée ?"
                 confirmText="Supprimer"
                 cancelText="Annuler"
                 onClose={() => setEntryToDelete(null)}
@@ -535,7 +537,7 @@ const BodyMeasurementsPage = () => {
                 onCancel={() => setEntryToDelete(null)}
                 onConfirm={handleDeleteSnapshot}
             >
-                <p>Le snapshot sera supprimé de l’historique.</p>
+                <p>Cette entrée de mensurations sera supprimée de l’historique.</p>
             </ConfirmDialog>
         </div>
     )

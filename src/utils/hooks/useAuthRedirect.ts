@@ -1,13 +1,20 @@
 import { useEffect } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import { useAppDispatch } from '@/store'
-import { setAuthChecked, setUser, signInSuccess, signOutSuccess } from '@/store'
+import {
+    setAuthChecked,
+    setLang,
+    setUser,
+    signInSuccess,
+    signOutSuccess,
+} from '@/store'
 import { auth } from '@/firebase'
 
 const useAuthRedirect = () => {
     const dispatch = useAppDispatch()
 
     useEffect(() => {
+        dispatch(setLang('fr'))
         dispatch(setAuthChecked(false))
 
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
