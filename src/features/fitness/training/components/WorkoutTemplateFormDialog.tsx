@@ -874,7 +874,7 @@ const WorkoutTemplateFormDialog = ({
                 )}
 
                 <FormContainer className="mt-4" layout="vertical">
-                    <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="grid gap-x-4 gap-y-2 lg:grid-cols-2">
                         <FormItem label="Type de séance" asterisk>
                             <Select<SelectOption, false>
                                 options={SESSION_TYPE_OPTIONS}
@@ -1036,30 +1036,42 @@ const WorkoutTemplateFormDialog = ({
                                                         key={`${exerciseIndex}-${setIndex}`}
                                                         className="grid gap-2 rounded-lg bg-gray-50 p-3 md:grid-cols-[1fr_1fr_auto] dark:bg-gray-800/60"
                                                     >
-                                                        <Input
-                                                            value={set.targetReps || ''}
-                                                            placeholder="Répétitions (ex: 10)"
-                                                            onChange={(event) =>
-                                                                setExerciseSetField(
-                                                                    exerciseIndex,
-                                                                    setIndex,
-                                                                    'targetReps',
-                                                                    event.target.value,
-                                                                )
-                                                            }
-                                                        />
-                                                        <Input
-                                                            value={set.targetWeight || ''}
-                                                            placeholder="Charge cible (optionnel)"
-                                                            onChange={(event) =>
-                                                                setExerciseSetField(
-                                                                    exerciseIndex,
-                                                                    setIndex,
-                                                                    'targetWeight',
-                                                                    event.target.value,
-                                                                )
-                                                            }
-                                                        />
+                                                        <div>
+                                                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                                                                Répétitions
+                                                            </p>
+                                                            <Input
+                                                                value={set.targetReps || ''}
+                                                                placeholder="10"
+                                                                inputMode="numeric"
+                                                                onChange={(event) =>
+                                                                    setExerciseSetField(
+                                                                        exerciseIndex,
+                                                                        setIndex,
+                                                                        'targetReps',
+                                                                        event.target.value,
+                                                                    )
+                                                                }
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                                                                Charge (kg)
+                                                            </p>
+                                                            <Input
+                                                                value={set.targetWeight || ''}
+                                                                placeholder="Optionnel"
+                                                                inputMode="decimal"
+                                                                onChange={(event) =>
+                                                                    setExerciseSetField(
+                                                                        exerciseIndex,
+                                                                        setIndex,
+                                                                        'targetWeight',
+                                                                        event.target.value,
+                                                                    )
+                                                                }
+                                                            />
+                                                        </div>
                                                         <Button
                                                             size="xs"
                                                             variant="twoTone"

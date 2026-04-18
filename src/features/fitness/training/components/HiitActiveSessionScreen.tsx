@@ -8,7 +8,7 @@ import type {
 } from '@/features/fitness/training/types/workoutSession'
 import {
     HiOutlineCheckCircle,
-    HiOutlineChevronRight,
+    HiOutlineFastForward,
     HiOutlinePause,
     HiOutlinePlay,
     HiOutlineX,
@@ -44,6 +44,10 @@ interface HiitActiveSessionScreenProps {
     onExit: () => void
 }
 
+interface SpeakOptions {
+    interrupt?: boolean
+}
+
 const PREPARATION_SECONDS = 10
 const TICK_INTERVAL_MS = 200
 const ANTICIPATION_SECONDS = 8
@@ -60,6 +64,18 @@ const ROUND_COMPLETE_MESSAGES = [
     'Bravo, un tour de plus.',
     'Parfait, tour terminé.',
     'Bien joué, continue cette énergie.',
+]
+
+const FINISH_MESSAGES = [
+    "J'ai toujours cru en toi, bien joué.",
+    "Tu transpires, mais moi j'ai rien senti.",
+    'Session bouclée. Tu peux être fier de toi.',
+    'Très solide. Tu viens de gagner ta journée.',
+    'Propre et efficace. Continue sur ce rythme.',
+    'Tu l’as fait. Et c’était carré.',
+    'Fin de séance, mental validé.',
+    'Ton cardio a demandé grâce, mais toi tu as tenu.',
+    'Performance validée. Tes voisins ont sûrement entendu la motivation.',
 ]
 
 const phaseLabel: Record<SessionPhaseType, string> = {
@@ -204,13 +220,12 @@ const buildInitialEngineState = (
 
     const initialPhase = phases[initialPhaseIndex]
     const durationMs = initialPhase.durationSec * 1000
-    const nowMs = Date.now()
 
     return {
         phaseIndex: initialPhaseIndex,
-        phaseEndsAtMs: nowMs + durationMs,
+        phaseEndsAtMs: null,
         pausedRemainingMs: durationMs,
-        isPaused: false,
+        isPaused: true,
         completedWorkCount: clampedCompletedWorkCount,
         isFinished: false,
     }
@@ -329,6 +344,7 @@ const HiitActiveSessionScreen = ({
     const shownEncouragementKeysRef = useRef<Set<string>>(new Set())
     const lastPhaseIndexRef = useRef(engine.phaseIndex)
     const lastSyncedCompletedCountRef = useRef(engine.completedWorkCount)
+    const speechUnlockedRef = useRef(false)
 
     const currentPhase = !engine.isFinished ? phases[engine.phaseIndex] || null : null
     const nextPhase = !engine.isFinished ? phases[engine.phaseIndex + 1] || null : null
@@ -376,6 +392,9 @@ const HiitActiveSessionScreen = ({
 
     const currentWorkCount = engine.completedWorkCount
     const completedRounds = Math.floor(currentWorkCount / exerciseCount)
+    const completionPercent = workPhases.length > 0
+        ? Math.min(100, Math.round((currentWorkCount / workPhases.length) * 100))
+        : 0
 
     const playTone = useCallback((frequency: number, durationMs: number, gainValue: number) => {
         if (typeof window === 'undefined') {
@@ -426,22 +445,78 @@ const HiitActiveSessionScreen = ({
         playTone(980, 80, 0.035)
     }, [playTone])
 
-    const speak = useCallback((text: string) => {
+    const ensureMediaUnlocked = useCallback(() => {
+        if (typeof window === 'undefined') {
+            return
+        }
+
+        if (!('speechSynthesis' in window) || speechUnlockedRef.current) {
+            return
+        }
+
+        try {
+            const warmupUtterance = new SpeechSynthesisUtterance('Prêt')
+            warmupUtterance.lang = 'fr-FR'
+            warmupUtterance.rate = 1
+            warmupUtterance.pitch = 1
+            warmupUtterance.volume = 0
+            warmupUtterance.onstart = () => {
+                speechUnlockedRef.current = true
+            }
+            window.speechSynthesis.cancel()
+            window.speechSynthesis.speak(warmupUtterance)
+            window.setTimeout(() => {
+                window.speechSynthesis.cancel()
+            }, 120)
+        } catch {
+            // Ignore speech synthesis limitations.
+        }
+    }, [])
+
+    const speak = useCallback((text: string, options?: SpeakOptions) => {
         if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text.trim()) {
             return
         }
 
         try {
-            const utterance = new SpeechSynthesisUtterance(text)
+            const utterance = new SpeechSynthesisUtterance(text.trim())
             utterance.lang = 'fr-FR'
             utterance.rate = 1
             utterance.pitch = 1
-            window.speechSynthesis.cancel()
+            utterance.onstart = () => {
+                speechUnlockedRef.current = true
+            }
+            utterance.onerror = () => {
+                playTone(820, 90, 0.03)
+            }
+
+            if (options?.interrupt) {
+                window.speechSynthesis.cancel()
+            }
+
             window.speechSynthesis.speak(utterance)
         } catch {
-            // Ignore speech synthesis limitations.
+            playTone(820, 90, 0.03)
         }
-    }, [])
+    }, [playTone])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return
+        }
+
+        const primeMedia = () => {
+            ensureMediaUnlocked()
+        }
+
+        window.addEventListener('pointerdown', primeMedia)
+        window.addEventListener('touchstart', primeMedia)
+
+        return () => {
+            window.removeEventListener('pointerdown', primeMedia)
+            window.removeEventListener('touchstart', primeMedia)
+        }
+    }, [ensureMediaUnlocked])
 
     useEffect(() => {
         if (engine.isFinished || engine.isPaused) {
@@ -471,7 +546,7 @@ const HiitActiveSessionScreen = ({
 
         if (engine.isFinished) {
             playTransitionBell()
-            speak('Séance HIIT terminée.')
+            speak(pickRandom(FINISH_MESSAGES), { interrupt: true })
             return
         }
 
@@ -479,11 +554,11 @@ const HiitActiveSessionScreen = ({
 
         const phase = phases[engine.phaseIndex]
         if (phase?.type === 'work') {
-            speak(`Exercice: ${phase.exerciseName}`)
+            speak(`Exercice: ${phase.exerciseName}`, { interrupt: true })
         }
 
         if (phase?.type === 'preparation') {
-            speak('Prépare-toi.')
+            speak('Prépare-toi.', { interrupt: true })
         }
     }, [engine.isFinished, engine.phaseIndex, phases, playTransitionBell, speak])
 
@@ -643,6 +718,8 @@ const HiitActiveSessionScreen = ({
     }, [])
 
     const handlePause = () => {
+        ensureMediaUnlocked()
+
         if (engine.isFinished || engine.isPaused) {
             return
         }
@@ -679,6 +756,8 @@ const HiitActiveSessionScreen = ({
     }, [])
 
     const handleResume = () => {
+        ensureMediaUnlocked()
+
         if (engine.isFinished || !engine.isPaused || !currentPhase) {
             return
         }
@@ -695,6 +774,8 @@ const HiitActiveSessionScreen = ({
     }
 
     const handleSkip = () => {
+        ensureMediaUnlocked()
+
         setEngine((prev) => {
             if (prev.isFinished) {
                 return prev
@@ -748,6 +829,7 @@ const HiitActiveSessionScreen = ({
     }
 
     const handleRequestExit = () => {
+        ensureMediaUnlocked()
         pauseEngineNow()
         setIsExitPromptOpen(true)
     }
@@ -793,19 +875,7 @@ const HiitActiveSessionScreen = ({
             >
                 <div className="absolute inset-0 bg-[#0B1120]" />
                 <div className="absolute inset-0 bg-gradient-to-b from-[#0B1120] via-[#0B1120] to-[#060B16]" />
-                <div className="relative mx-auto grid h-full w-full max-w-5xl grid-rows-[auto_auto_minmax(0,1fr)_auto] overflow-hidden pl-[max(0.875rem,env(safe-area-inset-left))] pr-[max(0.875rem,env(safe-area-inset-right))] pt-[max(0.625rem,env(safe-area-inset-top))] pb-[max(0.625rem,env(safe-area-inset-bottom))] md:px-6 md:pb-4 md:pt-4">
-                    <div className="flex items-start justify-end pb-1">
-                        <Button
-                            size="sm"
-                            variant="default"
-                            className="shrink-0 border border-white/40 bg-white/20 font-semibold text-white hover:bg-white/30"
-                            icon={<HiOutlineX />}
-                            onClick={handleRequestExit}
-                        >
-                            Quitter
-                        </Button>
-                    </div>
-
+                <div className="relative mx-auto grid h-full w-full max-w-5xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden pl-[max(0.875rem,env(safe-area-inset-left))] pr-[max(0.875rem,env(safe-area-inset-right))] pt-[max(0.625rem,env(safe-area-inset-top))] pb-[max(0.625rem,env(safe-area-inset-bottom))] md:px-6 md:pb-4 md:pt-4">
                     {!engine.isFinished ? (
                         <>
                             <div className="flex justify-center py-1">
@@ -870,20 +940,17 @@ const HiitActiveSessionScreen = ({
 
                             <div className="flex items-center justify-center pb-[calc(max(0.625rem,env(safe-area-inset-bottom))+5.75rem)] pt-1 text-center sm:pb-[calc(max(0.625rem,env(safe-area-inset-bottom))+6rem)] sm:pt-2">
                                 <div className="mx-auto inline-flex w-full max-w-md flex-col items-center rounded-2xl border border-white/20 bg-white/[0.06] px-4 py-2.5 shadow-lg shadow-slate-950/20 sm:px-5 sm:py-3">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">
-                                        Prochaine étape
-                                    </p>
+                                    {nextPreviewSecondary && (
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400 sm:text-xs">
+                                            {nextPreviewSecondary}
+                                        </p>
+                                    )}
                                     <p
                                         className="mt-1 w-full max-w-full truncate text-center text-[clamp(1.35rem,5.8vw,2.1rem)] font-extrabold leading-tight text-gray-100 md:text-4xl"
                                         title={nextPreviewPrimary}
                                     >
                                         {nextPreviewPrimary}
                                     </p>
-                                    {nextPreviewSecondary && (
-                                        <p className="mt-1 text-center text-xs font-medium uppercase tracking-[0.12em] text-gray-400 sm:text-sm">
-                                            {nextPreviewSecondary}
-                                        </p>
-                                    )}
                                 </div>
                             </div>
 
@@ -893,7 +960,20 @@ const HiitActiveSessionScreen = ({
                                 }`}
                             >
                                 <div className="mx-auto grid w-full max-w-sm grid-cols-[1fr_auto_1fr] items-center">
-                                    <div />
+                                    {engine.isPaused ? (
+                                        <Button
+                                            size="sm"
+                                            variant="default"
+                                            className="justify-self-start border border-white/40 bg-white/20 px-3 font-semibold text-white hover:bg-white/30"
+                                            icon={<HiOutlineX />}
+                                            disabled={isExitPromptOpen}
+                                            onClick={handleRequestExit}
+                                        >
+                                            Quitter
+                                        </Button>
+                                    ) : (
+                                        <div />
+                                    )}
                                     {engine.isPaused ? (
                                         <Button
                                             size="lg"
@@ -917,8 +997,8 @@ const HiitActiveSessionScreen = ({
                                         size="sm"
                                         variant="plain"
                                         shape="circle"
-                                        className="justify-self-center text-gray-300 hover:bg-white/10 hover:text-white [&_svg]:h-6 [&_svg]:w-6"
-                                        icon={<HiOutlineChevronRight />}
+                                        className="justify-self-center text-blue-300 hover:bg-blue-500/15 hover:text-blue-100 active:text-white [&_svg]:h-7 [&_svg]:w-7"
+                                        icon={<HiOutlineFastForward />}
                                         disabled={isExitPromptOpen}
                                         onClick={handleSkip}
                                     />
@@ -926,13 +1006,18 @@ const HiitActiveSessionScreen = ({
                             </div>
                         </>
                     ) : (
-                        <div className="flex flex-1 flex-col items-center justify-center text-center">
+                        <div className="row-[1/-1] flex h-full flex-col items-center justify-center px-4 text-center">
                             <div className="rounded-full bg-emerald-500/15 p-3 ring-1 ring-emerald-300/30">
                                 <HiOutlineCheckCircle className="h-24 w-24 text-emerald-300 md:h-28 md:w-28" />
                             </div>
-                            <h2 className="mt-4 text-3xl font-bold">Séance terminée</h2>
-                            <p className="mt-2 max-w-md text-sm text-gray-300">
-                                Excellent travail. Pense à finaliser la séance pour l’enregistrer dans ton historique.
+                            <h2 className="mt-5 text-4xl font-extrabold tracking-tight text-emerald-100 md:text-5xl">
+                                Excellent travail !
+                            </h2>
+                            <p className="mt-2 text-6xl font-black tracking-tight text-emerald-300 md:text-7xl">
+                                {completionPercent}%
+                            </p>
+                            <p className="mt-3 max-w-md text-sm text-gray-300 md:text-base">
+                                Séance terminée. Finalise pour l’enregistrer dans ton historique.
                             </p>
 
                             <div className="mt-5 grid w-full max-w-md grid-cols-2 gap-3 text-sm">
@@ -954,10 +1039,7 @@ const HiitActiveSessionScreen = ({
                                 <p className="mt-3 text-sm text-red-300">{finalizeError}</p>
                             )}
 
-                            <div className="mt-5 flex w-full max-w-md gap-2">
-                                <Button block variant="twoTone" onClick={onExit}>
-                                    Fermer
-                                </Button>
+                            <div className="mt-5 w-full max-w-md">
                                 <Button
                                     block
                                     variant="solid"

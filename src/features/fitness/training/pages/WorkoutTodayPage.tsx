@@ -23,7 +23,6 @@ import type {
     PlannedWorkoutExercise,
     PerformedExerciseStatus,
     SavePerformedExerciseInput,
-    TemplateWorkoutSet,
     UpdateHiitSessionInput,
 } from '@/features/fitness/training/types/workoutSession'
 import { isCardioNoSetsExercise } from '@/features/fitness/training/utils/exerciseKind'
@@ -931,6 +930,31 @@ const WorkoutTodayPage = () => {
                                 isCardioNoSetsExercise(exercise)
                             const muscleLabel =
                                 exercise.muscleGroup?.trim() || 'Non défini'
+                            const plannedSets = exercise.plannedSets || []
+                            const performedSets = performed?.sets || []
+                            const previewSetCount = Math.max(
+                                plannedSets.length,
+                                performedSets.length,
+                            )
+                            const previewSets = Array.from(
+                                { length: previewSetCount },
+                                (_, index) => {
+                                    const plannedSet = plannedSets[index]
+                                    const performedSet = performedSets[index]
+                                    const performedReps = (performedSet?.reps || '').trim()
+                                    const performedWeight = (performedSet?.weight || '').trim()
+
+                                    return {
+                                        setNumber: index + 1,
+                                        targetReps:
+                                            performedReps || plannedSet?.targetReps || '',
+                                        targetWeight:
+                                            performedWeight ||
+                                            plannedSet?.targetWeight ||
+                                            '',
+                                    }
+                                },
+                            )
 
                             return (
                                 <div
@@ -990,9 +1014,9 @@ const WorkoutTodayPage = () => {
                                                             <span>Poids</span>
                                                         </div>
                                                         <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                                                            {exercise.plannedSets
+                                                            {previewSets
                                                                 .slice(0, 3)
-                                                                .map((set: TemplateWorkoutSet, index: number) => (
+                                                                .map((set, index: number) => (
                                                                     <div
                                                                         key={`${exercise.plannedExerciseId}_set_${index + 1}`}
                                                                         className="grid grid-cols-[56px_1fr_1fr] px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200"
@@ -1013,13 +1037,12 @@ const WorkoutTodayPage = () => {
                                                                     </div>
                                                                 ))}
                                                         </div>
-                                                        {exercise.plannedSets.length > 3 && (
+                                                        {previewSets.length > 3 && (
                                                             <p className="border-t border-gray-200 px-2 py-1 text-[11px] text-gray-500 dark:border-gray-700 dark:text-gray-400">
                                                                 +
-                                                                {exercise.plannedSets.length - 3}{' '}
+                                                                {previewSets.length - 3}{' '}
                                                                 set
-                                                                {exercise.plannedSets.length - 3 >
-                                                                1
+                                                                {previewSets.length - 3 > 1
                                                                     ? 's'
                                                                     : ''}{' '}
                                                                 supplémentaires

@@ -204,11 +204,11 @@ const WorkoutExerciseDetailDialog = ({
                         </Alert>
                     )}
 
-                    <div className="mt-4 grid gap-3 md:grid-cols-2">
-                        <Tag className="bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-100">
+                    <div className="mt-4 flex flex-wrap gap-2">
+                        <Tag className="w-fit bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-100">
                             {plannedExercise?.muscleGroup || 'Groupe musculaire non défini'}
                         </Tag>
-                        <Tag className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                        <Tag className="w-fit bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
                             {plannedExercise?.equipment || 'Matériel non défini'}
                         </Tag>
                     </div>

@@ -160,6 +160,7 @@ const WorkoutTemplatesPage = () => {
     const [formMode, setFormMode] = useState<TemplateFormMode>('create')
     const [selectedTemplate, setSelectedTemplate] = useState<WorkoutTemplate | null>(null)
     const [templateToDelete, setTemplateToDelete] = useState<WorkoutTemplate | null>(null)
+    const [startingTemplateId, setStartingTemplateId] = useState<string | null>(null)
 
     const formInitialValues = useMemo<WorkoutTemplateInput>(() => {
         if (!selectedTemplate) {
@@ -201,11 +202,16 @@ const WorkoutTemplatesPage = () => {
     }
 
     const handleStartSession = async (templateId: string) => {
+        setStartingTemplateId(templateId)
         try {
             await startSession(templateId)
             navigate(FITNESS_ROUTES.trainingToday)
         } catch {
             // Error already handled in hook state.
+        } finally {
+            setStartingTemplateId((currentId) =>
+                currentId === templateId ? null : currentId,
+            )
         }
     }
 
@@ -335,7 +341,14 @@ const WorkoutTemplatesPage = () => {
                                             variant="solid"
                                             icon={<HiOutlinePlay />}
                                             onClick={() => handleStartSession(template.id)}
-                                            loading={isStarting}
+                                            loading={
+                                                isStarting &&
+                                                startingTemplateId === template.id
+                                            }
+                                            disabled={
+                                                isStarting &&
+                                                startingTemplateId !== template.id
+                                            }
                                         >
                                             Lancer
                                         </Button>

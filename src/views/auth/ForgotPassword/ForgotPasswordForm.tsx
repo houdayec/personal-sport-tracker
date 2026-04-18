@@ -7,6 +7,7 @@ import ActionLink from '@/components/shared/ActionLink'
 import { apiForgotPassword } from '@/services/AuthService'
 import useTimeOutMessage from '@/utils/hooks/useTimeOutMessage'
 import { Field, Form, Formik } from 'formik'
+import { useAppSelector } from '@/store'
 import * as Yup from 'yup'
 import type { CommonProps } from '@/@types/common'
 
@@ -25,6 +26,10 @@ const validationSchema = Yup.object().shape({
 
 const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
     const { disableSubmit = false, className, signInUrl = '/sign-in' } = props
+    const authEmail = useAppSelector((state) => state.auth.user.email)
+    const isSignedIn = useAppSelector((state) => state.auth.session.signedIn)
+    const connectedEmail = (authEmail || '').trim()
+    const shouldUseConnectedEmail = Boolean(isSignedIn && connectedEmail)
 
     const [emailSent, setEmailSent] = useState(false)
 
@@ -55,23 +60,30 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
         }
     }
 
+    const wrapperClass = `w-full text-left ${className || ''}`.trim()
+
     return (
-        <div className={className}>
-            <div className="mb-6">
+        <div className={wrapperClass} style={{ textAlign: 'left' }}>
+            <div className="mb-5 space-y-2">
                 {emailSent ? (
                     <>
-                        <h3 className="mb-1">Check your email</h3>
-                        <p>
+                        <h3 className="text-2xl font-semibold leading-tight">
+                            Check your email
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
                             We have sent a password recovery instruction to your
-                            email
+                            {shouldUseConnectedEmail ? ` email (${connectedEmail})` : ' email'}
                         </p>
                     </>
                 ) : (
                     <>
-                        <h3 className="mb-1">Forgot Password</h3>
-                        <p>
-                            Please enter your email address to receive a
-                            verification code
+                        <h3 className="text-2xl font-semibold leading-tight">
+                            Forgot Password
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                            {shouldUseConnectedEmail
+                                ? `We will send a reset link to your connected account: ${connectedEmail}`
+                                : 'Please enter your email address to receive a verification code'}
                         </p>
                     </>
                 )}
@@ -83,12 +95,20 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
             )}
             <Formik
                 initialValues={{
-                    email: '',
+                    email: connectedEmail,
                 }}
+                enableReinitialize
                 validationSchema={validationSchema}
                 onSubmit={(values, { setSubmitting }) => {
                     if (!disableSubmit) {
-                        onSendMail(values, setSubmitting)
+                        onSendMail(
+                            {
+                                email: shouldUseConnectedEmail
+                                    ? connectedEmail
+                                    : values.email,
+                            },
+                            setSubmitting,
+                        )
                     } else {
                         setSubmitting(false)
                     }
@@ -97,7 +117,13 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
                 {({ touched, errors, isSubmitting }) => (
                     <Form>
                         <FormContainer>
-                            <div className={emailSent ? 'hidden' : ''}>
+                            <div
+                                className={
+                                    emailSent || shouldUseConnectedEmail
+                                        ? 'hidden'
+                                        : 'mb-1'
+                                }
+                            >
                                 <FormItem
                                     invalid={errors.email && touched.email}
                                     errorMessage={errors.email}
@@ -116,10 +142,11 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
                                 loading={isSubmitting}
                                 variant="solid"
                                 type="submit"
+                                className="h-11"
                             >
                                 {emailSent ? 'Resend Email' : 'Send Email'}
                             </Button>
-                            <div className="mt-4 text-center">
+                            <div className="mt-5 text-left text-sm">
                                 <span>Back to </span>
                                 <ActionLink to={signInUrl}>Sign in</ActionLink>
                             </div>
