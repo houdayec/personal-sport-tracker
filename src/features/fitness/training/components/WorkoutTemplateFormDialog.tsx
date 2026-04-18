@@ -78,7 +78,7 @@ const FALLBACK_RUNNING_TYPE_OPTIONS = getFallbackRunningTypeOptions()
 
 const createDefaultSet = (index: number): TemplateWorkoutSet => ({
     setNumber: index + 1,
-    targetReps: '10-12',
+    targetReps: '10',
     targetWeight: '',
 })
 
@@ -93,7 +93,7 @@ const createDefaultExercise = (index: number): WorkoutTemplateExercise => ({
     name: `Exercice ${index + 1}`,
     muscleGroup: '',
     equipment: '',
-    plannedSets: [createDefaultSet(0)],
+    plannedSets: [createDefaultSet(0), createDefaultSet(1), createDefaultSet(2)],
 })
 
 const createDefaultHiitConfig = (): HiitTemplateConfig => ({
@@ -862,8 +862,8 @@ const WorkoutTemplateFormDialog = ({
             onRequestClose={handleClose}
         >
             <div className="max-h-[75vh] overflow-y-auto px-6 py-5">
-                <h5>{getDialogTitle(mode)}</h5>
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                <h5 className="text-2xl font-bold">{getDialogTitle(mode)}</h5>
+                <p className="mt-1 text-base text-gray-600 dark:text-gray-300">
                     Construis un template réutilisable pour démarrer une séance en un clic.
                 </p>
 
@@ -937,8 +937,16 @@ const WorkoutTemplateFormDialog = ({
 
                     {values.sessionType === 'strength' && (
                         <div>
+                            <div className="mb-3">
+                                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                    Configuration force
+                                </p>
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                    Ajoute tes exercices et définis les séries prévues.
+                                </p>
+                            </div>
                             <div className="mb-3 flex items-center justify-between">
-                                <p className="font-semibold">Exercices</p>
+                                <p className="text-lg font-semibold">Exercices</p>
                                 <Button
                                     size="xs"
                                     icon={<HiOutlinePlus />}
@@ -961,7 +969,7 @@ const WorkoutTemplateFormDialog = ({
                                         className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
                                     >
                                         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                                            <p className="font-semibold">
+                                            <p className="text-base font-semibold">
                                                 Exercice {exerciseIndex + 1}
                                             </p>
                                             <Button
@@ -1012,7 +1020,7 @@ const WorkoutTemplateFormDialog = ({
 
                                         <div>
                                             <div className="mb-2 flex items-center justify-between">
-                                                <p className="text-sm font-semibold">Séries</p>
+                                                <p className="text-base font-semibold">Séries</p>
                                                 <Button
                                                     size="xs"
                                                     icon={<HiOutlinePlus />}
@@ -1030,7 +1038,7 @@ const WorkoutTemplateFormDialog = ({
                                                     >
                                                         <Input
                                                             value={set.targetReps || ''}
-                                                            placeholder="Répétitions (ex: 8-10)"
+                                                            placeholder="Répétitions (ex: 10)"
                                                             onChange={(event) =>
                                                                 setExerciseSetField(
                                                                     exerciseIndex,
@@ -1080,6 +1088,14 @@ const WorkoutTemplateFormDialog = ({
 
                     {values.sessionType === 'hiit' && (
                         <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                            <div className="mb-3">
+                                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                    Configuration HIIT
+                                </p>
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                    Règle le format, les intervalles et l’ordre des exercices.
+                                </p>
+                            </div>
                             {errors.exercises && (
                                 <Alert type="danger" className="mb-3">
                                     {errors.exercises}
@@ -1179,7 +1195,7 @@ const WorkoutTemplateFormDialog = ({
 
                             {(values.hiitConfig?.exercises || []).length > 0 && (
                                 <div className="mt-2">
-                                    <p className="mb-2 text-sm font-semibold">
+                                    <p className="mb-2 text-base font-semibold">
                                         Ordre des exercices HIIT
                                     </p>
                                     <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
@@ -1263,6 +1279,14 @@ const WorkoutTemplateFormDialog = ({
 
                     {values.sessionType === 'running' && (
                         <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                            <div className="mb-3">
+                                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                    Configuration course
+                                </p>
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                    Définis le type, la distance et/ou la durée cible.
+                                </p>
+                            </div>
                             <div className="grid gap-3 lg:grid-cols-2">
                                 <FormItem label="Type de course">
                                     <Select<SelectOption, false>

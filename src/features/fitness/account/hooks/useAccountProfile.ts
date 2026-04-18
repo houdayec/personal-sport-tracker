@@ -109,6 +109,7 @@ const useAccountProfile = () => {
                 preferredWeightUnit: 'kg',
                 preferredLengthUnit: 'cm',
                 preferredThemeMode: 'light',
+                weeklySessionGoal: 4,
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
                 isOnboarded: true,
             })
@@ -181,6 +182,7 @@ const useAccountProfile = () => {
             preferredWeightUnit: PreferredWeightUnit
             preferredLengthUnit: PreferredLengthUnit
             preferredThemeMode: PreferredThemeMode
+            weeklySessionGoal: number
             timezone: string
         }) => {
             setIsSavingPreferences(true)
@@ -192,6 +194,7 @@ const useAccountProfile = () => {
                     preferredWeightUnit: input.preferredWeightUnit,
                     preferredLengthUnit: input.preferredLengthUnit,
                     preferredThemeMode: input.preferredThemeMode,
+                    weeklySessionGoal: input.weeklySessionGoal,
                     timezone: input.timezone,
                 })
 
@@ -199,6 +202,7 @@ const useAccountProfile = () => {
                     preferredWeightUnit: input.preferredWeightUnit,
                     preferredLengthUnit: input.preferredLengthUnit,
                     preferredThemeMode: input.preferredThemeMode,
+                    weeklySessionGoal: input.weeklySessionGoal,
                     timezone: input.timezone.trim(),
                 })
                 dispatch(setMode(input.preferredThemeMode))

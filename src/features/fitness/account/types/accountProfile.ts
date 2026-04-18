@@ -13,6 +13,7 @@ export interface UserProfileDocument {
     preferredWeightUnit?: PreferredWeightUnit
     preferredLengthUnit?: PreferredLengthUnit
     preferredThemeMode?: PreferredThemeMode
+    weeklySessionGoal?: number
     timezone?: string
     isOnboarded?: boolean
     createdAt: Timestamp | null
@@ -30,6 +31,7 @@ export interface CreateUserProfileInput {
     preferredWeightUnit?: PreferredWeightUnit
     preferredLengthUnit?: PreferredLengthUnit
     preferredThemeMode?: PreferredThemeMode
+    weeklySessionGoal?: number
     timezone?: string
     isOnboarded?: boolean
 }
@@ -40,6 +42,7 @@ export interface UpdateUserProfilePatch {
     preferredWeightUnit?: PreferredWeightUnit
     preferredLengthUnit?: PreferredLengthUnit
     preferredThemeMode?: PreferredThemeMode
+    weeklySessionGoal?: number
     timezone?: string
     isOnboarded?: boolean
 }

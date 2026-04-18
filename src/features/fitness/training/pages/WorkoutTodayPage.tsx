@@ -11,6 +11,7 @@ import {
     Select,
     Spinner,
     Tag,
+    Tooltip,
 } from '@/components/ui'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import HiitActiveSessionScreen from '@/features/fitness/training/components/HiitActiveSessionScreen'
@@ -34,6 +35,7 @@ import {
     HiOutlineClock,
     HiOutlinePlus,
     HiOutlinePencil,
+    HiOutlineInformationCircle,
     HiOutlineUpload,
 } from 'react-icons/hi'
 
@@ -59,6 +61,26 @@ const sessionTypeLabel = {
 const hiitFormatLabel: Record<'interval' | 'circuit', string> = {
     interval: 'Intervalles',
     circuit: 'Circuit',
+}
+
+const getTemplateSummary = (template: {
+    sessionType?: 'strength' | 'hiit' | 'running'
+    strengthConfig?: { exercises?: unknown[] }
+    exercises?: unknown[]
+    hiitConfig?: { rounds?: number }
+    runningConfig?: { runType?: string }
+}): string => {
+    const sessionType = template.sessionType || 'strength'
+
+    if (sessionType === 'strength') {
+        return `${(template.strengthConfig?.exercises || template.exercises || []).length} exercices`
+    }
+
+    if (sessionType === 'hiit') {
+        return `${template.hiitConfig?.rounds || 0} tours`
+    }
+
+    return formatRunningTypeLabel(template.runningConfig?.runType)
 }
 
 interface ExerciseLibraryOption {
@@ -93,70 +115,67 @@ const triggerSessionFinishedConfetti = () => {
         return
     }
 
-    const generators: Array<{
-        canvas: HTMLCanvasElement
-        instance: ConfettiGenerator
-    }> = []
+    const generators: Array<{ canvas: HTMLCanvasElement; instance: ConfettiGenerator }> =
+        []
+    const cleanupTimeouts: number[] = []
 
-    const launchBurst = (side: 'left' | 'right') => {
-        const canvas = document.createElement('canvas')
-        canvas.style.position = 'fixed'
-        canvas.style.top = '0'
-        canvas.style.left = side === 'left' ? '0' : '50%'
-        canvas.style.width = '50%'
-        canvas.style.height = '100%'
-        canvas.style.pointerEvents = 'none'
-        canvas.style.zIndex = '2000'
-        document.body.appendChild(canvas)
+    const launchBurst = (delayMs: number, max: number, clock: number, size = 1.25) => {
+        const timeoutId = window.setTimeout(() => {
+            const canvas = document.createElement('canvas')
+            canvas.style.position = 'fixed'
+            canvas.style.inset = '0'
+            canvas.style.width = '100%'
+            canvas.style.height = '100%'
+            canvas.style.pointerEvents = 'none'
+            canvas.style.zIndex = '2200'
+            document.body.appendChild(canvas)
 
-        const confetti = new ConfettiGenerator({
-            target: canvas,
-            max: 120,
-            size: 1.2,
-            animate: true,
-            respawn: true,
-            rotate: true,
-            start_from_edge: true,
-            clock: 20,
-            width: Math.max(1, Math.floor(window.innerWidth / 2)),
-            height: window.innerHeight,
-            colors: [
-                [34, 197, 94],
-                [74, 222, 128],
-                [59, 130, 246],
-                [96, 165, 250],
-                [245, 158, 11],
-            ],
-        })
+            const confetti = new ConfettiGenerator({
+                target: canvas,
+                max,
+                size,
+                animate: true,
+                respawn: false,
+                rotate: true,
+                start_from_edge: false,
+                clock,
+                width: window.innerWidth,
+                height: window.innerHeight,
+                colors: [
+                    [34, 197, 94],
+                    [74, 222, 128],
+                    [59, 130, 246],
+                    [96, 165, 250],
+                    [245, 158, 11],
+                ],
+            })
 
-        confetti.render()
-        generators.push({
-            canvas,
-            instance: confetti,
-        })
+            confetti.render()
+            generators.push({ canvas, instance: confetti })
+        }, delayMs)
+
+        cleanupTimeouts.push(timeoutId)
     }
 
-    launchBurst('left')
-    launchBurst('right')
+    launchBurst(0, 160, 24, 1.25)
+    launchBurst(380, 110, 27, 1.2)
 
-    const secondWaveTimeout = window.setTimeout(() => {
-        launchBurst('left')
-        launchBurst('right')
-    }, 550)
-
-    window.setTimeout(() => {
-        window.clearTimeout(secondWaveTimeout)
+    const cleanupId = window.setTimeout(() => {
+        cleanupTimeouts.forEach((timeoutId) => window.clearTimeout(timeoutId))
         generators.forEach(({ instance, canvas }) => {
             instance.clear()
             canvas.remove()
         })
-    }, 3800)
+    }, 2400)
+
+    cleanupTimeouts.push(cleanupId)
 }
 
 const WorkoutTodayPage = () => {
     const {
         exerciseOptions,
         templates,
+        recentSessions,
         activeSession,
         completedExerciseCount,
         isLoading,
@@ -190,6 +209,9 @@ const WorkoutTodayPage = () => {
     const [runningDurationSec, setRunningDurationSec] = useState('')
     const [runningAvgPaceSecPerKm, setRunningAvgPaceSecPerKm] = useState('')
     const [runningNotes, setRunningNotes] = useState('')
+    const [quickCompletingExerciseId, setQuickCompletingExerciseId] = useState<string | null>(
+        null,
+    )
     const runningGpxInputRef = useRef<HTMLInputElement | null>(null)
     const autoOpenedHiitSessionIdRef = useRef<string | null>(null)
 
@@ -227,6 +249,32 @@ const WorkoutTodayPage = () => {
                 }),
             )
     }, [exerciseOptions])
+
+    const recentTemplateItems = useMemo(() => {
+        if (!recentSessions.length || !templates.length) {
+            return []
+        }
+
+        const templateById = new Map(templates.map((template) => [template.id, template]))
+        const orderedTemplateIds: string[] = []
+
+        recentSessions.forEach((session) => {
+            const templateId = session.sourceTemplate?.id || session.templateId
+
+            if (
+                templateId &&
+                !orderedTemplateIds.includes(templateId) &&
+                templateById.has(templateId)
+            ) {
+                orderedTemplateIds.push(templateId)
+            }
+        })
+
+        return orderedTemplateIds
+            .map((templateId) => templateById.get(templateId))
+            .filter((template): template is NonNullable<typeof template> => Boolean(template))
+            .slice(0, 6)
+    }, [recentSessions, templates])
 
     useEffect(() => {
         if (!activeSession || activeSession.sessionType !== 'hiit') {
@@ -429,11 +477,16 @@ const WorkoutTodayPage = () => {
         }
 
         try {
+            setQuickCompletingExerciseId(plannedExercise.plannedExerciseId)
             await completeExercise(
                 buildQuickCompletePayload(plannedExercise, performedExercise),
             )
         } catch {
             // Error managed in hook state.
+        } finally {
+            setQuickCompletingExerciseId((prev) =>
+                prev === plannedExercise.plannedExerciseId ? null : prev,
+            )
         }
     }
 
@@ -449,62 +502,151 @@ const WorkoutTodayPage = () => {
     }
 
     const renderTemplateLauncher = () => {
-        if (templates.length === 0) {
-            return (
-                <Card>
-                    <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center dark:border-gray-600">
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
-                            Aucun template disponible pour démarrer une séance.
-                        </p>
-                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                            Ajoute au moins un template dans
-                            <code className="mx-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700">
-                                users/{'{uid}'}/workout_templates
-                            </code>
-                            .
-                        </p>
-                    </div>
-                </Card>
-            )
-        }
-
         return (
-            <div className="grid gap-4 lg:grid-cols-2">
-                {templates.map((template) => (
-                    <Card key={template.id}>
-                        <div className="flex h-full flex-col justify-between gap-4">
-                            <div>
-                                <h5>{template.name}</h5>
-                                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                                    Type: {sessionTypeLabel[template.sessionType || 'strength']} ·{' '}
-                                    {template.sessionType === 'strength'
-                                        ? `${(template.strengthConfig?.exercises || template.exercises || []).length} exercices`
-                                        : template.sessionType === 'hiit'
-                                          ? `${template.hiitConfig?.rounds || 0} tours`
-                                          : formatRunningTypeLabel(
-                                                template.runningConfig?.runType,
-                                            )}
-                                </p>
-                                {template.description && (
-                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        {template.description}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="flex justify-end">
-                                <Button
-                                    size="sm"
-                                    variant="solid"
-                                    icon={<HiOutlinePlay />}
-                                    loading={isStarting}
-                                    onClick={() => handleStartTemplate(template.id)}
+            <div className="space-y-4">
+                <Card header="Récemment utilisés">
+                    {recentTemplateItems.length === 0 ? (
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Lance quelques séances pour retrouver ici tes templates les plus récents.
+                        </p>
+                    ) : (
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            {recentTemplateItems.map((template) => (
+                                <div
+                                    key={`recent_${template.id}`}
+                                    className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
                                 >
-                                    Lancer cette séance
-                                </Button>
-                            </div>
+                                    <div className="flex h-full flex-col justify-between gap-4">
+                                        <div>
+                                            <h5>{template.name}</h5>
+                                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                                                Type:{' '}
+                                                {sessionTypeLabel[template.sessionType || 'strength']} ·{' '}
+                                                {getTemplateSummary(template)}
+                                            </p>
+                                        </div>
+                                        <div className="flex justify-end">
+                                            <Button
+                                                size="sm"
+                                                variant="solid"
+                                                icon={<HiOutlinePlay />}
+                                                loading={isStarting}
+                                                onClick={() =>
+                                                    handleStartTemplate(template.id)
+                                                }
+                                            >
+                                                Lancer cette séance
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    </Card>
-                ))}
+                    )}
+                </Card>
+
+                <Card header="Mes 5 dernières séances faites">
+                    {recentSessions.length === 0 ? (
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Aucune séance terminée pour le moment.
+                        </p>
+                    ) : (
+                        <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                            {recentSessions.map((session) => {
+                                const sessionDate =
+                                    session.endedAt ||
+                                    session.completedAt ||
+                                    session.startedAt ||
+                                    session.updatedAt
+
+                                return (
+                                    <div
+                                        key={`recent_session_${session.id}`}
+                                        className="flex items-start justify-between gap-3 py-3"
+                                    >
+                                        <div>
+                                            <p className="font-semibold text-gray-900 dark:text-gray-100">
+                                                {session.sourceTemplate?.name ||
+                                                    session.templateName ||
+                                                    `Séance ${sessionTypeLabel[session.sessionType]}`}
+                                            </p>
+                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Type: {sessionTypeLabel[session.sessionType]}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm text-gray-700 dark:text-gray-200">
+                                                {sessionDate?.toDate
+                                                    ? dayjs(sessionDate.toDate()).format(
+                                                          'DD/MM/YYYY HH:mm',
+                                                      )
+                                                    : 'Date inconnue'}
+                                            </p>
+                                            <p className="mt-1 text-xs font-medium text-emerald-600 dark:text-emerald-300">
+                                                Terminée
+                                            </p>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+                </Card>
+
+                <Card header="Tous les templates">
+                    {templates.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center dark:border-gray-600">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Aucun template disponible pour démarrer une séance.
+                            </p>
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                Ajoute au moins un template dans
+                                <code className="mx-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700">
+                                    users/{'{uid}'}/workout_templates
+                                </code>
+                                .
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            {templates.map((template) => (
+                                <div
+                                    key={template.id}
+                                    className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
+                                >
+                                    <div className="flex h-full flex-col justify-between gap-4">
+                                        <div>
+                                            <h5>{template.name}</h5>
+                                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                                                Type:{' '}
+                                                {sessionTypeLabel[template.sessionType || 'strength']} ·{' '}
+                                                {getTemplateSummary(template)}
+                                            </p>
+                                            {template.description && (
+                                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                    {template.description}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex justify-end">
+                                            <Button
+                                                size="sm"
+                                                variant="solid"
+                                                icon={<HiOutlinePlay />}
+                                                loading={isStarting}
+                                                onClick={() =>
+                                                    handleStartTemplate(template.id)
+                                                }
+                                            >
+                                                Lancer cette séance
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </Card>
             </div>
         )
     }
@@ -726,7 +868,17 @@ const WorkoutTodayPage = () => {
                 <Card>
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div>
-                            <h5>Séance en cours</h5>
+                            <h5>
+                                Séance en cours
+                                {(activeSession.sourceTemplate?.name ||
+                                    activeSession.templateName) && (
+                                    <>
+                                        {' : '}
+                                        {activeSession.sourceTemplate?.name ||
+                                            activeSession.templateName}
+                                    </>
+                                )}
+                            </h5>
                             <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                                 Démarrée le{' '}
                                 {activeSession.startedAt
@@ -736,23 +888,10 @@ const WorkoutTodayPage = () => {
                                     : 'maintenant'}
                                 .
                             </p>
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Les exercices de cette séance sont figés au démarrage pour garder un historique fidèle.
+                            <p className="mt-2 text-lg font-semibold text-gray-800 dark:text-gray-100 md:text-xl">
+                                {completedExerciseCount}/{totalExercises} terminé
+                                {totalExercises > 1 ? 's' : ''}
                             </p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                                <Tag className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
-                                    {completedExerciseCount}/{totalExercises} terminé
-                                    {totalExercises > 1 ? 's' : ''}
-                                </Tag>
-                                {(activeSession.sourceTemplate?.name ||
-                                    activeSession.templateName) && (
-                                    <Tag className="bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-100">
-                                        Modèle:{' '}
-                                        {activeSession.sourceTemplate?.name ||
-                                            activeSession.templateName}
-                                    </Tag>
-                                )}
-                            </div>
                         </div>
 
                         <div className="flex flex-wrap gap-2">
@@ -782,7 +921,7 @@ const WorkoutTodayPage = () => {
                 </Card>
 
                 <Card header="Exercices de la séance">
-                    <div className="space-y-3">
+                    <div className="grid gap-3 md:grid-cols-2">
                         {activeSession.plannedExercises.map((exercise) => {
                             const performed =
                                 activeSession.performedExercises[exercise.plannedExerciseId]
@@ -790,11 +929,13 @@ const WorkoutTodayPage = () => {
                                 performed?.status || 'not_started'
                             const isNoSetsExercise =
                                 isCardioNoSetsExercise(exercise)
+                            const muscleLabel =
+                                exercise.muscleGroup?.trim() || 'Non défini'
 
                             return (
                                 <div
                                     key={exercise.plannedExerciseId}
-                                    className="cursor-pointer rounded-xl border border-gray-200 p-4 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/40 md:cursor-default md:hover:bg-transparent"
+                                    className="h-full cursor-pointer rounded-xl border border-gray-200 p-4 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/40 md:cursor-default md:hover:bg-transparent"
                                     onClick={() => openExerciseOnSmallScreens(exercise)}
                                     onKeyDown={(event) => {
                                         if (event.key === 'Enter' || event.key === ' ') {
@@ -806,23 +947,42 @@ const WorkoutTodayPage = () => {
                                     tabIndex={0}
                                 >
                                     <div className="flex flex-wrap items-start justify-between gap-3">
-                                        <div>
-                                            <p className="font-semibold">{exercise.name}</p>
-                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                Ordre template: {exercise.orderIndex + 1}
-                                            </p>
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-3">
+                                                <div className="inline-flex h-9 min-w-9 items-center justify-center rounded-full bg-blue-100 px-2 text-sm font-extrabold text-blue-700 dark:bg-blue-500/20 dark:text-blue-100">
+                                                    {exercise.orderIndex + 1}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-1">
+                                                        <p className="truncate text-lg font-bold leading-normal text-gray-900 dark:text-gray-100 md:text-xl">
+                                                            {exercise.name}
+                                                        </p>
+                                                        <Tooltip
+                                                            title={`Muscle ciblé: ${muscleLabel}`}
+                                                        >
+                                                            <button
+                                                                type="button"
+                                                                className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-300"
+                                                                onClick={(event) =>
+                                                                    event.stopPropagation()
+                                                                }
+                                                                onKeyDown={(event) =>
+                                                                    event.stopPropagation()
+                                                                }
+                                                                aria-label="Voir les muscles ciblés"
+                                                            >
+                                                                <HiOutlineInformationCircle className="h-4 w-4" />
+                                                            </button>
+                                                        </Tooltip>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             {isNoSetsExercise ? (
                                                 <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
                                                     Objectif cardio: sans sets (durée et distance dans les notes).
                                                 </p>
                                             ) : (
                                                 <>
-                                                    <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
-                                                        Objectif: {exercise.plannedSets.length} set
-                                                        {exercise.plannedSets.length > 1
-                                                            ? 's'
-                                                            : ''}
-                                                    </p>
                                                     <div className="mt-2 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
                                                         <div className="grid grid-cols-[56px_1fr_1fr] bg-gray-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:bg-gray-800 dark:text-gray-300">
                                                             <span>Set</span>
@@ -868,53 +1028,59 @@ const WorkoutTodayPage = () => {
                                                     </div>
                                                 </>
                                             )}
-                                            <div className="mt-2 flex flex-wrap gap-2">
-                                                <Tag className={statusToTagClass[status]}>
-                                                    {statusToLabel[status]}
-                                                </Tag>
-                                                <Tag className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
-                                                    {exercise.muscleGroup || 'Muscle non défini'}
-                                                </Tag>
-                                                <Tag className="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
-                                                    {exercise.equipment || 'Matériel non défini'}
-                                                </Tag>
+                                            <div className="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300">
+                                                <p>
+                                                    Matériel: {exercise.equipment || 'Non défini'}
+                                                </p>
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-wrap gap-2">
-                                            <Button
-                                                size="xs"
-                                                variant={
-                                                    status === 'completed' ? 'default' : 'solid'
-                                                }
-                                                icon={<HiOutlineCheckCircle />}
-                                                disabled={
-                                                    isSavingExercise ||
-                                                    status === 'completed'
-                                                }
-                                                onClick={(event) => {
-                                                    event.stopPropagation()
-                                                    handleQuickCompleteExercise(
-                                                        exercise,
-                                                        performed,
-                                                    )
-                                                }}
-                                            >
-                                                {status === 'completed'
-                                                    ? 'Terminé'
-                                                    : 'Exercice fait'}
-                                            </Button>
-                                            <Button
-                                                size="xs"
-                                                icon={<HiOutlinePencil />}
-                                                className="hidden md:inline-flex"
-                                                onClick={(event) => {
-                                                    event.stopPropagation()
-                                                    openExercise(exercise)
-                                                }}
-                                            >
-                                                Ouvrir
-                                            </Button>
+                                        <div className="mt-2 flex w-full items-center justify-between gap-3 md:mt-0 md:w-auto md:justify-end">
+                                            <Tag className={statusToTagClass[status]}>
+                                                {statusToLabel[status]}
+                                            </Tag>
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button
+                                                    size="xs"
+                                                    variant={
+                                                        status === 'completed'
+                                                            ? 'default'
+                                                            : 'solid'
+                                                    }
+                                                    icon={<HiOutlineCheckCircle />}
+                                                    loading={
+                                                        quickCompletingExerciseId ===
+                                                            exercise.plannedExerciseId &&
+                                                        isSavingExercise
+                                                    }
+                                                    disabled={
+                                                        isSavingExercise ||
+                                                        status === 'completed'
+                                                    }
+                                                    onClick={(event) => {
+                                                        event.stopPropagation()
+                                                        handleQuickCompleteExercise(
+                                                            exercise,
+                                                            performed,
+                                                        )
+                                                    }}
+                                                >
+                                                    {status === 'completed'
+                                                        ? 'Terminé'
+                                                        : 'Exercice fait'}
+                                                </Button>
+                                                <Button
+                                                    size="xs"
+                                                    icon={<HiOutlinePencil />}
+                                                    className="hidden md:inline-flex"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation()
+                                                        openExercise(exercise)
+                                                    }}
+                                                >
+                                                    Ouvrir
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1059,6 +1225,10 @@ const WorkoutTodayPage = () => {
                 title="Terminer la séance"
                 confirmText="Terminer"
                 cancelText="Annuler"
+                className="flex min-h-screen items-center justify-center px-4"
+                contentClassName="w-full max-w-[560px] !h-auto pb-0 px-0"
+                confirmLoading={isFinishingSession}
+                cancelDisabled={isFinishingSession}
                 onClose={() => setIsFinishConfirmOpen(false)}
                 onRequestClose={() => setIsFinishConfirmOpen(false)}
                 onCancel={() => setIsFinishConfirmOpen(false)}

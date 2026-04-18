@@ -20,6 +20,7 @@ import {
 const DEFAULT_WEIGHT_UNIT: PreferredWeightUnit = 'kg'
 const DEFAULT_LENGTH_UNIT: PreferredLengthUnit = 'cm'
 const DEFAULT_THEME_MODE: PreferredThemeMode = 'light'
+const DEFAULT_WEEKLY_SESSION_GOAL = 4
 
 const toUserProfileRef = (uid: string): DocumentReference<UserProfileDocument> => {
     return userDocumentRef(uid) as DocumentReference<UserProfileDocument>
@@ -61,6 +62,14 @@ const normalizeTimezone = (value?: string): string => {
     }
 }
 
+const normalizeWeeklySessionGoal = (value: unknown): number => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return DEFAULT_WEEKLY_SESSION_GOAL
+    }
+
+    return Math.min(14, Math.max(1, Math.round(value)))
+}
+
 const userProfileFromSnapshot = (
     snapshot: QueryDocumentSnapshot<UserProfileDocument>,
 ): UserProfile => {
@@ -82,6 +91,7 @@ const userProfileFromSnapshot = (
         preferredThemeMode: isPreferredThemeMode(data.preferredThemeMode)
             ? data.preferredThemeMode
             : DEFAULT_THEME_MODE,
+        weeklySessionGoal: normalizeWeeklySessionGoal(data.weeklySessionGoal),
         timezone: typeof data.timezone === 'string' ? data.timezone : normalizeTimezone(),
         isOnboarded: Boolean(data.isOnboarded),
         createdAt: data.createdAt ?? null,
@@ -106,6 +116,7 @@ const buildCreatePayload = (data: CreateUserProfileInput): CreateUserProfileInpu
         preferredThemeMode: isPreferredThemeMode(data.preferredThemeMode)
             ? data.preferredThemeMode
             : DEFAULT_THEME_MODE,
+        weeklySessionGoal: normalizeWeeklySessionGoal(data.weeklySessionGoal),
         timezone: normalizeTimezone(data.timezone),
         isOnboarded: Boolean(data.isOnboarded),
     }
@@ -132,6 +143,10 @@ const buildPatchPayload = (patch: UpdateUserProfilePatch): UpdateUserProfilePatc
 
     if (isPreferredThemeMode(patch.preferredThemeMode)) {
         payload.preferredThemeMode = patch.preferredThemeMode
+    }
+
+    if (typeof patch.weeklySessionGoal === 'number' && Number.isFinite(patch.weeklySessionGoal)) {
+        payload.weeklySessionGoal = normalizeWeeklySessionGoal(patch.weeklySessionGoal)
     }
 
     if (typeof patch.timezone === 'string') {

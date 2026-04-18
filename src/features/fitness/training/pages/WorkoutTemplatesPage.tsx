@@ -50,7 +50,17 @@ const DEFAULT_TEMPLATE_INPUT: WorkoutTemplateInput = {
             plannedSets: [
                 {
                     setNumber: 1,
-                    targetReps: '10-12',
+                    targetReps: '10',
+                    targetWeight: '',
+                },
+                {
+                    setNumber: 2,
+                    targetReps: '10',
+                    targetWeight: '',
+                },
+                {
+                    setNumber: 3,
+                    targetReps: '10',
                     targetWeight: '',
                 },
             ],

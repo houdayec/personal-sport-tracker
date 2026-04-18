@@ -5,6 +5,7 @@ import {
     addExerciseToWorkoutSession,
     finishWorkoutSession,
     getCurrentWorkoutSession,
+    listWorkoutSessionsHistory,
     listWorkoutTemplates,
     markExerciseCompleted,
     createWorkoutSessionFromTemplate,
@@ -44,6 +45,7 @@ const useWorkoutTodaySession = () => {
 
     const [exerciseOptions, setExerciseOptions] = useState<Exercise[]>([])
     const [templates, setTemplates] = useState<WorkoutTemplate[]>([])
+    const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([])
     const [activeSession, setActiveSession] = useState<WorkoutSession | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [isStarting, setIsStarting] = useState(false)
@@ -67,15 +69,19 @@ const useWorkoutTodaySession = () => {
 
         try {
             const currentUid = assertUid()
-            const [inProgressSession, templateList, exerciseList] = await Promise.all([
+            const [inProgressSession, templateList, exerciseList, historyList] = await Promise.all([
                 getCurrentWorkoutSession(currentUid),
                 listWorkoutTemplates(currentUid),
                 listActiveExercises(currentUid),
+                listWorkoutSessionsHistory(currentUid),
             ])
 
             setActiveSession(inProgressSession)
             setTemplates(templateList)
             setExerciseOptions(exerciseList)
+            setRecentSessions(
+                historyList.filter((session) => session.status === 'completed').slice(0, 5),
+            )
         } catch (loadError) {
             setError(getErrorMessage(loadError))
         } finally {
@@ -394,6 +400,16 @@ const useWorkoutTodaySession = () => {
             const currentUid = assertUid()
             await finishWorkoutSession(currentUid, activeSession.id)
             setActiveSession(null)
+            try {
+                const historyList = await listWorkoutSessionsHistory(currentUid)
+                setRecentSessions(
+                    historyList
+                        .filter((session) => session.status === 'completed')
+                        .slice(0, 5),
+                )
+            } catch {
+                // Keep page responsive even if refresh history fails.
+            }
             showFitnessSuccessToast('Séance terminée. Elle est maintenant dans l’historique.')
         } catch (finishError) {
             showFitnessErrorToast(getErrorMessage(finishError))
@@ -487,6 +503,7 @@ const useWorkoutTodaySession = () => {
     return {
         exerciseOptions,
         templates,
+        recentSessions,
         activeSession,
         completedExerciseCount,
         isLoading,

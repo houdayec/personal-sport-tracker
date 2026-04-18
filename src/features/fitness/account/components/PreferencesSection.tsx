@@ -14,6 +14,7 @@ interface PreferencesSectionProps {
         preferredWeightUnit: PreferredWeightUnit
         preferredLengthUnit: PreferredLengthUnit
         preferredThemeMode: PreferredThemeMode
+        weeklySessionGoal: number
         timezone: string
     }) => Promise<void>
 }
@@ -32,17 +33,22 @@ const PreferencesSection = ({
     const [preferredThemeMode, setPreferredThemeMode] = useState<PreferredThemeMode>(
         profile.preferredThemeMode || 'light',
     )
+    const [weeklySessionGoal, setWeeklySessionGoal] = useState<number>(
+        profile.weeklySessionGoal || 4,
+    )
     const [timezone, setTimezone] = useState(profile.timezone || 'UTC')
 
     useEffect(() => {
         setPreferredWeightUnit(profile.preferredWeightUnit || 'kg')
         setPreferredLengthUnit(profile.preferredLengthUnit || 'cm')
         setPreferredThemeMode(profile.preferredThemeMode || 'light')
+        setWeeklySessionGoal(profile.weeklySessionGoal || 4)
         setTimezone(profile.timezone || 'UTC')
     }, [
         profile.preferredWeightUnit,
         profile.preferredLengthUnit,
         profile.preferredThemeMode,
+        profile.weeklySessionGoal,
         profile.timezone,
     ])
 
@@ -51,6 +57,7 @@ const PreferencesSection = ({
             preferredWeightUnit,
             preferredLengthUnit,
             preferredThemeMode,
+            weeklySessionGoal,
             timezone,
         })
     }
@@ -63,7 +70,7 @@ const PreferencesSection = ({
             </p>
 
             <FormContainer className="mt-4" layout="vertical">
-                <div className="grid gap-4 lg:grid-cols-4">
+                <div className="grid gap-4 lg:grid-cols-5">
                     <FormItem label="Unité de poids">
                         <Input
                             asElement="select"
@@ -95,6 +102,26 @@ const PreferencesSection = ({
                             value={timezone}
                             onChange={(event) => setTimezone(event.target.value)}
                             placeholder="Europe/Paris"
+                        />
+                    </FormItem>
+
+                    <FormItem label="Objectif hebdo (séances)">
+                        <Input
+                            type="number"
+                            min={1}
+                            max={14}
+                            value={String(weeklySessionGoal)}
+                            onChange={(event) =>
+                                setWeeklySessionGoal(
+                                    Math.min(
+                                        14,
+                                        Math.max(
+                                            1,
+                                            Number(event.target.value || 1),
+                                        ),
+                                    ),
+                                )
+                            }
                         />
                     </FormItem>
 

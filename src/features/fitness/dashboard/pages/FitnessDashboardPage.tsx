@@ -5,7 +5,11 @@ import { Alert, Button, Tag } from '@/components/ui'
 import { Link } from 'react-router-dom'
 import { FITNESS_ROUTES } from '@/features/fitness/constants/routes'
 import { useAppSelector } from '@/store'
-import { getCurrentWorkoutSession } from '@/features/fitness/training/services/workoutSessionService'
+import {
+    getCurrentWorkoutSession,
+    listWorkoutSessionsHistory,
+} from '@/features/fitness/training/services/workoutSessionService'
+import { getCurrentUserProfile } from '@/features/fitness/account/services/accountProfileService'
 import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import type { WorkoutSession } from '@/features/fitness/training/types/workoutSession'
 import { HiOutlinePlay, HiOutlineRefresh } from 'react-icons/hi'
@@ -16,28 +20,34 @@ const sessionTypeLabel: Record<'strength' | 'hiit' | 'running', string> = {
     running: 'COURSE',
 }
 
-const keyMetrics = [
-    {
-        label: 'Séance prévue',
-        value: '45 min',
-        note: 'Renforcement bas du corps',
-    },
-    {
-        label: 'Poids du jour',
-        value: '-- kg',
-        note: 'A saisir dans Corps > Poids',
-    },
-    {
-        label: 'Objectif hebdo',
-        value: '3 / 4',
-        note: 'Séances complétées',
-    },
-    {
-        label: 'Série en cours',
-        value: '5 jours',
-        note: 'Suivi actif',
-    },
-]
+const getSessionTimestampMs = (session: WorkoutSession): number => {
+    return (
+        session.endedAt?.toMillis?.() ??
+        session.completedAt?.toMillis?.() ??
+        session.startedAt?.toMillis?.() ??
+        session.updatedAt?.toMillis?.() ??
+        session.createdAt?.toMillis?.() ??
+        0
+    )
+}
+
+const getWeeklyGoalNote = (completed: number, goal: number): string => {
+    if (completed <= 0) {
+        return 'Aucune séance validée pour le moment cette semaine.'
+    }
+
+    if (completed < goal) {
+        const remaining = goal - completed
+        return `Encore ${remaining} séance${remaining > 1 ? 's' : ''} pour atteindre ton objectif.`
+    }
+
+    if (completed === goal) {
+        return 'Objectif hebdo atteint, bravo.'
+    }
+
+    const extra = completed - goal
+    return `Objectif dépassé de ${extra} séance${extra > 1 ? 's' : ''}. Excellent rythme.`
+}
 
 const quickLinks = [
     {
@@ -75,12 +85,17 @@ const getErrorMessage = (error: unknown): string => {
 const FitnessDashboardPage = () => {
     const uid = useAppSelector((state) => state.auth.session.uid)
     const [activeSession, setActiveSession] = useState<WorkoutSession | null>(null)
+    const [weeklySessionGoal, setWeeklySessionGoal] = useState(4)
+    const [weeklyCompletedSessions, setWeeklyCompletedSessions] = useState(0)
+    const [sessionsThisYearCount, setSessionsThisYearCount] = useState(0)
     const [isLoadingSession, setIsLoadingSession] = useState(false)
     const [sessionError, setSessionError] = useState<string | null>(null)
 
-    const loadActiveSession = useCallback(async () => {
+    const loadDashboardData = useCallback(async () => {
         if (!uid) {
             setActiveSession(null)
+            setWeeklySessionGoal(4)
+            setSessionsThisYearCount(0)
             setSessionError(null)
             return
         }
@@ -89,8 +104,40 @@ const FitnessDashboardPage = () => {
         setSessionError(null)
 
         try {
-            const session = await getCurrentWorkoutSession(uid)
+            const [session, history, profile] = await Promise.all([
+                getCurrentWorkoutSession(uid),
+                listWorkoutSessionsHistory(uid),
+                getCurrentUserProfile(uid),
+            ])
+
+            const now = dayjs()
+            const daysSinceMonday = (now.day() + 6) % 7
+            const weekStart = now
+                .subtract(daysSinceMonday, 'day')
+                .startOf('day')
+                .valueOf()
+            const yearStart = dayjs().startOf('year').valueOf()
+
+            const completedThisWeek = history.filter((workoutSession) => {
+                if (workoutSession.status !== 'completed') {
+                    return false
+                }
+
+                return getSessionTimestampMs(workoutSession) >= weekStart
+            }).length
+
+            const completedThisYear = history.filter((workoutSession) => {
+                if (workoutSession.status !== 'completed') {
+                    return false
+                }
+
+                return getSessionTimestampMs(workoutSession) >= yearStart
+            }).length
+
             setActiveSession(session)
+            setWeeklyCompletedSessions(completedThisWeek)
+            setSessionsThisYearCount(completedThisYear)
+            setWeeklySessionGoal(profile?.weeklySessionGoal || 4)
         } catch (error) {
             setActiveSession(null)
             setSessionError(getErrorMessage(error))
@@ -100,8 +147,8 @@ const FitnessDashboardPage = () => {
     }, [uid])
 
     useEffect(() => {
-        loadActiveSession()
-    }, [loadActiveSession])
+        loadDashboardData()
+    }, [loadDashboardData])
 
     const activeSessionProgress = useMemo(() => {
         if (!activeSession) {
@@ -145,6 +192,22 @@ const FitnessDashboardPage = () => {
             percent,
         }
     }, [activeSession])
+
+    const keyMetrics = useMemo(
+        () => [
+            {
+                label: 'Objectif hebdo',
+                value: `${weeklyCompletedSessions}/${weeklySessionGoal}`,
+                note: getWeeklyGoalNote(weeklyCompletedSessions, weeklySessionGoal),
+            },
+            {
+                label: 'Sessions faites cette année',
+                value: String(sessionsThisYearCount),
+                note: `Depuis le 1er janvier ${dayjs().year()}`,
+            },
+        ],
+        [sessionsThisYearCount, weeklyCompletedSessions, weeklySessionGoal],
+    )
 
     return (
         <div className="space-y-6">
@@ -205,7 +268,7 @@ const FitnessDashboardPage = () => {
                             <Button
                                 size="sm"
                                 icon={<HiOutlineRefresh />}
-                                onClick={loadActiveSession}
+                                onClick={loadDashboardData}
                             >
                                 Rafraîchir
                             </Button>
@@ -219,7 +282,7 @@ const FitnessDashboardPage = () => {
                 </Card>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
                 {keyMetrics.map((metric) => (
                     <Card
                         key={metric.label}
