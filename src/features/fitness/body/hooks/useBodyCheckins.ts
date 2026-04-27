@@ -8,6 +8,10 @@ import {
     updateBodyCheckin,
     uploadBodyCheckinPhoto,
 } from '@/features/fitness/body/services/bodyCheckinService'
+import {
+    deleteBodyMeasurementEntriesBySourceCheckinId,
+    upsertBodyMeasurementEntryFromCheckin,
+} from '@/features/fitness/body/services/bodyMeasurementService'
 import { logFitnessErrorDev } from '@/features/fitness/common/utils/debugError'
 import { showFitnessErrorToast, showFitnessSuccessToast } from '@/features/fitness/common/utils/feedbackToast'
 import type {
@@ -16,6 +20,10 @@ import type {
     BodyCheckinPhoto,
     BodyCheckinPhotoUploadInput,
 } from '@/features/fitness/body/types/bodyCheckin'
+import {
+    createEmptyBodyMeasurementValues,
+    type BodyMeasurementEntryInput,
+} from '@/features/fitness/body/types/bodyMeasurement'
 
 const uidRequiredErrorMessage =
     'Utilisateur non connecté. Impossible d’accéder aux body check-ins.'
@@ -38,6 +46,32 @@ interface EditBodyCheckinPayload {
     existingPhotos: BodyCheckinPhoto[]
     removedPhotoPaths: string[]
     newPhotos: BodyCheckinPhotoUploadInput[]
+}
+
+const toBodyMeasurementInputFromCheckin = (
+    input: BodyCheckinInput,
+): BodyMeasurementEntryInput => {
+    const measurementValues = createEmptyBodyMeasurementValues()
+
+    measurementValues.neck = input.values.neck
+    measurementValues.shoulders = input.values.shoulders
+    measurementValues.chest = input.values.chest
+    measurementValues.waist = input.values.waist
+    measurementValues.hips = input.values.hips
+    measurementValues.glutes = null
+    measurementValues.leftArm = input.values.armLeft
+    measurementValues.rightArm = input.values.armRight
+    measurementValues.leftThigh = input.values.thighLeft
+    measurementValues.rightThigh = input.values.thighRight
+    measurementValues.leftCalf = input.values.calfLeft
+    measurementValues.rightCalf = input.values.calfRight
+
+    return {
+        measuredAt: input.measuredAt,
+        unit: input.unit,
+        values: measurementValues,
+        note: input.note,
+    }
 }
 
 const useBodyCheckins = () => {
@@ -116,6 +150,11 @@ const useBodyCheckins = () => {
                     ...input,
                     photos: photoPlaceholders,
                 })
+                await upsertBodyMeasurementEntryFromCheckin(
+                    currentUid,
+                    checkinId,
+                    toBodyMeasurementInputFromCheckin(input),
+                )
 
                 for (const photo of photosToUpload) {
                     await uploadBodyCheckinPhoto(
@@ -163,6 +202,11 @@ const useBodyCheckins = () => {
                     ...payload.input,
                     photos: [...remainingPhotos, ...photoPlaceholders],
                 })
+                await upsertBodyMeasurementEntryFromCheckin(
+                    currentUid,
+                    payload.checkinId,
+                    toBodyMeasurementInputFromCheckin(payload.input),
+                )
 
                 for (const photoPath of payload.removedPhotoPaths) {
                     await deleteBodyCheckinPhoto(currentUid, payload.checkinId, photoPath)
@@ -189,6 +233,10 @@ const useBodyCheckins = () => {
         async (checkinId: string) => {
             await runMutation(async () => {
                 const currentUid = assertUid()
+                await deleteBodyMeasurementEntriesBySourceCheckinId(
+                    currentUid,
+                    checkinId,
+                )
                 await deleteBodyCheckin(currentUid, checkinId)
                 const items = await getBodyCheckins(currentUid)
                 setCheckins(items)

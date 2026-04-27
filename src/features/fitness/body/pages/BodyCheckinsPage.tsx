@@ -96,6 +96,26 @@ const photoTypeLabel: Record<BodyCheckinPhotoType, string> = {
     other: 'Autre',
 }
 
+const parsePositiveDecimalInput = (
+    rawValue: string,
+    fieldLabel: string,
+): number | null => {
+    const trimmed = rawValue.trim()
+
+    if (!trimmed) {
+        return null
+    }
+
+    const normalized = trimmed.replace(',', '.')
+    const parsed = Number(normalized)
+
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        throw new Error(`La valeur "${fieldLabel}" doit être positive.`)
+    }
+
+    return parsed
+}
+
 const buildInputFromForm = (values: BodyCheckinFormValues): BodyCheckinInput => {
     if (!values.measuredAt.trim()) {
         throw new Error('La date du check-in est requise.')
@@ -108,24 +128,15 @@ const buildInputFromForm = (values: BodyCheckinFormValues): BodyCheckinInput => 
 
     const normalizedValues = createEmptyBodyCheckinValues()
     BODY_CHECKIN_FIELDS.forEach((field) => {
-        const rawValue = values.values[field.key].trim()
-        if (!rawValue) {
+        const parsed = parsePositiveDecimalInput(values.values[field.key], field.label)
+        if (parsed === null) {
             normalizedValues[field.key] = null
             return
-        }
-
-        const parsed = Number(rawValue)
-        if (!Number.isFinite(parsed) || parsed <= 0) {
-            throw new Error(`La valeur "${field.label}" doit être positive.`)
         }
         normalizedValues[field.key] = parsed
     })
 
-    const trimmedWeight = values.weight.trim()
-    const parsedWeight = trimmedWeight ? Number(trimmedWeight) : undefined
-    if (trimmedWeight && (!Number.isFinite(parsedWeight) || (parsedWeight as number) <= 0)) {
-        throw new Error('Le poids doit être un nombre positif.')
-    }
+    const parsedWeight = parsePositiveDecimalInput(values.weight, 'Poids')
 
     return {
         measuredAt,
@@ -646,7 +657,7 @@ const BodyCheckinsPage = () => {
                 onClose={closeEditDialog}
                 onRequestClose={closeEditDialog}
             >
-                <div className="px-6 py-5">
+                <div className="max-h-[75vh] overflow-y-auto px-6 py-5">
                     <h5>Modifier le body check-in</h5>
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                         Ajuste les mesures, le poids, les photos et la note si besoin.

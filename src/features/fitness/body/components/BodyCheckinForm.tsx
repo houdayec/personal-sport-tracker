@@ -1,6 +1,14 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import dayjs from 'dayjs'
-import { Button, DatePicker, FormContainer, FormItem, Input, Tag } from '@/components/ui'
+import {
+    Button,
+    DatePicker,
+    FormContainer,
+    FormItem,
+    Input,
+    Select,
+    Tag,
+} from '@/components/ui'
 import {
     BODY_CHECKIN_FIELDS,
     BODY_CHECKIN_PHOTO_TYPES,
@@ -64,6 +72,16 @@ const photoTypeLabel: Record<BodyCheckinPhotoType, string> = {
     other: 'Autre',
 }
 
+interface PhotoTypeOption {
+    value: BodyCheckinPhotoType
+    label: string
+}
+
+const PHOTO_TYPE_OPTIONS: PhotoTypeOption[] = BODY_CHECKIN_PHOTO_TYPES.map((type) => ({
+    value: type,
+    label: photoTypeLabel[type],
+}))
+
 const BodyCheckinForm = ({
     values,
     existingPhotos = [],
@@ -92,6 +110,10 @@ const BodyCheckinForm = ({
         onAddPhoto(selectedPhotoType, file)
         event.target.value = ''
     }
+
+    const selectedPhotoTypeOption =
+        PHOTO_TYPE_OPTIONS.find((option) => option.value === selectedPhotoType) ||
+        PHOTO_TYPE_OPTIONS[0]
 
     return (
         <FormContainer layout="vertical">
@@ -127,9 +149,7 @@ const BodyCheckinForm = ({
 
                 <FormItem label="Poids (optionnel)">
                     <Input
-                        type="number"
-                        min="0"
-                        step="0.1"
+                        type="text"
                         inputMode="decimal"
                         value={values.weight}
                         onChange={(event) => onFieldChange('weight', event.target.value)}
@@ -152,9 +172,7 @@ const BodyCheckinForm = ({
                 {BODY_CHECKIN_FIELDS.map((field) => (
                     <FormItem key={field.key} label={field.label}>
                         <Input
-                            type="number"
-                            min="0"
-                            step="0.1"
+                            type="text"
                             inputMode="decimal"
                             value={values.values[field.key]}
                             onChange={(event) =>
@@ -176,20 +194,19 @@ const BodyCheckinForm = ({
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <Input
-                            asElement="select"
-                            value={selectedPhotoType}
-                            onChange={(event) =>
-                                setSelectedPhotoType(event.target.value as BodyCheckinPhotoType)
-                            }
-                            disabled={disabled}
-                        >
-                            {BODY_CHECKIN_PHOTO_TYPES.map((type) => (
-                                <option key={type} value={type}>
-                                    {photoTypeLabel[type]}
-                                </option>
-                            ))}
-                        </Input>
+                        <div className="min-w-[170px]">
+                            <Select<PhotoTypeOption, false>
+                                options={PHOTO_TYPE_OPTIONS}
+                                value={selectedPhotoTypeOption}
+                                isSearchable={false}
+                                isDisabled={disabled}
+                                onChange={(option) =>
+                                    setSelectedPhotoType(
+                                        (option?.value as BodyCheckinPhotoType) || 'front',
+                                    )
+                                }
+                            />
+                        </div>
                         <Button
                             size="sm"
                             icon={<HiOutlineUpload />}

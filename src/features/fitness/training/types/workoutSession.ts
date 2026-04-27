@@ -247,3 +247,17 @@ export interface UpdateBreathingSessionInput {
     completedCycles?: number
     notes?: string
 }
+
+export interface CreatePastWorkoutSessionInput {
+    sessionType: SessionType
+    startedAt: Date | string
+    durationMin: number
+    sourceName?: string
+    notes?: string
+    strengthExerciseCount?: number
+    hiitRounds?: number
+    hiitExerciseCount?: number
+    runningType?: RunningType
+    distanceKm?: number
+    breathingCompletedCycles?: number
+}

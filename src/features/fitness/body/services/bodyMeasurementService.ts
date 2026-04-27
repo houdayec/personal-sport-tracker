@@ -5,9 +5,11 @@ import {
     doc,
     getDoc,
     getDocs,
+    query,
     serverTimestamp,
     Timestamp,
     updateDoc,
+    where,
     type QueryDocumentSnapshot,
 } from 'firebase/firestore'
 import { fitnessCollections } from '@/features/fitness/common/services'
@@ -59,6 +61,12 @@ const normalizeMeasurementValues = (
     return normalized
 }
 
+const hasAtLeastOneMeasurementValue = (values: BodyMeasurementValues): boolean => {
+    return Object.values(values).some(
+        (value) => typeof value === 'number' && Number.isFinite(value) && value > 0,
+    )
+}
+
 const normalizeBodyMeasurementInput = (
     input: BodyMeasurementEntryInput,
 ): BodyMeasurementEntryInput => {
@@ -107,6 +115,9 @@ const bodyMeasurementEntryFromSnapshot = (
         measuredAt: data.measuredAt ?? null,
         unit: isBodyMeasurementUnit(data.unit) ? data.unit : 'cm',
         values: normalizeSnapshotValues(data.values),
+        ...(typeof data.sourceCheckinId === 'string' && data.sourceCheckinId.trim()
+            ? { sourceCheckinId: data.sourceCheckinId.trim() }
+            : {}),
         note: typeof data.note === 'string' ? data.note : undefined,
         createdAt: data.createdAt ?? null,
         updatedAt: data.updatedAt ?? null,
@@ -208,4 +219,64 @@ export const deleteBodyMeasurementEntry = async (
     )
 
     await deleteDoc(entryRef)
+}
+
+export const upsertBodyMeasurementEntryFromCheckin = async (
+    uid: string,
+    checkinId: string,
+    input: BodyMeasurementEntryInput,
+): Promise<void> => {
+    const entriesRef = fitnessCollections.bodyMeasurementEntries<BodyMeasurementEntryDocument>(uid)
+    const bySourceQuery = query(entriesRef, where('sourceCheckinId', '==', checkinId))
+    const existingBySource = await getDocs(bySourceQuery)
+
+    if (!hasAtLeastOneMeasurementValue(input.values)) {
+        await Promise.all(existingBySource.docs.map((snapshot) => deleteDoc(snapshot.ref)))
+        return
+    }
+
+    const normalized = normalizeBodyMeasurementInput(input)
+
+    if (!existingBySource.empty) {
+        await Promise.all(
+            existingBySource.docs.map((snapshot) =>
+                updateDoc(snapshot.ref, {
+                    measuredAt: Timestamp.fromDate(normalized.measuredAt),
+                    unit: normalized.unit,
+                    values: normalized.values,
+                    ...(normalized.note ? { note: normalized.note } : { note: deleteField() }),
+                    sourceCheckinId: checkinId,
+                    updatedAt: serverTimestamp(),
+                    schemaVersion: BODY_MEASUREMENT_SCHEMA_VERSION,
+                }),
+            ),
+        )
+        return
+    }
+
+    await addDoc(entriesRef, {
+        measuredAt: Timestamp.fromDate(normalized.measuredAt),
+        unit: normalized.unit,
+        values: normalized.values,
+        ...(normalized.note ? { note: normalized.note } : {}),
+        sourceCheckinId: checkinId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        schemaVersion: BODY_MEASUREMENT_SCHEMA_VERSION,
+    })
+}
+
+export const deleteBodyMeasurementEntriesBySourceCheckinId = async (
+    uid: string,
+    checkinId: string,
+): Promise<void> => {
+    const entriesRef = fitnessCollections.bodyMeasurementEntries<BodyMeasurementEntryDocument>(uid)
+    const bySourceQuery = query(entriesRef, where('sourceCheckinId', '==', checkinId))
+    const snapshot = await getDocs(bySourceQuery)
+
+    if (snapshot.empty) {
+        return
+    }
+
+    await Promise.all(snapshot.docs.map((entry) => deleteDoc(entry.ref)))
 }

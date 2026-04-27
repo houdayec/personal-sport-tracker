@@ -36,6 +36,7 @@ export interface BodyMeasurementEntryDocument {
     measuredAt: Timestamp | null
     unit: BodyMeasurementUnit
     values: BodyMeasurementValues
+    sourceCheckinId?: string
     createdAt: Timestamp | null
     updatedAt: Timestamp | null
     schemaVersion: number

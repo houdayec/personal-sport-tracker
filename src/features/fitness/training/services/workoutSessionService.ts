@@ -1,4 +1,5 @@
 import {
+    Timestamp,
     addDoc,
     arrayUnion,
     deleteDoc,
@@ -22,6 +23,7 @@ import {
     WORKOUT_SESSION_SCHEMA_VERSION,
     WORKOUT_TEMPLATE_SCHEMA_VERSION,
     type BreathingSessionData,
+    type CreatePastWorkoutSessionInput,
     type CreateBreathingSessionInput,
     type HiitSessionData,
     type HiitTemplateConfig,
@@ -1748,6 +1750,195 @@ export const updateBreathingSessionData = async (
         },
         updatedAt: serverTimestamp(),
     })
+}
+
+const clampCount = (value: unknown, fallback: number, min = 1, max = 99) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return fallback
+    }
+
+    return Math.min(max, Math.max(min, Math.round(value)))
+}
+
+const buildManualStrengthSnapshot = (
+    exerciseCount: number,
+): StrengthSessionData => {
+    const plannedExercises: PlannedWorkoutExercise[] = Array.from(
+        { length: exerciseCount },
+        (_, index) => {
+            const name = `Exercice ${index + 1}`
+            const plannedExerciseId = `planned_manual_${index + 1}_${sanitizeKey(name)}_${Date.now()}`
+
+            return {
+                plannedExerciseId,
+                exerciseSource: 'user',
+                exerciseId: null,
+                exerciseSnapshot: {
+                    name,
+                    muscleGroup: '',
+                    equipment: '',
+                },
+                name,
+                muscleGroup: '',
+                equipment: '',
+                orderIndex: index,
+                plannedSets: [{ setNumber: 1 }],
+            }
+        },
+    )
+
+    const performedExercises = plannedExercises.reduce<
+        Record<string, PerformedWorkoutExercise>
+    >((accumulator, plannedExercise) => {
+        accumulator[plannedExercise.plannedExerciseId] = {
+            plannedExerciseId: plannedExercise.plannedExerciseId,
+            exerciseSource: plannedExercise.exerciseSource,
+            exerciseId: plannedExercise.exerciseId,
+            exerciseSnapshot: plannedExercise.exerciseSnapshot,
+            name: plannedExercise.name,
+            status: 'completed',
+            sets: [],
+            notes: '',
+        }
+        return accumulator
+    }, {})
+
+    const performedExerciseIds = plannedExercises.map(
+        (plannedExercise) => plannedExercise.plannedExerciseId,
+    )
+
+    return {
+        plannedExercises,
+        performedExercises,
+        performedExerciseIds,
+    }
+}
+
+export const createPastWorkoutSession = async (
+    uid: string,
+    input: CreatePastWorkoutSessionInput,
+): Promise<WorkoutSession> => {
+    const sessionType = normalizeSessionType(input.sessionType, 'strength')
+    const startedAtDate =
+        input.startedAt instanceof Date ? input.startedAt : new Date(input.startedAt)
+
+    if (Number.isNaN(startedAtDate.getTime())) {
+        throw new Error('Date de séance invalide.')
+    }
+
+    const durationMin = clampCount(input.durationMin, 45, 1, 24 * 60)
+    const durationSec = durationMin * 60
+    const endedAtDate = new Date(startedAtDate.getTime() + durationSec * 1000)
+
+    if (startedAtDate.getTime() > Date.now()) {
+        throw new Error('La date doit être dans le passé.')
+    }
+
+    const sourceName = normalizeString(input.sourceName) || 'Saisie manuelle'
+    const notes = normalizeString(input.notes)
+    const startedAt = Timestamp.fromDate(startedAtDate)
+    const endedAt = Timestamp.fromDate(endedAtDate)
+
+    const strengthData =
+        sessionType === 'strength'
+            ? buildManualStrengthSnapshot(
+                  clampCount(input.strengthExerciseCount, 4, 1, 50),
+              )
+            : {
+                  plannedExercises: [],
+                  performedExercises: {},
+                  performedExerciseIds: [],
+              }
+
+    const hiitRounds = clampCount(input.hiitRounds, 4, 1, 30)
+    const hiitExerciseCount = clampCount(input.hiitExerciseCount, 4, 1, 30)
+    const hiitExercises = Array.from(
+        { length: hiitExerciseCount },
+        (_, index) => `Exercice HIIT ${index + 1}`,
+    )
+
+    const runningDistanceKm =
+        typeof input.distanceKm === 'number' && Number.isFinite(input.distanceKm)
+            ? Math.max(0, Number(input.distanceKm))
+            : undefined
+    const runningPaceSecPerKm =
+        runningDistanceKm && runningDistanceKm > 0
+            ? roundNumber(durationSec / runningDistanceKm, 1)
+            : undefined
+
+    const breathingCompletedCycles = clampCount(
+        input.breathingCompletedCycles,
+        Math.max(1, Math.floor(durationSec / 10)),
+        1,
+        999,
+    )
+
+    const sessionsRef = fitnessCollections.workoutSessions<WorkoutSessionDocument>(uid)
+    const sessionDocRef = await addDoc(sessionsRef, {
+        sessionType,
+        status: 'completed',
+        startedAt,
+        endedAt,
+        completedAt: endedAt,
+        plannedExercises: strengthData.plannedExercises,
+        performedExercises: strengthData.performedExercises,
+        performedExerciseIds: strengthData.performedExerciseIds,
+        strengthData,
+        ...(sessionType === 'hiit'
+            ? {
+                  hiitData: {
+                      format: 'interval' as const,
+                      rounds: hiitRounds,
+                      workSec: 40,
+                      restSec: 20,
+                      exercises: hiitExercises,
+                      completedRounds: hiitRounds,
+                      completedExerciseNames: hiitExercises,
+                      ...(notes ? { notes } : {}),
+                  },
+              }
+            : {}),
+        ...(sessionType === 'running'
+            ? {
+                  runningData: {
+                      runType: normalizeRunningTypeValue(input.runningType, 'Footing'),
+                      ...(typeof runningDistanceKm === 'number'
+                          ? { distanceKm: roundNumber(runningDistanceKm, 2) }
+                          : {}),
+                      durationSec,
+                      ...(typeof runningPaceSecPerKm === 'number'
+                          ? { avgPaceSecPerKm: runningPaceSecPerKm }
+                          : {}),
+                      ...(notes ? { notes } : {}),
+                  },
+              }
+            : {}),
+        ...(sessionType === 'breathing'
+            ? {
+                  breathingData: {
+                      inhaleSec: 5,
+                      exhaleSec: 5,
+                      durationSec,
+                      elapsedSec: durationSec,
+                      completedCycles: breathingCompletedCycles,
+                      ...(notes ? { notes } : {}),
+                  },
+              }
+            : {}),
+        sourceTemplate: {
+            id: 'manual_entry',
+            name: sourceName,
+            version: WORKOUT_TEMPLATE_SCHEMA_VERSION,
+            sessionType,
+        },
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        schemaVersion: WORKOUT_SESSION_SCHEMA_VERSION,
+        templateId: 'manual_entry',
+        templateName: sourceName,
+    })
+
+    return getWorkoutSessionById(uid, sessionDocRef.id)
 }
 
 export const completeWorkoutSession = async (

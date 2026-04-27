@@ -1,13 +1,24 @@
 import dayjs from 'dayjs'
+import { useState } from 'react'
 import { Link, generatePath } from 'react-router-dom'
 import { Alert, Button, Card, Spinner, Tag } from '@/components/ui'
+import { showFitnessErrorToast, showFitnessSuccessToast } from '@/features/fitness/common/utils/feedbackToast'
 import { FITNESS_ROUTES } from '@/features/fitness/constants/routes'
+import PastWorkoutSessionDialog from '@/features/fitness/training/components/PastWorkoutSessionDialog'
+import { createPastWorkoutSession } from '@/features/fitness/training/services/workoutSessionService'
 import {
     formatDuration,
     useWorkoutHistoryList,
 } from '@/features/fitness/training/hooks/useWorkoutHistory'
+import type { CreatePastWorkoutSessionInput } from '@/features/fitness/training/types/workoutSession'
 import { formatRunningTypeLabel } from '@/features/fitness/training/utils/runningType'
-import { HiOutlineClock, HiOutlineRefresh, HiOutlineClipboardList } from 'react-icons/hi'
+import { useAppSelector } from '@/store'
+import {
+    HiOutlineClock,
+    HiOutlineRefresh,
+    HiOutlineClipboardList,
+    HiOutlinePlusCircle,
+} from 'react-icons/hi'
 
 const sessionTypeLabel: Record<'strength' | 'hiit' | 'running' | 'breathing', string> = {
     strength: 'FORCE',
@@ -17,8 +28,36 @@ const sessionTypeLabel: Record<'strength' | 'hiit' | 'running' | 'breathing', st
 }
 
 const WorkoutHistoryPage = () => {
+    const uid = useAppSelector((state) => state.auth.session.uid)
     const { sessionSummaries, isLoading, error, loadHistory } =
         useWorkoutHistoryList()
+    const [isPastSessionDialogOpen, setIsPastSessionDialogOpen] = useState(false)
+    const [isSubmittingPastSession, setIsSubmittingPastSession] = useState(false)
+
+    const handleCreatePastSession = async (
+        input: CreatePastWorkoutSessionInput,
+    ) => {
+        if (!uid) {
+            throw new Error('Utilisateur non connecté.')
+        }
+
+        setIsSubmittingPastSession(true)
+        try {
+            await createPastWorkoutSession(uid, input)
+            showFitnessSuccessToast('Séance passée ajoutée.')
+            setIsPastSessionDialogOpen(false)
+            await loadHistory()
+        } catch (submitError) {
+            if (submitError instanceof Error && submitError.message) {
+                showFitnessErrorToast(submitError.message)
+            } else {
+                showFitnessErrorToast('Impossible d’ajouter la séance passée.')
+            }
+            throw submitError
+        } finally {
+            setIsSubmittingPastSession(false)
+        }
+    }
 
     return (
         <div className="space-y-6">
@@ -45,14 +84,24 @@ const WorkoutHistoryPage = () => {
                         <HiOutlineClipboardList className="text-xl text-gray-500" />
                         <p className="font-semibold">Sessions triées par date décroissante</p>
                     </div>
-                    <Button
-                        size="sm"
-                        icon={<HiOutlineRefresh />}
-                        onClick={loadHistory}
-                        disabled={isLoading}
-                    >
-                        Rafraîchir
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            size="sm"
+                            icon={<HiOutlinePlusCircle />}
+                            variant="solid"
+                            onClick={() => setIsPastSessionDialogOpen(true)}
+                        >
+                            Ajouter une séance passée
+                        </Button>
+                        <Button
+                            size="sm"
+                            icon={<HiOutlineRefresh />}
+                            onClick={loadHistory}
+                            disabled={isLoading}
+                        >
+                            Rafraîchir
+                        </Button>
+                    </div>
                 </div>
             </Card>
 
@@ -153,6 +202,18 @@ const WorkoutHistoryPage = () => {
                     </div>
                 )}
             </Card>
+
+            <PastWorkoutSessionDialog
+                isOpen={isPastSessionDialogOpen}
+                isSubmitting={isSubmittingPastSession}
+                onClose={() => {
+                    if (isSubmittingPastSession) {
+                        return
+                    }
+                    setIsPastSessionDialogOpen(false)
+                }}
+                onSubmit={handleCreatePastSession}
+            />
         </div>
     )
 }
